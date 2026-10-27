@@ -1,4 +1,4 @@
-import { setupHostEndRound } from "../shared/game-shell.js";
+import { renderGamePlayerPanel, setupHostEndRound } from "../shared/game-shell.js";
 const API_BASE_URL = window.PLAYBLOX_API_BASE_URL || (["localhost","127.0.0.1"].includes(location.hostname) ? "http://localhost:8787" : "https://playblox-party-service.playblox-party.workers.dev");
 const params = new URLSearchParams(location.search);
 const code = (params.get("party") || "").toUpperCase();
@@ -61,15 +61,7 @@ function render() {
   $("flow-assign").classList.toggle("active",!finished&&phase==="assign");
   $("flow-questions").classList.toggle("active",!finished&&phase==="questions");
   $("flow-reveal").classList.toggle("active",finished);
-  const roster=$("player-roster");
-  roster.replaceChildren(...(gameState.playerOrder||[]).map((id,index)=>{
-    const p=player(id),item=document.createElement("li");
-    item.className="roster-player"+(id===myPlayerId?" you":"");
-    const number=document.createElement("span");number.className="roster-number";number.textContent=String(index+1);
-    const name=document.createElement("strong");name.textContent=(p?.nickname||"Player")+(id===myPlayerId?" (you)":"");
-    const state=document.createElement("small");state.textContent=p?.connected===false?"Reconnecting":isFinished()?"Round complete":(gameState.submittedPlayerIds||[]).includes(id)?"Submitted":"Thinking…";
-    item.append(number,name,state);return item;
-  }));
+  renderGamePlayerPanel({container:$("player-roster"),room,gameState,myPlayerId});
   $("phase-title").textContent=finished?"All answers revealed!":phase==="assign"?"Assign a secret word":"Ask the player on your left";
   $("phase-copy").textContent=finished?"All questions and their assigned answers are now revealed.":phase==="assign"?"Give the player immediately to your right a word, term, or phrase. They will not see it until the reveal.":"Write a question for the player immediately to your left. Their assigned text will automatically be the answer.";
   $("table-title").textContent=finished?"The big reveal":phase==="assign"?"Secret words":"Questions are locked";
