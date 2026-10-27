@@ -21,13 +21,23 @@ export const ticTacToe = {
       : { ok: false, reason: "Tic-Tac-Toe needs exactly two connected players." };
   },
 
-  createInitialState(context) {
+  createInitialState(context, previousState = null) {
     const players = context.players.filter(player => player.role === "player" && player.connected);
+    // Randomize the opener for a new game; alternate the opener for rematches.
+    const previousOrder = previousState?.playerOrder;
+    let order = players.slice(0, 2).map(player => player.id);
+    if (Array.isArray(previousOrder) && previousOrder.length === 2
+        && order.every(id => previousOrder.includes(id))) {
+      order = [previousOrder[1], previousOrder[0]];
+    } else if (crypto.getRandomValues(new Uint8Array(1))[0] % 2 === 1) {
+      order.reverse();
+    }
+    const byId = Object.fromEntries(players.map(player => [player.id, player]));
     return {
       board: Array(9).fill(null),
-      playerOrder: players.slice(0, 2).map(player => player.id),
-      symbols: { [players[0].id]: "X", [players[1].id]: "O" },
-      currentPlayerId: players[0].id,
+      playerOrder: order,
+      symbols: { [order[0]]: "X", [order[1]]: "O" },
+      currentPlayerId: order[0],
       winnerId: null,
       winningLine: null,
       isDraw: false,
