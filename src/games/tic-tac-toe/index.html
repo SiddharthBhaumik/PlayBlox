@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#fff8e9">
+  <title>Tic-Tac-Toe — PlayBlox</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Nunito:wght@500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../../styles.css">
+  <link rel="stylesheet" href="./game.css">
+  <script type="module" src="./game.js"></script>
+</head>
+<body>
+  <div class="page-shell game-shell">
+    <header class="topbar">
+      <a class="brand" href="../../../" aria-label="PlayBlox home"><span class="brand-mark" aria-hidden="true">🧸</span><span class="brand-name">Play<span>Blox</span></span></a>
+      <a class="back-link" id="back-to-lobby" href="../../../">← Back to party</a>
+    </header>
+    <main class="tic-game">
+      <div class="eyebrow">✦ PLAYBLOX CLASSICS ✦</div>
+      <h1>Tic-Tac-<span class="highlight">Toe!</span></h1>
+      <p class="game-intro">Two players. Nine squares. One little showdown.</p>
+      <div class="game-room-meta"><span id="room-label">Joining your party…</span><span id="connection-status">Connecting…</span></div>
+      <section class="tic-card" aria-label="Tic-Tac-Toe game">
+        <div class="turn-banner" id="turn-banner" aria-live="polite">Connecting to the game…</div>
+        <div class="tic-board" id="tic-board" role="group" aria-label="Tic-Tac-Toe board">
+          <button class="tic-cell" type="button" data-index="0" aria-label="Square 1" disabled></button>
+          <button class="tic-cell" type="button" data-index="1" aria-label="Square 2" disabled></button>
+          <button class="tic-cell" type="button" data-index="2" aria-label="Square 3" disabled></button>
+          <button class="tic-cell" type="button" data-index="3" aria-label="Square 4" disabled></button>
+          <button class="tic-cell" type="button" data-index="4" aria-label="Square 5" disabled></button>
+          <button class="tic-cell" type="button" data-index="5" aria-label="Square 6" disabled></button>
+          <button class="tic-cell" type="button" data-index="6" aria-label="Square 7" disabled></button>
+          <button class="tic-cell" type="button" data-index="7" aria-label="Square 8" disabled></button>
+          <button class="tic-cell" type="button" data-index="8" aria-label="Square 9" disabled></button>
+        </div>
+        <div class="game-result" id="game-result" hidden aria-live="polite"></div>
+        <button class="primary-button rematch-button" id="return-lobby" type="button" hidden>↩ Return to party lobby</button>
+      </section>
+      <p class="game-help" id="game-help">The host can return everyone to the lobby when the round is over.</p>
+    </main>
+  </div>
+</body>
+</html>
