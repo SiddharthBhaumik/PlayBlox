@@ -330,7 +330,24 @@ if (incomingCode) {
     api('/api/rooms/' + encodeURIComponent(code) + '/join', {
       method: 'POST',
       body: JSON.stringify({ nickname: savedNickname, playerToken: savedToken }),
-    }).then(result => openParty({ room: result.room, token: result.playerToken }))
+    }).then(async result => {
+      // When the host explicitly returns from an active game, reset the shared game
+      // before opening the lobby. Otherwise the lobby loads correctly but the server
+      // still considers the old game active, so starting another game fails.
+      if (explicitlyReturningToLobby && result.room?.lifecycle !== 'lobby'
+          && result.room?.players?.some(player => player.token === result.playerToken && player.isHost)) {
+        await api('/api/rooms/' + encodeURIComponent(code) + '/game/reset', {
+          method: 'POST',
+          headers: { Authorization: 'Bearer ' + result.playerToken },
+          body: JSON.stringify({}),
+        });
+        result = await api('/api/rooms/' + encodeURIComponent(code) + '/join', {
+          method: 'POST',
+          body: JSON.stringify({ nickname: savedNickname, playerToken: savedToken }),
+        });
+      }
+      openParty({ room: result.room, token: result.playerToken });
+    })
       .catch(() => {
         $('invite-code').value = incomingCode;
         $('join-party-form').scrollIntoView({ block: 'center', behavior: 'smooth' });
