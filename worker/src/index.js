@@ -343,6 +343,7 @@ export class PartyRoom extends DurableObject {
     this.room.rematchVotes = {};
     this.room.lastActivityAt = Date.now();
     await this.persistAndSchedule();
+    this.broadcast({ type: "host-ended-round", message: "The host ended the round and returned everyone to the lobby." });
     this.broadcast({ type: "room-updated", room: publicRoom(this.room), stateVersion: this.room.stateVersion });
     return json({ ok: true, room: publicRoom(this.room) }, 200, request);
   }
