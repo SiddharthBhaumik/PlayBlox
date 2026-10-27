@@ -317,7 +317,7 @@ export class PartyRoom extends DurableObject {
     player.connected = true; player.disconnectExpiresAt = null;
     this.room.emptySinceAt = null; this.room.lastActivityAt = Date.now();
     await this.persistAndSchedule();
-    server.send(JSON.stringify({ type: "room-snapshot", room: publicRoom(this.room), stateVersion: this.room.stateVersion || 0 }));
+    server.send(JSON.stringify({ type: "room-snapshot", room: publicRoom(this.room), playerId: player.id, stateVersion: this.room.stateVersion || 0 }));
     this.broadcast({ type: "room-updated", room: publicRoom(this.room) });
     return new Response(null, { status: 101, webSocket: client });
   }
