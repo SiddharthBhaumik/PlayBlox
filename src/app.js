@@ -199,6 +199,8 @@ $('leave-lobby').addEventListener('click',async()=>{
  finally{sessionStorage.removeItem('playblox:'+code+':token');leavingLobby=true;socketGeneration++;clearSocketTimers();if(roomSocket){roomSocket.close();roomSocket=null;}button.disabled=false;returnToPlayground();}
 });
 function returnToPlayground(){leavingLobby=true;socketGeneration++;clearSocketTimers();if(roomSocket){roomSocket.close();roomSocket=null;}activeRoomCode=null;activePlayerToken=null;lastRoomPlayers=null;
+ // Status messages belong to the current create/join attempt, not the homepage forever.
+ ['create-feedback','join-feedback'].forEach(id=>{const node=$(id);if(node){node.textContent='';node.classList.remove('visible','success');}});
  $('lobby-screen').hidden=true;document.querySelectorAll('[data-home-section]').forEach(s=>s.hidden=false);window.scrollTo({top:0,behavior:'smooth'});}
 
 
