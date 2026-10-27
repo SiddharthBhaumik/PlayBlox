@@ -29,50 +29,53 @@ async function api(path, options = {}) {
     throw new Error('Could not reach the party service. Please try again.');
   }
   const data = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(data.error || 'Something went wrong. Please try again.');
+  if (!response.ok) { const error = new Error(data.error || 'Something went wrong. Please try again.'); error.status = response.status; throw error; }
   return data;
 }
 
+let lastRoomPlayers = null;
+let activeRoomCode = null;
+let activePlayerToken = null;
+function addLobbyActivity(message) {
+  const feed = $('lobby-activity'); if (!feed) return;
+  const item = document.createElement('li'); item.textContent = message; feed.prepend(item);
+  while (feed.children.length > 8) feed.lastElementChild.remove();
+}
 function renderPlayers(room) {
-  let list = $('party-players');
-  if (!list) {
-    list = document.createElement('div');
-    list.id = 'party-players';
-    list.className = 'party-players';
-    $('room-code').insertAdjacentElement('afterend', list);
-  }
-  list.replaceChildren();
-  const count = document.createElement('p');
-  count.className = 'dialog-note';
-  count.textContent = `Players: ${room.playerCount}/${room.playerCap}`;
-  const names = document.createElement('p');
-  names.textContent = room.players.map(p => p.nickname + (p.isHost ? ' (host)' : '')).join(' · ');
-  list.append(count, names);
-}
-
-function connectRoom(code, token) {
-  if (roomSocket) roomSocket.close();
-  if (!API_BASE_URL) return;
-  roomSocket = new WebSocket(API_BASE_URL.replace(/^http/, 'ws') +
-    `/api/rooms/${encodeURIComponent(code)}/ws?token=${encodeURIComponent(token)}`);
-  roomSocket.addEventListener('message', event => {
-    let message;
-    try { message = JSON.parse(event.data); } catch { return; }
-    if (['room-snapshot', 'room-updated'].includes(message.type) && message.room) renderPlayers(message.room);
+  $('lobby-player-count').textContent = `${room.playerCount}/${room.playerCap} players`;
+  const list = $('lobby-players'); list.replaceChildren();
+  room.players.forEach(player => {
+    const item=document.createElement('li'); item.className='lobby-player';
+    const avatar=document.createElement('span'); avatar.className='player-avatar'; avatar.textContent=[...player.nickname][0]?.toUpperCase()||'?';
+    const details=document.createElement('span'); details.className='player-details';
+    const name=document.createElement('strong'); name.textContent=player.nickname;
+    const role=document.createElement('small'); role.textContent=player.isHost?'HOST':'PLAYER';
+    details.append(name,role); item.append(avatar,details);
+    if(player.isHost){const badge=document.createElement('span');badge.className='host-badge';badge.textContent='👑 Host';item.append(badge);}
+    list.append(item);
   });
+  if(lastRoomPlayers){
+    const prev=new Set(lastRoomPlayers.map(p=>p.id)), curr=new Set(room.players.map(p=>p.id));
+    room.players.filter(p=>!prev.has(p.id)).forEach(p=>addLobbyActivity(`✨ ${p.nickname} joined the lobby`));
+    lastRoomPlayers.filter(p=>!curr.has(p.id)).forEach(p=>addLobbyActivity(`👋 ${p.nickname} left the lobby`));
+  }
+  lastRoomPlayers=room.players.map(p=>({...p}));
 }
-
-function openParty({ room, token, hostName = '' }) {
-  $('room-code').textContent = room.code;
-  $('dialog-title').textContent = room.name || 'Your party is ready!';
-  $('dialog-description').textContent = hostName
-    ? `Nice one, ${hostName}! Share this invite with your friends.`
-    : 'You joined the party! Share the invite link with other friends.';
-  $('copy-invite').textContent = '📋 Copy invite link';
-  $('copy-invite').dataset.inviteUrl = new URL('./?party=' + encodeURIComponent(room.code), location.href).href;
-  renderPlayers(room);
-  $('party-dialog').showModal();
-  connectRoom(room.code, token);
+function connectRoom(code,token){
+  if(roomSocket) roomSocket.close(); if(!API_BASE_URL)return;
+  roomSocket=new WebSocket(API_BASE_URL.replace(/^http/,'ws')+`/api/rooms/${encodeURIComponent(code)}/ws?token=${encodeURIComponent(token)}`);
+  roomSocket.addEventListener('message',event=>{let message;try{message=JSON.parse(event.data)}catch{return}
+    if(['room-snapshot','room-updated'].includes(message.type)&&message.room)renderPlayers(message.room);});
+  roomSocket.addEventListener('open',()=>{$('lobby-connection').textContent='Live · updates appear automatically';$('lobby-connection').classList.remove('offline');});
+  roomSocket.addEventListener('close',()=>{if(activeRoomCode===code){$('lobby-connection').textContent='Connection closed — the host may have ended the party.';$('lobby-connection').classList.add('offline');}});
+}
+function openParty({room,token}){
+  activeRoomCode=room.code;activePlayerToken=token;lastRoomPlayers=null;
+  $('lobby-title').textContent=room.name||'Party lobby';$('lobby-code').textContent=room.code;
+  $('lobby-invite').dataset.inviteUrl=new URL('./?party='+encodeURIComponent(room.code),location.href).href;
+  $('lobby-activity').replaceChildren();addLobbyActivity('🎉 Lobby opened — invite your friends to join!');
+  renderPlayers(room);document.querySelectorAll('[data-home-section]').forEach(s=>s.hidden=true);
+  $('lobby-screen').hidden=false;window.scrollTo({top:0,behavior:'smooth'});connectRoom(room.code,token);
 }
 
 $('create-party-form').addEventListener('submit', async event => {
@@ -87,7 +90,7 @@ $('create-party-form').addEventListener('submit', async event => {
     const result = await api('/api/rooms', { method: 'POST', body: JSON.stringify({ hostName, partyName }) });
     sessionStorage.setItem('playblox:' + result.room.code + ':token', result.playerToken);
     feedback('create-feedback', 'Your party is ready!', true);
-    openParty({ room: result.room, token: result.playerToken, hostName });
+    openParty({ room: result.room, token: result.playerToken });
   } catch (error) {
     feedback('create-feedback', error.message);
   } finally { button.disabled = false; }
@@ -112,32 +115,37 @@ $('join-party-form').addEventListener('submit', async event => {
   }
   button.disabled = true;
   try {
-    const result = await api('/api/rooms/' + encodeURIComponent(code) + '/join', {
-      method: 'POST', body: JSON.stringify({ nickname }),
-    });
-    sessionStorage.setItem('playblox:' + result.room.code + ':token', result.playerToken);
-    feedback('join-feedback', 'You joined the party!', true);
-    openParty({ room: result.room, token: result.playerToken });
+    const tokenKey = 'playblox:' + code + ':token';
+    const existingToken = sessionStorage.getItem(tokenKey);
+    let result;
+    try {
+      result = await api('/api/rooms/' + encodeURIComponent(code) + '/join', { method:'POST',
+        body:JSON.stringify({nickname,...(existingToken?{playerToken:existingToken}:{})}) });
+    } catch(error) {
+      if(error.status!==401||!existingToken) throw error;
+      sessionStorage.removeItem(tokenKey);
+      result=await api('/api/rooms/'+encodeURIComponent(code)+'/join',{method:'POST',body:JSON.stringify({nickname})});
+    }
+    sessionStorage.setItem(tokenKey,result.playerToken);
+    feedback('join-feedback',result.reused?'Welcome back to your lobby!':'You joined the party!',true);
+    openParty({room:result.room,token:result.playerToken});
   } catch (error) {
     feedback('join-feedback', error.message);
   } finally { button.disabled = false; }
 });
 
-$('copy-invite').addEventListener('click', async () => {
-  const url = $('copy-invite').dataset.inviteUrl || '';
-  try {
-    await navigator.clipboard.writeText(url);
-    $('copy-invite').textContent = '✅ Invite link copied!';
-  } catch { window.prompt('Copy your party invite link:', url); }
+async function copyInvite(button){const url=button.dataset.inviteUrl||'';try{await navigator.clipboard.writeText(url);button.textContent='✅ Invite link copied!';}catch{window.prompt('Copy your party invite link:',url);}}
+$('lobby-invite').addEventListener('click',()=>copyInvite($('lobby-invite')));
+$('leave-lobby').addEventListener('click',async()=>{
+ const code=activeRoomCode,token=activePlayerToken;if(!code||!token)return returnToPlayground();
+ const button=$('leave-lobby');button.disabled=true;
+ try{await api('/api/rooms/'+encodeURIComponent(code)+'/leave',{method:'POST',headers:{Authorization:'Bearer '+token}});}
+ catch(error){addLobbyActivity('⚠️ '+error.message);}
+ finally{sessionStorage.removeItem('playblox:'+code+':token');if(roomSocket){roomSocket.close();roomSocket=null;}button.disabled=false;returnToPlayground();}
 });
-function closePartyDialog() {
-  if (roomSocket) { roomSocket.close(); roomSocket = null; }
-  $('party-dialog').close();
-}
-$('close-dialog').addEventListener('click', closePartyDialog);
-$('party-dialog').addEventListener('click', event => {
-  if (event.target === $('party-dialog')) closePartyDialog();
-});
+function returnToPlayground(){if(roomSocket){roomSocket.close();roomSocket=null;}activeRoomCode=null;activePlayerToken=null;lastRoomPlayers=null;
+ $('lobby-screen').hidden=true;document.querySelectorAll('[data-home-section]').forEach(s=>s.hidden=false);window.scrollTo({top:0,behavior:'smooth'});}
+
 
 const incomingCode = new URLSearchParams(location.search).get('party');
 if (incomingCode) {
