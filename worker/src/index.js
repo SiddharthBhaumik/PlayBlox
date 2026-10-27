@@ -48,8 +48,8 @@ function randomItem(items) {
 function publicRoom(room) {
   return {
     code: room.code, name: room.name, hostId: room.hostId,
-    players: room.players.map(({ id, nickname, isHost, connected = false, disconnectExpiresAt = null }) => ({
-      id, nickname, isHost, connected, connectionState: connected ? "connected" : "reconnecting",
+    players: room.players.map(({ id, nickname, isHost, connected = false, disconnectExpiresAt = null, role = "player" }) => ({
+      id, nickname, isHost, role, connected, connectionState: connected ? "connected" : "reconnecting",
       disconnectExpiresAt,
     })),
     playerCount: room.players.length, playerCap: ROOM_CAP, createdAt: room.createdAt,
@@ -156,11 +156,20 @@ export class PartyRoom extends DurableObject {
       return json({ error: "Your saved player session has expired. Please join again." }, 401, request);
     }
     if (this.room.players.length >= ROOM_CAP) return json({ error: "This party is full (8 players maximum)." }, 409, request);
+    let role = "player";
     if (this.room.lifecycle && this.room.lifecycle !== "lobby") {
-      return json({ error: "This party's game has already started. This game does not currently accept late joins." }, 409, request);
+      const activeGame = getServerGame(this.room.gameId);
+      if (!activeGame) return json({ error: "The active game's late-join rules are unavailable." }, 409, request);
+      if (activeGame.lateJoinPolicy === "wait") {
+        return json({ error: "This game has started. Please wait until the host returns to the lobby." }, 409, request);
+      }
+      if (activeGame.lateJoinPolicy === "spectate") role = "spectator";
+      if (activeGame.lateJoinPolicy === "participate" && this.room.players.length >= Math.min(activeGame.players?.max ?? ROOM_CAP, ROOM_CAP)) {
+        return json({ error: "This game has reached its player limit. You cannot join this round." }, 409, request);
+      }
     }
     const now = Date.now(), id = crypto.randomUUID(), playerToken = randomToken();
-    this.room.players.push({ id, token: playerToken, nickname, isHost: false, joinedAt: now, connected: false, disconnectExpiresAt: null });
+    this.room.players.push({ id, token: playerToken, nickname, role, isHost: false, joinedAt: now, connected: false, disconnectExpiresAt: null });
     this.room.emptySinceAt = null; this.room.lastActivityAt = now;
     await this.persistAndSchedule();
     this.broadcast({ type: "room-updated", room: publicRoom(this.room) });
@@ -263,7 +272,7 @@ export class PartyRoom extends DurableObject {
     return {
       room: { code: this.room.code, name: this.room.name, gameId: this.room.gameId, lifecycle: this.room.lifecycle },
       player: { id: player.id, nickname: player.nickname, isHost: player.isHost },
-      players: this.room.players.map(({ id, nickname, isHost, connected }) => ({ id, nickname, isHost, connected })),
+      players: this.room.players.map(({ id, nickname, isHost, connected, role = "player" }) => ({ id, nickname, isHost, connected, role })),
       game: { id: game.id, interactionModel: game.interactionModel, lateJoinPolicy: game.lateJoinPolicy },
     };
   }
