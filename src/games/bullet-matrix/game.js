@@ -31,7 +31,7 @@ function render(){
  $("round-reveal").hidden=!gameState.lastRound;
  $("match-result").hidden=!done;
  $("return-lobby").hidden=!currentPlayer()?.isHost;
- $("leave-game").hidden=Boolean(currentPlayer()?.isHost);
+ $("leave-game").hidden=false;
  $("leave-game").disabled=leaving;
  if(done){
   $("winner-title").textContent=gameState.winnerId?"🏆 "+(room.players.find(p=>p.id===gameState.winnerId)?.nickname||"A player")+" wins!": "Everyone was eliminated";
