@@ -14,13 +14,17 @@ export function registerServerGame(game) {
   if (!game.players || !Number.isInteger(game.players.min) || !Number.isInteger(game.players.max) || game.players.min < 1 || game.players.max < game.players.min) {
     throw new TypeError("Invalid player limits for " + game.id);
   }
-  serverGames.set(game.id, Object.freeze({ ...game }));
+  if (game.spectators !== undefined && typeof game.spectators.supported !== "boolean") {
+    throw new TypeError("spectators.supported must be a boolean for " + game.id);
+  }
+  if (!["participate", "spectate", "wait"].includes(game.lateJoinPolicy)) throw new TypeError("Invalid lateJoinPolicy for " + game.id);
+  serverGames.set(game.id, Object.freeze({ ...game, spectators: Object.freeze({ supported: game.spectators?.supported === true }) }));
 }
 
 registerServerGame(ticTacToe);
 
 export function getServerGame(id) { return serverGames.get(id) || null; }
 export function listServerGames() {
-  return [...serverGames.values()].map(({ id, name, description, players, interactionModel, lateJoinPolicy }) =>
-    ({ id, name, description, players, interactionModel, lateJoinPolicy }));
+  return [...serverGames.values()].map(({ id, name, description, players, interactionModel, lateJoinPolicy, spectators }) =>
+    ({ id, name, description, players, interactionModel, lateJoinPolicy, spectators }));
 }
