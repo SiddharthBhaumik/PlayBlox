@@ -49,6 +49,20 @@ export const gameRegistry = [
     lateJoinPolicy: 'spectate',
     spectators: { supported: true },
   },
+  {
+    id: 'questionable-answers',
+    name: 'Questionable Answers',
+    description: 'Secretly assign words, ask curious questions, then reveal the automatic answers together.',
+    emoji: '🤔',
+    color: '#e5e8ff',
+    status: 'ready',
+    path: './src/games/questionable-answers/index.html',
+    entryMode: 'party',
+    players: { min: 2, max: 8 },
+    interactionModel: 'simultaneous',
+    lateJoinPolicy: 'spectate',
+    spectators: { supported: true },
+  },
   // Example for a future game (uncomment and edit when its page exists):
   // {
   //   id: 'memory-match',
