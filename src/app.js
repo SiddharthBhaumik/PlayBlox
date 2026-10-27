@@ -41,6 +41,7 @@ async function api(path, options = {}) {
 let lastRoomPlayers = null;
 let activeRoomCode = null;
 let activePlayerToken = null;
+let activePlayerId = null;
 function gameFeedback(message, success = false) {
   const node = $('game-launch-feedback');
   if (!node) return;
@@ -60,6 +61,9 @@ function addLobbyActivity(message) {
   while (feed.children.length > 8) feed.lastElementChild.remove();
 }
 function renderPlayers(room) {
+  const me = room.players.find(player => player.id === activePlayerId);
+  $('start-game').hidden = Boolean(me && !me.isHost);
+  $('lobby-game-select').hidden = Boolean(me && !me.isHost);
   $('lobby-player-count').textContent = `${room.playerCount}/${room.playerCap} players`;
   const list = $('lobby-players'); list.replaceChildren();
   room.players.forEach(player => {
@@ -100,6 +104,7 @@ function connectRoom(code,token){
     socket.addEventListener('message',event=>{
       if(generation!==socketGeneration||socket!==roomSocket)return;
       let message;try{message=JSON.parse(event.data)}catch{return}
+      if(message.type==='room-snapshot'&&message.playerId)activePlayerId=message.playerId;
       if(['room-snapshot','room-updated','game-started'].includes(message.type)&&message.room)renderPlayers(message.room);
       if(message.type==='room-snapshot'&&message.room?.lifecycle&&message.room.lifecycle!=='lobby'&&message.room.gameId){
         openActiveGame(message.room.gameId);
@@ -142,7 +147,7 @@ function connectRoom(code,token){
   connect();
 }
 function openParty({room,token}){
-  activeRoomCode=room.code;activePlayerToken=token;lastRoomPlayers=null;
+  activeRoomCode=room.code;activePlayerToken=token;activePlayerId=null;lastRoomPlayers=null;
   $('lobby-title').textContent=room.name||'Party lobby';$('lobby-code').textContent=room.code;
   $('lobby-invite').dataset.inviteUrl=new URL('./?party='+encodeURIComponent(room.code),location.href).href;
   $('lobby-activity').replaceChildren();addLobbyActivity('🎉 Lobby opened — invite your friends to join!');
@@ -237,7 +242,7 @@ $('leave-lobby').addEventListener('click',async()=>{
  catch(error){addLobbyActivity('⚠️ '+error.message);}
  finally{sessionStorage.removeItem('playblox:'+code+':token');leavingLobby=true;socketGeneration++;clearSocketTimers();if(roomSocket){roomSocket.close();roomSocket=null;}button.disabled=false;returnToPlayground();}
 });
-function returnToPlayground(){leavingLobby=true;socketGeneration++;clearSocketTimers();if(roomSocket){roomSocket.close();roomSocket=null;}activeRoomCode=null;activePlayerToken=null;lastRoomPlayers=null;
+function returnToPlayground(){leavingLobby=true;socketGeneration++;clearSocketTimers();if(roomSocket){roomSocket.close();roomSocket=null;}activeRoomCode=null;activePlayerToken=null;activePlayerId=null;lastRoomPlayers=null;
  // Status messages belong to the current create/join attempt, not the homepage forever.
  ['create-feedback','join-feedback'].forEach(id=>{const node=$(id);if(node){node.textContent='';node.classList.remove('visible','success');}});
  $('lobby-screen').hidden=true;document.querySelectorAll('[data-home-section]').forEach(s=>s.hidden=false);window.scrollTo({top:0,behavior:'smooth'});}
