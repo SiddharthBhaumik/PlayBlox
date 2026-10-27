@@ -66,3 +66,19 @@ All endpoints are scoped to `/api/rooms/:code`. Authenticated endpoints require 
 The room's public snapshot includes `lifecycle`, `gameId`, `game`, `gameState`, and `stateVersion`. Clients must treat server state as authoritative and must not decide whether an action is valid locally.
 
 The server-side registry lives at `worker/src/games/registry.js`. A game must be registered there before the start endpoint can launch it. The registry intentionally starts empty until a real game module implements the contract; the platform must not pretend an unimplemented game is playable.
+
+
+## Reference implementation: Tic-Tac-Toe
+
+The first reference game is registered as `tic-tac-toe`.
+
+- Client catalog descriptor: `src/games/registry.js`
+- Client UI and interaction: `src/games/tic-tac-toe/`
+- Server rules module: `worker/src/games/tic-tac-toe.js`
+- Server module registration: `worker/src/games/registry.js`
+
+It demonstrates a turn-based game with a server-authoritative board, turn validation, occupied-cell validation, win/draw detection, a state version per accepted move, and a results lifecycle. It requires exactly two connected players and uses the `wait` late-join policy.
+
+## Reference game checklist
+
+When adding another game, keep its rules in its own server module and its UI in its own client folder. The shared Worker should only need the generic module registration; the shared homepage/lobby should only need catalog metadata and the common launch control. Do not add game IDs to shared endpoint logic.
