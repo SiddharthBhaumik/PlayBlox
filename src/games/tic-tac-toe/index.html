@@ -18,7 +18,9 @@
       <a class="brand" href="../../../" aria-label="PlayBlox home"><span class="brand-mark" aria-hidden="true">🧸</span><span class="brand-name">Play<span>Blox</span></span></a>
       <a class="back-link" id="back-to-lobby" href="../../../">← Back to party</a>
     </header>
-    <main class="tic-game">
+    <div class="game-layout">
+      <aside class="game-roster" aria-label="Players in this game"><h2>In this game</h2><ul id="game-players"><li>Connecting to party…</li></ul></aside>
+      <main class="tic-game">
       <div class="eyebrow">✦ PLAYBLOX CLASSICS ✦</div>
       <div class="game-title-row"><span class="game-title-icon" aria-hidden="true"><img src="../../../assets/game-icons/tic-tac-toe.svg" alt=""></span><h1>Tic-Tac-<span class="highlight">Toe!</span></h1></div>
       <p class="game-intro">Two players. Nine squares. One little showdown.</p>
@@ -37,10 +39,12 @@
           <button class="tic-cell" type="button" data-index="8" aria-label="Square 9" disabled></button>
         </div>
         <div class="game-result" id="game-result" hidden aria-live="polite"></div>
-        <button class="primary-button rematch-button" id="return-lobby" type="button" hidden>↩ Return to party lobby</button>
+        <section class="rematch-prompt" id="rematch-prompt" hidden aria-live="polite"><h2>Another round?</h2><p id="rematch-status">Would you like to play again?</p><div class="rematch-actions"><button class="primary-button" id="play-again" type="button">Play again</button><button class="secondary-button" id="no-rematch" type="button">Back to lobby</button></div></section>
+        <button class="primary-button rematch-button" id="return-lobby" type="button" hidden>↩ End game and return to lobby</button>
       </section>
       <p class="game-help" id="game-help">The host can return everyone to the lobby when the round is over.</p>
-    </main>
+      </main>
+    </div>
   </div>
 </body>
 </html>
