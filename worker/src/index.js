@@ -83,7 +83,7 @@ export default {
       }
       return json({ error: "Couldn't create a room right now. Please try again." }, 503, request);
     }
-    const match = url.pathname.match(/^\/api\/rooms\/([A-Z0-9]{6})(?:\/(join|leave|ws|game\\/(?:start|action|reset)))?$/i);
+    const match = url.pathname.match(/^\/api\/rooms\/([A-Z0-9]{6})(?:\/(.*))?$/i);
     if (!match) return json({ error: "Not found." }, 404, request);
     const code = match[1].toUpperCase(), action = match[2] || "";
     const stub = env.PARTY_ROOMS.get(env.PARTY_ROOMS.idFromName(code));
