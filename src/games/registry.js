@@ -57,7 +57,10 @@ export function renderGameCards(container, games) {
   }
 
   container.replaceChildren(...availableGames.map((game) => {
-    const card = document.createElement(game.status === 'ready' && game.path ? 'a' : 'article');
+    const partyCode = new URLSearchParams(location.search).get('party');
+    const hasSavedSession = partyCode && sessionStorage.getItem('playblox:' + partyCode.toUpperCase() + ':token');
+    const canOpen = game.status === 'ready' && game.path && hasSavedSession;
+    const card = document.createElement(canOpen ? 'a' : 'article');
     card.className = 'game-card';
     card.style.setProperty('--game-color', game.color || '#e8e0ff');
     if (card.tagName === 'A') {
@@ -74,7 +77,7 @@ export function renderGameCards(container, games) {
     description.textContent = game.description || 'A new game for your party.';
     const status = document.createElement('span');
     status.className = 'game-tag';
-    status.textContent = game.status === 'ready' && game.path ? '▶ Play game' : '✦ Coming soon';
+    status.textContent = game.status === 'ready' && game.path ? (canOpen ? '▶ Play game' : '✦ Start from a party lobby') : '✦ Coming soon';
     card.append(emoji, title, description, status);
     return card;
   }));
