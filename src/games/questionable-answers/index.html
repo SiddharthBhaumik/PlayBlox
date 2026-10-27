@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#fff8e9">
+  <title>Questionable Answers — PlayBlox</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Nunito:wght@500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../../styles.css">
+  <link rel="stylesheet" href="./game.css">
+  <script type="module" src="./game.js"></script>
+</head>
+<body>
+  <div class="page-shell game-shell qa-shell">
+    <header class="topbar">
+      <a class="brand" href="../../../" aria-label="PlayBlox home"><span class="brand-mark" aria-hidden="true">🧸</span><span class="brand-name">Play<span>Blox</span></span></a>
+      <a class="back-link" id="back-to-lobby" href="../../../" hidden aria-hidden="true" tabindex="-1">Back to party</a>
+    </header>
+    <main class="qa-game">
+      <div class="eyebrow">✦ PLAYBLOX PARTY GAME ✦</div>
+      <div class="game-title-row"><span class="game-title-icon" aria-hidden="true">🤔</span><h1>Questionable <span>Answers</span></h1></div>
+      <p class="game-intro">Secret words. Curious questions. One big reveal.</p>
+      <div class="game-room-meta"><span id="room-label">Connecting to party…</span><span id="connection-status">Connecting…</span></div>
+      <section class="qa-card">
+        <div class="phase-heading"><span class="phase-pill" id="phase-pill">Round 1 of 2</span><h2 id="phase-title">Assign a secret word</h2><p id="phase-copy">Give the player on your right a word, term, or phrase. They won't see it until the reveal.</p></div>
+        <div class="table-scene" id="table-scene" aria-label="Players seated around the central table">
+          <div class="round-table"><div class="table-center"><span class="table-sparkle">✦</span><strong id="table-title">Secret words</strong><p id="table-copy">Choose a word for the seat on your right.</p><div class="table-progress" id="table-progress">0 / 0 submitted</div></div></div>
+          <div id="seats" class="seats"></div>
+        </div>
+        <section class="submission-panel" id="submission-panel">
+          <label for="submission-input" id="submission-label">Your secret word or phrase</label>
+          <textarea id="submission-input" maxlength="240" rows="3" placeholder="Type something unexpected…"></textarea>
+          <div class="submission-footer"><span id="submission-hint">Up to 80 characters. Only you can see your draft.</span><button id="submit-button" type="button">Lock it in</button></div>
+          <p id="submission-status" class="submission-status" role="status"></p>
+        </section>
+        <section class="reveal-panel" id="reveal-panel" hidden><h2>🎉 The big reveal</h2><p>Every question and its automatic answer, all at once.</p><div id="reveal-pairs" class="reveal-pairs"></div></section>
+        <p id="game-help" class="game-help" role="status">Submissions stay private until everyone is ready.</p>
+        <div class="game-exit-actions"><button id="return-lobby" class="primary-button" type="button" hidden>↩ End game and return to lobby</button><button id="leave-game" class="secondary-button" type="button" hidden>Leave game and party</button></div>
+      </section>
+    </main>
+  </div>
+</body>
+</html>
