@@ -11,6 +11,7 @@ let heartbeatTimer = null;
 let reconnectTimer = null;
 let reconnectAttempt = 0;
 let leavingLobby = false;
+const explicitlyReturningToLobby = new URLSearchParams(location.search).get('lobby') === '1';
 
 $('year').textContent = new Date().getFullYear();
 renderGameCards($('games-grid'), gameRegistry);
@@ -174,14 +175,14 @@ function connectRoom(code,token){
       if(['room-snapshot','room-updated','game-started'].includes(message.type)&&message.room)renderPlayers(message.room);
       if(message.type==='room-snapshot'&&message.room?.lifecycle&&message.room.lifecycle!=='lobby'&&message.room.gameId){
         const me=message.room.players.find(p=>p.id===activePlayerId);
-        if(me?.role==='player'||me?.role==='spectator') openActiveGame(message.room.gameId);
+        if(!explicitlyReturningToLobby&&(me?.role==='player'||me?.role==='spectator')) openActiveGame(message.room.gameId);
         else $('lobby-connection').textContent='Game in progress · you are waiting for the next round';
       }
       if(message.type==='game-started'){
         addLobbyActivity('🎮 '+(message.room?.game?.name||'A game')+' started');
         $('lobby-connection').textContent='Game in progress · opening game…';
         const me=message.room?.players.find(p=>p.id===activePlayerId);
-        if(me?.role==='player'||me?.role==='spectator') openActiveGame(message.room?.gameId);
+        if(!explicitlyReturningToLobby&&(me?.role==='player'||me?.role==='spectator')) openActiveGame(message.room?.gameId);
         else $('lobby-connection').textContent='Game in progress · you are waiting for the next round';
       }
       if(message.type==='game-state'){
