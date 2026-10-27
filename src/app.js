@@ -87,8 +87,8 @@ function renderPlayers(room) {
   const me = room.players.find(player => player.id === activePlayerId);
   $('start-game').hidden = Boolean(me && !me.isHost);
   $('lobby-game-select').hidden = Boolean(me && !me.isHost);
-  // The host owns the party lifecycle and cannot use the member leave action.
-  $('leave-lobby').hidden = Boolean(me?.isHost);
+  // Hosts may leave too; the server transfers ownership to a remaining member.
+  $('leave-lobby').hidden = !me;
   $('lobby-player-count').textContent = `${room.playerCount}/${room.playerCap} players`;
   const list = $('lobby-players'); list.replaceChildren();
   room.players.forEach(player => {
