@@ -87,6 +87,8 @@ function renderPlayers(room) {
   const me = room.players.find(player => player.id === activePlayerId);
   $('start-game').hidden = Boolean(me && !me.isHost);
   $('lobby-game-select').hidden = Boolean(me && !me.isHost);
+  // The host owns the party lifecycle and cannot use the member leave action.
+  $('leave-lobby').hidden = Boolean(me?.isHost);
   $('lobby-player-count').textContent = `${room.playerCount}/${room.playerCap} players`;
   const list = $('lobby-players'); list.replaceChildren();
   room.players.forEach(player => {
@@ -316,9 +318,17 @@ $('start-game').addEventListener('click', async () => {
 $('leave-lobby').addEventListener('click',async()=>{
  const code=activeRoomCode,token=activePlayerToken;if(!code||!token)return returnToPlayground();
  const button=$('leave-lobby');button.disabled=true;
- try{await api('/api/rooms/'+encodeURIComponent(code)+'/leave',{method:'POST',headers:{Authorization:'Bearer '+token}});}
- catch(error){addLobbyActivity('⚠️ '+error.message);}
- finally{sessionStorage.removeItem('playblox:'+code+':token');sessionStorage.removeItem('playblox:'+code+':nickname');leavingLobby=true;socketGeneration++;clearSocketTimers();if(roomSocket){roomSocket.close();roomSocket=null;}button.disabled=false;returnToPlayground();}
+ try {
+   await api('/api/rooms/'+encodeURIComponent(code)+'/leave',{method:'POST',headers:{Authorization:'Bearer '+token}});
+   sessionStorage.removeItem('playblox:'+code+':token');
+   sessionStorage.removeItem('playblox:'+code+':nickname');
+   leavingLobby=true;socketGeneration++;clearSocketTimers();
+   if(roomSocket){roomSocket.close();roomSocket=null;}
+   returnToPlayground();
+ } catch(error) {
+   addLobbyActivity('⚠️ Could not leave the party: '+error.message);
+   button.disabled=false;
+ }
 });
 function returnToPlayground(){leavingLobby=true;socketGeneration++;clearSocketTimers();if(roomSocket){roomSocket.close();roomSocket=null;}activeRoomCode=null;activePlayerToken=null;activePlayerId=null;lastRoomPlayers=null;
  // Status messages belong to the current create/join attempt, not the homepage forever.
