@@ -58,6 +58,18 @@ function render() {
   const finished=isFinished(), phase=gameState.phase, submitted=isSubmitted();
   const submittedCount=(gameState.submittedPlayerIds||[]).length, total=(gameState.playerOrder||[]).length;
   $("phase-pill").textContent=finished?"Complete":phase==="assign"?"Round 1 of 2":"Round 2 of 2";
+  $("flow-assign").classList.toggle("active",!finished&&phase==="assign");
+  $("flow-questions").classList.toggle("active",!finished&&phase==="questions");
+  $("flow-reveal").classList.toggle("active",finished);
+  const roster=$("player-roster");
+  roster.replaceChildren(...(gameState.playerOrder||[]).map((id,index)=>{
+    const p=player(id),item=document.createElement("li");
+    item.className="roster-player"+(id===myPlayerId?" you":"");
+    const number=document.createElement("span");number.className="roster-number";number.textContent=String(index+1);
+    const name=document.createElement("strong");name.textContent=(p?.nickname||"Player")+(id===myPlayerId?" (you)":"");
+    const state=document.createElement("small");state.textContent=p?.connected===false?"Reconnecting":isFinished()?"Round complete":(gameState.submittedPlayerIds||[]).includes(id)?"Submitted":"Thinking…";
+    item.append(number,name,state);return item;
+  }));
   $("phase-title").textContent=finished?"All answers revealed!":phase==="assign"?"Assign a secret word":"Ask the player on your left";
   $("phase-copy").textContent=finished?"All questions and their assigned answers are now revealed.":phase==="assign"?"Give the player immediately to your right a word, term, or phrase. They will not see it until the reveal.":"Write a question for the player immediately to your left. Their assigned text will automatically be the answer.";
   $("table-title").textContent=finished?"The big reveal":phase==="assign"?"Secret words":"Questions are locked";
@@ -73,7 +85,15 @@ function render() {
   if(submitted){$("submission-status").textContent="Your submission is locked. Waiting for "+Math.max(0,total-submittedCount)+" player(s).";$("submission-input").value="";$("submission-input").disabled=true}
   else if(!finished){$("submission-input").disabled=false;$("submission-status").textContent=""}
   $("return-lobby").hidden=!player(myPlayerId)?.isHost;
+  $("replay-game").hidden=!finished;
+  $("replay-game").disabled=Boolean(gameState?.myRematchVote);
   $("leave-game").hidden=false;
+  $("replay-status").hidden=!finished;
+  if(finished){
+    const votes=room?.rematchVotes||{};
+    const total=(gameState.playerOrder||[]).length;
+    $("replay-status").textContent=`${Object.keys(votes).filter(id=>votes[id]===true).length} of ${total} players voted to replay. Everyone must choose Play again.`;
+  }
   $("leave-game").disabled=leaving;
   renderSeats();renderReveal();
   if(finished)help("The game is complete. Every question and automatic answer is now visible.");
@@ -100,6 +120,16 @@ $("submit-button").addEventListener("click",async()=>{
   } catch(e) {help(e.message,true);if(Number.isInteger(e.stateVersion))stateVersion=e.stateVersion;try{await syncRoom()}catch{}}
   finally{submitting=false;render()}
 });
+$("replay-game").addEventListener("click",async()=>{
+  const button=$("replay-game");
+  if(button.disabled||!isFinished())return;
+  button.disabled=true;
+  try{
+    const result=await api("/api/rooms/"+encodeURIComponent(code)+"/game/rematch",{method:"POST",body:JSON.stringify({playAgain:true})});
+    if(result.status==="waiting")$("replay-status").textContent="Your replay vote is in. Waiting for the other players…";
+    else if(result.status==="started")help("Everyone agreed — starting another round!");
+  }catch(e){help(e.message,true);button.disabled=false}
+});
 async function endRound(button){if(!player(myPlayerId)?.isHost)return;if(!confirm("End this game and return everyone to the party lobby?"))return;button.disabled=true;try{await api("/api/rooms/"+encodeURIComponent(code)+"/game/reset",{method:"POST",body:"{}"});location.href=$("back-to-lobby").href}catch(e){help(e.message,true);button.disabled=false}}
 setupHostEndRound($("return-lobby"),{getRoom:()=>room,getPlayerId:()=>myPlayerId,onEnd:endRound});
 $("leave-game").addEventListener("click",async()=>{if(leaving||!confirm("Leave this game and party? You will need to rejoin to play again."))return;leaving=true;$("leave-game").disabled=true;try{await api("/api/rooms/"+encodeURIComponent(code)+"/leave",{method:"POST",body:"{}"});location.href="../../../"}catch(e){leaving=false;$("leave-game").disabled=false;help(e.message,true)}});
@@ -113,6 +143,7 @@ function connect(){
   if(gen!==generation||current!==socket)return;let m;try{m=JSON.parse(event.data)}catch{return}
   if(m.room&&["room-snapshot","room-updated","game-started"].includes(m.type)){room=m.room;myPlayerId=m.playerId||myPlayerId;gameState=room.gameState||gameState;stateVersion=room.stateVersion??stateVersion;if(room.lifecycle==="lobby"){location.href=$("back-to-lobby").href;return}render()}
   if(m.type==="game-state"){gameState=m.gameState;stateVersion=m.stateVersion;if(room){room.lifecycle=m.lifecycle;room.gameState=gameState;room.stateVersion=stateVersion;room.results=m.results}render()}
+  if(m.type==="rematch-vote"&&room){room.rematchVotes=m.votes||{};render()}
   if(m.type==="error")help(m.message||"A connection error occurred.",true);
  });
  current.addEventListener("close",()=>{if(gen!==generation||current!==socket||leaving)return;if(heartbeatTimer){clearInterval(heartbeatTimer);heartbeatTimer=null}setConnection("Connection interrupted · reconnecting",true);reconnectTimer=setTimeout(connect,reconnectDelay);reconnectDelay=Math.min(15000,reconnectDelay*2)});
