@@ -238,11 +238,21 @@ export class PartyRoom extends DurableObject {
     if (this.room.recentActionIds?.includes(body.actionId)) {
       return json({ ok: true, duplicate: true, stateVersion: this.room.stateVersion }, 200, request);
     }
-    if (!Number.isInteger(body.expectedStateVersion) || body.expectedStateVersion !== this.room.stateVersion) {
-      return json({ error: "Game state changed. Sync and try again.", stateVersion: this.room.stateVersion }, 409, request);
-    }
     const game = getServerGame(this.room.gameId);
     if (!game) return json({ error: "The active game module is unavailable." }, 500, request);
+    if (!Number.isInteger(body.expectedStateVersion)) {
+      return json({ error: "Game state version is required. Sync and try again.", stateVersion: this.room.stateVersion }, 409, request);
+    }
+    if (body.expectedStateVersion !== this.room.stateVersion) {
+      // Simultaneous games allow players to submit against the same round snapshot.
+      // The round guard prevents a delayed action from spilling into the next round.
+      const sameSimultaneousRound = game.interactionModel === "simultaneous"
+        && Number.isInteger(body.action?.round)
+        && body.action.round === this.room.gameState?.round;
+      if (!sameSimultaneousRound) {
+        return json({ error: "Game state changed. Sync and try again.", stateVersion: this.room.stateVersion }, 409, request);
+      }
+    }
     if (player.role !== "player") return json({ error: "Only selected players can submit game actions." }, 403, request);
     const context = this.gameContext(game, player);
     let validation;
