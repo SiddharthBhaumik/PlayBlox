@@ -58,7 +58,7 @@ export const gameRegistry = [
     status: 'ready',
     path: './src/games/questionable-answers/index.html',
     entryMode: 'party',
-    players: { min: 2, max: 8 },
+    players: { min: 3, max: 8 },
     interactionModel: 'simultaneous',
     lateJoinPolicy: 'spectate',
     spectators: { supported: true },
