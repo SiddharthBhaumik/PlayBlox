@@ -166,6 +166,7 @@ $('create-party-form').addEventListener('submit', async event => {
   try {
     const result = await api('/api/rooms', { method: 'POST', body: JSON.stringify({ hostName, partyName }) });
     sessionStorage.setItem('playblox:' + result.room.code + ':token', result.playerToken);
+    sessionStorage.setItem('playblox:' + result.room.code + ':nickname', hostName);
     feedback('create-feedback', 'Your party is ready!', true);
     openParty({ room: result.room, token: result.playerToken });
   } catch (error) {
@@ -204,6 +205,7 @@ $('join-party-form').addEventListener('submit', async event => {
       result=await api('/api/rooms/'+encodeURIComponent(code)+'/join',{method:'POST',body:JSON.stringify({nickname})});
     }
     sessionStorage.setItem(tokenKey,result.playerToken);
+    sessionStorage.setItem('playblox:' + code + ':nickname', nickname);
     feedback('join-feedback',result.reused?'Welcome back to your lobby!':'You joined the party!',true);
     openParty({room:result.room,token:result.playerToken});
   } catch (error) {
@@ -240,7 +242,7 @@ $('leave-lobby').addEventListener('click',async()=>{
  const button=$('leave-lobby');button.disabled=true;
  try{await api('/api/rooms/'+encodeURIComponent(code)+'/leave',{method:'POST',headers:{Authorization:'Bearer '+token}});}
  catch(error){addLobbyActivity('⚠️ '+error.message);}
- finally{sessionStorage.removeItem('playblox:'+code+':token');leavingLobby=true;socketGeneration++;clearSocketTimers();if(roomSocket){roomSocket.close();roomSocket=null;}button.disabled=false;returnToPlayground();}
+ finally{sessionStorage.removeItem('playblox:'+code+':token');sessionStorage.removeItem('playblox:'+code+':nickname');leavingLobby=true;socketGeneration++;clearSocketTimers();if(roomSocket){roomSocket.close();roomSocket=null;}button.disabled=false;returnToPlayground();}
 });
 function returnToPlayground(){leavingLobby=true;socketGeneration++;clearSocketTimers();if(roomSocket){roomSocket.close();roomSocket=null;}activeRoomCode=null;activePlayerToken=null;activePlayerId=null;lastRoomPlayers=null;
  // Status messages belong to the current create/join attempt, not the homepage forever.
@@ -250,6 +252,20 @@ function returnToPlayground(){leavingLobby=true;socketGeneration++;clearSocketTi
 
 const incomingCode = new URLSearchParams(location.search).get('party');
 if (incomingCode) {
-  $('invite-code').value = incomingCode;
-  $('join-party-form').scrollIntoView({ block: 'center', behavior: 'smooth' });
+  const code = incomingCode.toUpperCase().replace(/[^A-Z0-9]/g, '');
+  const savedToken = sessionStorage.getItem('playblox:' + code + ':token');
+  const savedNickname = sessionStorage.getItem('playblox:' + code + ':nickname');
+  if (/^[A-Z0-9]{6}$/.test(code) && savedToken && savedNickname) {
+    api('/api/rooms/' + encodeURIComponent(code) + '/join', {
+      method: 'POST',
+      body: JSON.stringify({ nickname: savedNickname, playerToken: savedToken }),
+    }).then(result => openParty({ room: result.room, token: result.playerToken }))
+      .catch(() => {
+        $('invite-code').value = incomingCode;
+        $('join-party-form').scrollIntoView({ block: 'center', behavior: 'smooth' });
+      });
+  } else {
+    $('invite-code').value = incomingCode;
+    $('join-party-form').scrollIntoView({ block: 'center', behavior: 'smooth' });
+  }
 }
