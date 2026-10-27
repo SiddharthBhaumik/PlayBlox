@@ -12,16 +12,16 @@ export const questionableAnswers = {
   emoji: "🤔",
   color: "#e5e8ff",
   entry: "./src/games/questionable-answers/index.html",
-  players: { min: 2, max: 8 },
+  players: { min: 3, max: 8 },
   interactionModel: "simultaneous",
   lateJoinPolicy: "spectate",
   spectators: { supported: true },
 
   canStart(context) {
     const players = context.players.filter(player => player.role === "player" && player.connected);
-    return players.length >= 2 && players.length <= 8
+    return players.length >= 3 && players.length <= 8
       ? { ok: true }
-      : { ok: false, reason: "Questionable Answers needs 2–8 connected players." };
+      : { ok: false, reason: "Questionable Answers needs 3–8 connected players." };
   },
 
   createInitialState(context) {
