@@ -343,8 +343,19 @@ export class PartyRoom extends DurableObject {
     const token = request.headers.get("Authorization")?.replace(/^Bearer\s+/i, "");
     const player = this.room.players.find(entry => entry.token === token);
     if (!player) return json({ error: "Invalid player session." }, 401, request);
+    if (player.isHost) return json({ error: "The host cannot leave the party. Transfer hosting first or close the party." }, 403, request);
     this.room.players = this.room.players.filter(entry => entry.id !== player.id);
     const now = Date.now(); this.room.lastActivityAt = now;
+    // If an active participant leaves explicitly, end the round cleanly instead of
+    // leaving a game whose required player can never return.
+    if (this.room.lifecycle !== "lobby" && player.role === "player") {
+      this.room.lifecycle = "lobby";
+      for (const entry of this.room.players) if (entry.role === "spectator" || entry.role === "waiting") entry.role = "player";
+      this.room.gameId = null; this.room.gameMetadata = null; this.room.gameState = null;
+      this.room.results = null; this.room.rematchVotes = {};
+      this.room.stateVersion = (this.room.stateVersion || 0) + 1;
+      this.room.recentActionIds = [];
+    }
     for (const socket of this.ctx.getWebSockets()) {
       if (socket.deserializeAttachment()?.playerId === player.id) {
         try { socket.close(1000, "Player left"); } catch {}
