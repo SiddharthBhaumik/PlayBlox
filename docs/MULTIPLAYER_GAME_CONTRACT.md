@@ -6,7 +6,7 @@ This document defines the boundary between the shared PlayBlox platform and indi
 
 Shared platform code owns identity, party membership, presence, reconnects, host permissions, game lifecycle, message routing, state versioning, and transport. A game module owns its rules, game state, accepted actions, rendering, and results.
 
-The platform must not assume that every game is turn-based. A game can declare a turn-based, simultaneous-action, or real-time interaction model.
+The platform must not assume that every game is turn-based. A game can declare a turn-based, simultaneous-action, or real-time interaction model. The host selects the participant roster when starting a round. The server validates that every selected player is connected and that the selected count falls within the game's declared range. Extra players are never silently removed: if `spectators.supported` is true they become spectators; otherwise they stay in the party as waiting players. Spectators may receive game state but cannot submit game actions.
 
 ## Game module metadata
 
@@ -17,6 +17,7 @@ Each game should export a descriptor with:
 - `entry`: the game's own page or client entry point.
 - `players.min` and `players.max`: supported player range.
 - `lateJoinPolicy`: `participate`, `spectate`, or `wait`.
+- `spectators.supported`: required boolean policy; `true` means non-participants may watch the active round, `false` means they remain in the party lobby until the next round.
 - `interactionModel`: `turn-based`, `simultaneous`, or `realtime`.
 
 The catalog can use presentation metadata without importing game rules. A game should not modify the homepage or shared lobby to appear in the catalog.
@@ -47,7 +48,7 @@ A temporary network loss is not an intentional leave. The platform reserves the 
 ## Adding a game checklist
 
 1. Create a folder under `src/games/<game-id>/`.
-2. Add a descriptor and implement the runtime hooks.
+2. Add a descriptor and implement the runtime hooks, including `players.min`, `players.max`, `spectators.supported`, and `lateJoinPolicy`.
 3. Add the descriptor to the game registry.
 4. Add the game's own UI/assets and focused tests.
 5. Verify start/finish conditions, invalid actions, late joins, reconnects, and host disconnects.
@@ -59,7 +60,7 @@ If adding a game requires editing the lobby, room transport, or shared lifecycle
 
 All endpoints are scoped to `/api/rooms/:code`. Authenticated endpoints require the player's session token in the `Authorization: Bearer <token>` header.
 
-- `POST /game/start` with `{ "gameId": "..." }`: host-only. Checks the registered module, connected player count, maximum room size, and `canStart`; creates authoritative initial state and moves the room into `playing`.
+- `POST /game/start` with `{ "gameId": "...", "selectedPlayerIds": ["..."] }`: host-only. Checks the registered module, validates that the selected players are connected and unique, enforces the game's minimum and maximum, calls `canStart`, creates authoritative initial state, assigns unselected players to spectator or waiting roles according to game metadata, and moves the room into `playing`.
 - `POST /game/action` with `{ "actionId": "...", "expectedStateVersion": 1, "action": { ... } }`: validates the session, lifecycle, expected state version, and action ID before calling the game's `validateAction` and `reduceAction` hooks. Accepted state updates are broadcast to room sockets.
 - `POST /game/reset`: host-only. Returns a running or finished game to the shared lobby and clears game state.
 
@@ -77,7 +78,7 @@ The first reference game is registered as `tic-tac-toe`.
 - Server rules module: `worker/src/games/tic-tac-toe.js`
 - Server module registration: `worker/src/games/registry.js`
 
-It demonstrates a turn-based game with a server-authoritative board, turn validation, occupied-cell validation, win/draw detection, a state version per accepted move, and a results lifecycle. It requires exactly two connected players and uses the `wait` late-join policy.
+It demonstrates a turn-based game with a server-authoritative board, turn validation, occupied-cell validation, win/draw detection, a state version per accepted move, and a results lifecycle. It requires exactly two selected, connected players, declares `spectators: { supported: true }`, and uses the `wait` late-join policy. When more than two people are in the party, the host chooses the two participants and the rest can watch.
 
 ## Reference game checklist
 
