@@ -14,8 +14,8 @@ export function registerServerGame(game) {
   if (!game.players || !Number.isInteger(game.players.min) || !Number.isInteger(game.players.max) || game.players.min < 1 || game.players.max < game.players.min) {
     throw new TypeError("Invalid player limits for " + game.id);
   }
-  if (game.spectators !== undefined && typeof game.spectators.supported !== "boolean") {
-    throw new TypeError("spectators.supported must be a boolean for " + game.id);
+  if (!game.spectators || typeof game.spectators.supported !== "boolean") {
+    throw new TypeError("Every game must declare spectators.supported as a boolean: " + game.id);
   }
   serverGames.set(game.id, Object.freeze({ ...game, spectators: Object.freeze({ supported: game.spectators?.supported === true }) }));
 }
