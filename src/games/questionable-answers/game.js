@@ -22,18 +22,46 @@ function renderSeats() {
   seats.replaceChildren();
   const w=scene.clientWidth, h=scene.clientHeight;
   const rx=Math.max(0,w/2-Math.min(76,w*.09)), ry=Math.max(0,h/2-48);
-  order.forEach((id,index)=>{
+  const positions=order.map((id,index)=>{
     const angle=(-Math.PI/2)+(2*Math.PI*index/order.length);
-    const x=w/2+Math.cos(angle)*rx, y=h/2+Math.sin(angle)*ry;
-    const p=player(id), card=document.createElement("article");
+    return {id,x:w/2+Math.cos(angle)*rx,y:h/2+Math.sin(angle)*ry};
+  });
+  const svgNS="http://www.w3.org/2000/svg";
+  const arrows=document.createElementNS(svgNS,"svg");
+  arrows.setAttribute("class","qa-player-arrows");
+  arrows.setAttribute("viewBox","0 0 "+w+" "+h);
+  arrows.setAttribute("width",String(w)); arrows.setAttribute("height",String(h));
+  arrows.setAttribute("aria-label",gameState.phase==="assign"?"Arrows show word assignment from each player to the next":"Arrows show questions passing in the reverse direction");
+  const defs=document.createElementNS(svgNS,"defs"), marker=document.createElementNS(svgNS,"marker");
+  marker.setAttribute("id","qa-arrowhead"); marker.setAttribute("markerWidth","8"); marker.setAttribute("markerHeight","8"); marker.setAttribute("refX","6"); marker.setAttribute("refY","3"); marker.setAttribute("orient","auto");
+  const tip=document.createElementNS(svgNS,"path"); tip.setAttribute("d","M0,0 L0,6 L6,3 z"); tip.setAttribute("fill","context-stroke"); marker.append(tip); defs.append(marker); arrows.append(defs);
+  const reverse=gameState.phase==="questions";
+  if(!isFinished()&&positions.length>1){
+    positions.forEach((from,index)=>{
+      const to=positions[(index+(reverse?-1:1)+positions.length)%positions.length];
+      const dx=to.x-from.x,dy=to.y-from.y,len=Math.hypot(dx,dy)||1,ux=dx/len,uy=dy/len;
+      const sx=from.x+ux*49,sy=from.y+uy*43,ex=to.x-ux*49,ey=to.y-uy*43;
+      const midX=(sx+ex)/2,midY=(sy+ey)/2;
+      const ox=midX-w/2,oy=midY-h/2,olen=Math.hypot(ox,oy)||1;
+      const bend=positions.length===2?0:18;
+      const path=document.createElementNS(svgNS,"path");
+      path.setAttribute("d","M "+sx+" "+sy+" Q "+(midX+ox/olen*bend)+" "+(midY+oy/olen*bend)+" "+ex+" "+ey);
+      path.setAttribute("class","qa-role-arrow "+(reverse?"reverse":"forward"));
+      path.setAttribute("marker-end","url(#qa-arrowhead)");
+      arrows.append(path);
+    });
+  }
+  seats.append(arrows);
+  positions.forEach(({id,x,y})=>{
+    const p=player(id),card=document.createElement("article");
     card.className="seat"+(id===myPlayerId?" you":"")+(p?.connected===false?" offline":"");
     card.style.left=x+"px"; card.style.top=y+"px";
-    const avatar=document.createElement("span");avatar.className="seat-avatar";avatar.textContent=id===myPlayerId?"🙂":"👤";avatar.setAttribute("aria-hidden","true");
-    const name=document.createElement("strong");name.className="seat-name";name.textContent=(p?.nickname||"Player")+(id===myPlayerId?" (you)":"");
-    const status=document.createElement("span");status.className="seat-status";
-    if(p?.connected===false) status.textContent="Reconnecting…";
-    else if(isFinished()) status.textContent="Revealed";
-    else if(gameState.phase==="assign") status.textContent=(gameState.submittedPlayerIds||[]).includes(id)?"Word locked":"Choosing a word";
+    const avatar=document.createElement("span"); avatar.className="seat-avatar"; avatar.textContent=id===myPlayerId?"🙂":"👤"; avatar.setAttribute("aria-hidden","true");
+    const name=document.createElement("strong"); name.className="seat-name"; name.textContent=(p?.nickname||"Player")+(id===myPlayerId?" (you)":"");
+    const status=document.createElement("span"); status.className="seat-status";
+    if(p?.connected===false)status.textContent="Reconnecting…";
+    else if(isFinished())status.textContent="Revealed";
+    else if(gameState.phase==="assign")status.textContent=(gameState.submittedPlayerIds||[]).includes(id)?"Word locked":"Choosing a word";
     else status.textContent=(gameState.submittedPlayerIds||[]).includes(id)?"Question locked":"Writing a question";
     card.append(avatar,name,status);
     if(id===myPlayerId){const dir=document.createElement("span");dir.className="seat-direction";dir.textContent="YOUR SEAT";card.append(dir)}
@@ -58,9 +86,6 @@ function render() {
   const finished=isFinished(), phase=gameState.phase, submitted=isSubmitted();
   const submittedCount=(gameState.submittedPlayerIds||[]).length, total=(gameState.playerOrder||[]).length;
   $("phase-pill").textContent=finished?"Complete":phase==="assign"?"Round 1 of 2":"Round 2 of 2";
-  $("flow-assign").classList.toggle("active",!finished&&phase==="assign");
-  $("flow-questions").classList.toggle("active",!finished&&phase==="questions");
-  $("flow-reveal").classList.toggle("active",finished);
   renderGamePlayerPanel({container:$("player-roster"),room,gameState,myPlayerId});
   $("phase-title").textContent=finished?"All answers revealed!":phase==="assign"?"Assign a secret word":"Ask the player on your left";
   $("phase-copy").textContent=finished?"All questions and their assigned answers are now revealed.":phase==="assign"?"Give the player immediately to your right a word, term, or phrase. They will not see it until the reveal.":"Write a question for the player immediately to your left. Their assigned text will automatically be the answer.";
