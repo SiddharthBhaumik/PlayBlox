@@ -46,8 +46,9 @@ function render() {
   });
   $("game-result").hidden = !finished;
   const isHost = Boolean(room.players.find(p => p.id === myPlayerId)?.isHost);
-  $("return-lobby").hidden = !isHost;
-  $("return-lobby").textContent = finished ? "↩ Return to party lobby" : "↩ End round & return to lobby";
+  const opponentDisconnected = room.players.some(p => p.id !== myPlayerId && !p.connected);
+  $("return-lobby").hidden = !isHost || (!finished && !opponentDisconnected);
+  $("return-lobby").textContent = finished ? "↩ Return to party lobby" : "↩ Opponent disconnected — return to lobby";
   if (gameState.winnerId) {
     const winner = room.players.find(p => p.id === gameState.winnerId);
     $("game-result").textContent = (winner?.nickname || "A player") + " wins! 🎉";
