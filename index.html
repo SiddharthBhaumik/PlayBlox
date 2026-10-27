@@ -23,7 +23,7 @@
     </header>
 
     <main>
-      <section class="hero" aria-labelledby="hero-title">
+      <section data-home-section class="hero" aria-labelledby="hero-title">
         <span class="doodle doodle-star" aria-hidden="true">✳</span>
         <span class="doodle doodle-sun" aria-hidden="true">☀️</span>
         <span class="doodle doodle-wave" aria-hidden="true">〰</span>
@@ -33,7 +33,7 @@
         <p>Grab your buddies, make a little party, and let the giggles begin. Your next favourite hangout is right here!</p>
       </section>
 
-      <section class="party-grid" aria-label="Party options">
+      <section data-home-section class="party-grid" aria-label="Party options">
         <article class="party-card create-card">
           <div class="card-top"><div class="card-icon" aria-hidden="true">🎪</div><span class="sticker">BE THE HOST!</span></div>
           <h2>Make a Party</h2>
@@ -73,7 +73,7 @@
         </article>
       </section>
 
-      <section class="coming-soon" aria-labelledby="games-heading">
+      <section data-home-section class="coming-soon" aria-labelledby="games-heading">
         <div class="coming-soon-heading">
           <span class="mini-doodle" aria-hidden="true">🖍️</span>
           <div><p class="section-kicker">THE PLAYROOM</p><h2 id="games-heading">A whole lot of fun is on its way!</h2></div>
@@ -84,7 +84,18 @@
           <div class="empty-toybox"><span aria-hidden="true">🧩</span><strong>Room for more games!</strong><span>Our first games are coming soon.</span></div>
         </div>
       </section>
-      <section class="friendship-strip" aria-label="PlayBlox highlights">
+            <section class="lobby-screen" id="lobby-screen" hidden aria-labelledby="lobby-title">
+        <div class="lobby-heading"><div class="lobby-heading-icon" aria-hidden="true">🎊</div><p class="section-kicker">YOUR PARTY IS LIVE</p><h1 id="lobby-title">Party lobby</h1><p class="lobby-subtitle">Everyone who joins will show up here automatically.</p><div class="lobby-status" id="lobby-connection">Connecting to live lobby…</div></div>
+        <div class="lobby-grid">
+          <section class="lobby-panel player-panel" aria-labelledby="players-heading"><div class="lobby-panel-heading"><div><p class="section-kicker">THE CREW</p><h2 id="players-heading">Players</h2></div><span class="player-count" id="lobby-player-count">1/8 players</span></div><ul class="lobby-player-list" id="lobby-players" aria-live="polite"></ul>
+            <div class="lobby-invite-box"><div><p class="section-kicker">INVITE YOUR FRIENDS</p><strong>Party code</strong><div class="lobby-code" id="lobby-code"></div></div><button class="primary-button" id="lobby-invite" type="button">📋 Copy invite link</button></div>
+          </section>
+          <section class="lobby-panel activity-panel" aria-labelledby="activity-heading"><p class="section-kicker">WHAT'S HAPPENING</p><h2 id="activity-heading">Lobby activity</h2><p class="activity-caption">New arrivals and departures will appear here.</p><ul class="lobby-activity" id="lobby-activity" aria-live="polite"></ul></section>
+        </div>
+        <div class="lobby-footer"><p>Waiting for your friends? Keep this lobby open while they join.</p><button class="secondary-button" id="leave-lobby" type="button">← Leave lobby</button></div>
+      </section>
+
+      <section data-home-section class="friendship-strip" aria-label="PlayBlox highlights">
         <div><span aria-hidden="true">🧩</span> New games on the way</div>
         <div><span aria-hidden="true">📱</span> Made for phones and PCs</div>
         <div><span aria-hidden="true">💛</span> Better with buddies</div>
@@ -93,14 +104,6 @@
     <footer><span>© <span id="year"></span> PlayBlox · Made for fun-sized adventures</span><a href="https://github.com/SiddharthBhaumik/PlayBlox" target="_blank" rel="noreferrer">Made with ☀️ on GitHub</a></footer>
   </div>
 
-  <dialog class="party-dialog" id="party-dialog" aria-labelledby="dialog-title">
-    <div class="dialog-emoji" aria-hidden="true">🎊</div>
-    <h2 id="dialog-title">Your party is ready!</h2>
-    <p id="dialog-description"></p>
-    <div class="room-code" id="room-code"></div>
-    <button class="primary-button" id="copy-invite" type="button">📋 Copy invite link</button>
-    <button class="secondary-button" id="close-dialog" type="button">Back to the playground</button>
-    <p class="dialog-note">Your party is live! Share the invite link so your friends can join.</p>
-  </dialog>
+g>
 </body>
 </html>
