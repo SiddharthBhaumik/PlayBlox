@@ -196,14 +196,11 @@ export class PartyRoom extends DurableObject {
     if (selectedPlayers.length < min) return json({ error: `This game needs at least ${min} selected, connected players.` }, 409, request);
     if (selectedPlayers.length > max) return json({ error: `Choose no more than ${max} participants for this game.` }, 409, request);
     const unselectedPlayers = this.room.players.filter(entry => !selectedIds.includes(entry.id));
-    if (unselectedPlayers.length && !game.spectators?.supported) {
-      // Non-participants remain in the party lobby while the selected players play.
-      for (const entry of unselectedPlayers) entry.role = "waiting";
-    } else {
-      for (const entry of unselectedPlayers) entry.role = "spectator";
-    }
-    for (const entry of selectedPlayers) entry.role = "player";
     const context = this.gameContext(game, player);
+    context.players = context.players.map(entry => ({
+      ...entry,
+      role: selectedIds.includes(entry.id) ? "player" : (game.spectators?.supported ? "spectator" : "waiting"),
+    }));
     let allowed;
     try { allowed = game.canStart ? await game.canStart(context) : { ok: true }; }
     catch { return json({ error: "The game could not validate its start conditions." }, 500, request); }
@@ -212,6 +209,9 @@ export class PartyRoom extends DurableObject {
     try { initialState = game.createInitialState ? await game.createInitialState(context) : {}; }
     catch { return json({ error: "The game could not initialize its state." }, 500, request); }
     if (initialState === undefined) return json({ error: "The game returned no initial state." }, 500, request);
+    // Commit roster roles only after the game has successfully validated and initialized.
+    for (const entry of selectedPlayers) entry.role = "player";
+    for (const entry of unselectedPlayers) entry.role = game.spectators?.supported ? "spectator" : "waiting";
     this.room.gameId = game.id;
     this.room.gameMetadata = { id: game.id, name: game.name, interactionModel: game.interactionModel, lateJoinPolicy: game.lateJoinPolicy, players: game.players, spectators: game.spectators ?? { supported: false } };
     this.room.lifecycle = "starting";
