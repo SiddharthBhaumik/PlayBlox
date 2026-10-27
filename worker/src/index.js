@@ -85,7 +85,6 @@ export default {
 export class PartyRoom extends DurableObject {
   constructor(ctx, env) {
     super(ctx, env);
-    this.sockets = new Map();
     this.ready = ctx.blockConcurrencyWhile(async () => {
       this.room = (await ctx.storage.get("room")) ?? null;
     });
@@ -147,16 +146,15 @@ export class PartyRoom extends DurableObject {
     if (!player) return json({ error: "Invalid player session." }, 401);
     this.room.players = this.room.players.filter((entry) => entry.id !== player.id);
     this.room.lastActivityAt = Date.now();
-    this.sockets.get(player.id)?.close(1000, "Player left");
-    this.sockets.delete(player.id);
+    const playerSocket = this.ctx.getWebSockets().find((socket) => socket.deserializeAttachment()?.playerId === player.id);
+    playerSocket?.close(1000, "Player left");
     if (this.room.players.length === 0) {
       this.room.lastActivityAt = Date.now();
       await this.persistAndSchedule();
     } else {
       // The host remains the host for this first version; if they leave, the room closes.
       if (player.isHost) {
-        for (const socket of this.sockets.values()) socket.close(1000, "Host closed the party");
-        this.sockets.clear();
+        for (const socket of this.ctx.getWebSockets()) socket.close(1000, "Host closed the party");
         this.room = null;
         await this.ctx.storage.deleteAll();
         return json({ ok: true, roomClosed: true });
@@ -172,9 +170,9 @@ export class PartyRoom extends DurableObject {
     const player = this.room.players.find((entry) => entry.token === token);
     if (!player) return json({ error: "Invalid player session." }, 401);
     const pair = new WebSocketPair();
-    const [client, server] = Object.values(pair);
+    const client = pair[0];
+    const server = pair[1];
     this.ctx.acceptWebSocket(server);
-    this.sockets.set(player.id, server);
     server.serializeAttachment({ playerId: player.id });
     server.send(JSON.stringify({ type: "room-snapshot", room: publicRoom(this.room) }));
     await this.touch();
@@ -195,22 +193,22 @@ export class PartyRoom extends DurableObject {
     else socket.send(JSON.stringify({ type: "error", message: "That action isn't supported yet." }));
   }
 
-  async webSocketClose(socket) {
-    const attachment = socket.deserializeAttachment();
-    if (attachment?.playerId && this.sockets.get(attachment.playerId) === socket) this.sockets.delete(attachment.playerId);
+  async webSocketClose(_socket) {
+    // Cloudflare manages accepted WebSockets; no in-memory registry is needed.
   }
 
-  async webSocketError(socket) {
-    await this.webSocketClose(socket);
+  async webSocketError(_socket) {
+    // Cloudflare manages accepted WebSockets; no in-memory registry is needed.
   }
 
   broadcast(message) {
     const serialized = JSON.stringify(message);
-    for (const [playerId, socket] of this.sockets) {
+    for (const socket of this.ctx.getWebSockets()) {
       try {
         if (socket.readyState === WebSocket.OPEN) socket.send(serialized);
-        else this.sockets.delete(playerId);
-      } catch { this.sockets.delete(playerId); }
+      } catch {
+        // A socket may close while a broadcast is in progress.
+      }
     }
   }
 
@@ -229,8 +227,7 @@ export class PartyRoom extends DurableObject {
     if (!this.room) return;
     const expiresAt = this.room.lastActivityAt + ROOM_IDLE_TTL_MS;
     if (Date.now() >= expiresAt) {
-      for (const socket of this.sockets.values()) socket.close(1000, "Party expired");
-      this.sockets.clear();
+      for (const socket of this.ctx.getWebSockets()) socket.close(1000, "Party expired");
       this.room = null;
       await this.ctx.storage.deleteAll();
     } else {
