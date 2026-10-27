@@ -12,6 +12,7 @@ let gameState = null;
 let stateVersion = 0;
 let myPlayerId = null;
 let reconnectTimer = null;
+let heartbeatTimer = null;
 let reconnectDelay = 1000;
 let generation = 0;
 let leaving = false;
@@ -107,21 +108,16 @@ function connect() {
     if (myGeneration !== generation || currentSocket !== socket) return;
     reconnectDelay = 1000;
     setConnection("Live");
-    currentSocket.send(JSON.stringify({ type: "ping" }));
+    if (heartbeatTimer) clearInterval(heartbeatTimer);
+    heartbeatTimer = setInterval(() => { if (currentSocket.readyState === WebSocket.OPEN) currentSocket.send(JSON.stringify({ type: "ping" })); }, 15000);
   });
   socket.addEventListener("message", event => {
     if (myGeneration !== generation || currentSocket !== socket) return;
     let message;
     try { message = JSON.parse(event.data); } catch { return; }
     if (message.room && ["room-snapshot", "room-updated", "game-started"].includes(message.type)) {
-      const existingId = myPlayerId;
       room = message.room;
-      myPlayerId = existingId || room.players.find(p => p.connected && p.nickname)?.id;
-      const tokenPlayer = room.players.find(p => p.connected && p.id === myPlayerId);
-      if (!tokenPlayer && !existingId) {
-        // The player's ID is not in the URL; match the token-authenticated socket using the current session nickname fallback below.
-        myPlayerId = room.players.find(p => p.isHost && sessionStorage.getItem("playblox:last-player:" + code) === p.nickname)?.id || myPlayerId;
-      }
+      myPlayerId = message.playerId || myPlayerId;
       gameState = room.gameState || gameState;
       stateVersion = room.stateVersion ?? stateVersion;
       if (room.lifecycle === "lobby") { location.href = $("back-to-lobby").href; return; }
@@ -134,10 +130,11 @@ function connect() {
       render();
     }
     if (message.type === "error") showError(message.message || "A connection error occurred.");
-    if (message.type === "pong") currentSocket.send(JSON.stringify({ type: "ping" }));
+
   });
   currentSocket.addEventListener("close", () => {
     if (myGeneration !== generation || currentSocket !== socket || leaving) return;
+    if (heartbeatTimer) { clearInterval(heartbeatTimer); heartbeatTimer = null; }
     setConnection("Connection interrupted · reconnecting", true);
     reconnectTimer = setTimeout(connect, reconnectDelay);
     reconnectDelay = Math.min(15000, reconnectDelay * 2);
@@ -176,6 +173,7 @@ $("return-lobby").addEventListener("click", async () => {
 window.addEventListener("beforeunload", () => {
   leaving = true;
   if (reconnectTimer) clearTimeout(reconnectTimer);
+  if (heartbeatTimer) clearInterval(heartbeatTimer);
   if (socket) socket.close();
 });
 connect();
