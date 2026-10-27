@@ -2,6 +2,7 @@ import { DurableObject } from "cloudflare:workers";
 
 const ROOM_CAP = 8;
 const ROOM_IDLE_TTL_MS = 2 * 60 * 60 * 1000;
+const EMPTY_ROOM_TTL_MS = 10 * 60 * 1000;
 const CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 const ALLOWED_ORIGINS = new Set([
   "https://siddharthbhaumik.github.io",
@@ -167,6 +168,7 @@ export class PartyRoom extends DurableObject {
       gameId: null,
       createdAt: now,
       lastActivityAt: now,
+      emptySinceAt: null,
     };
     await this.persistAndSchedule();
     return json({ room: publicRoom(this.room), playerToken: hostToken }, 201, request);
@@ -194,6 +196,7 @@ export class PartyRoom extends DurableObject {
     const id = crypto.randomUUID();
     const playerToken = randomToken();
     this.room.players.push({ id, token: playerToken, nickname, isHost: false, joinedAt: Date.now() });
+    this.room.emptySinceAt = null;
     this.room.lastActivityAt = Date.now();
     await this.persistAndSchedule();
     this.broadcast({ type: "room-updated", room: publicRoom(this.room) });
@@ -205,24 +208,28 @@ export class PartyRoom extends DurableObject {
     const player = this.room.players.find((entry) => entry.token === token);
     if (!player) return json({ error: "Invalid player session." }, 401, request);
     this.room.players = this.room.players.filter((entry) => entry.id !== player.id);
-    this.room.lastActivityAt = Date.now();
+    const now = Date.now();
+    this.room.lastActivityAt = now;
     const playerSocket = this.ctx.getWebSockets().find((socket) => socket.deserializeAttachment()?.playerId === player.id);
     playerSocket?.close(1000, "Player left");
+
     if (this.room.players.length === 0) {
-      this.room.lastActivityAt = Date.now();
+      // Keep an empty room reserved briefly so players can rejoin, then delete it.
+      this.room.emptySinceAt = now;
       await this.persistAndSchedule();
-    } else {
-      // The host remains the host for this first version; if they leave, the room closes.
-      if (player.isHost) {
-        for (const socket of this.ctx.getWebSockets()) socket.close(1000, "Host closed the party");
-        this.room = null;
-        await this.ctx.storage.deleteAll();
-        return json({ ok: true, roomClosed: true }, 200, request);
-      }
-      await this.persistAndSchedule();
-      this.broadcast({ type: "room-updated", room: publicRoom(this.room) });
+      return json({ ok: true, roomClosed: false, emptyRoomExpiresAt: now + EMPTY_ROOM_TTL_MS }, 200, request);
     }
-    return json({ ok: true, roomClosed: !this.room || this.room.players.length === 0 }, 200, request);
+
+    this.room.emptySinceAt = null;
+    if (player.isHost) {
+      // Transfer host to a random remaining player instead of closing the lobby.
+      const nextHost = this.room.players[crypto.getRandomValues(new Uint32Array(1))[0] % this.room.players.length];
+      this.room.hostId = nextHost.id;
+      for (const remaining of this.room.players) remaining.isHost = remaining.id === nextHost.id;
+    }
+    await this.persistAndSchedule();
+    this.broadcast({ type: "room-updated", room: publicRoom(this.room) });
+    return json({ ok: true, roomClosed: false, room: publicRoom(this.room) }, 200, request);
   }
 
   async connect(url) {
@@ -274,18 +281,24 @@ export class PartyRoom extends DurableObject {
 
   async touch() {
     this.room.lastActivityAt = Date.now();
-    await this.persistAndSchedule();
+    // Viewing an empty room must not extend its cleanup deadline.
+    if (this.room.players.length > 0) await this.persistAndSchedule();
   }
 
   async persistAndSchedule() {
     await this.ctx.storage.put("room", this.room);
-    await this.ctx.storage.setAlarm(Date.now() + ROOM_IDLE_TTL_MS);
+    const expiresAt = this.room.players.length === 0 && this.room.emptySinceAt
+      ? this.room.emptySinceAt + EMPTY_ROOM_TTL_MS
+      : Date.now() + ROOM_IDLE_TTL_MS;
+    await this.ctx.storage.setAlarm(expiresAt);
   }
 
   async alarm() {
     await this.ready;
     if (!this.room) return;
-    const expiresAt = this.room.lastActivityAt + ROOM_IDLE_TTL_MS;
+    const expiresAt = this.room.players.length === 0 && this.room.emptySinceAt
+      ? this.room.emptySinceAt + EMPTY_ROOM_TTL_MS
+      : this.room.lastActivityAt + ROOM_IDLE_TTL_MS;
     if (Date.now() >= expiresAt) {
       for (const socket of this.ctx.getWebSockets()) socket.close(1000, "Party expired");
       this.room = null;
