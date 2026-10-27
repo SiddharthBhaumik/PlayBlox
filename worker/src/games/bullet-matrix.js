@@ -148,7 +148,7 @@ export const bulletMatrix = {
     if (!state) return state;
     return {
       playerOrder: state.playerOrder,
-      round: state.lastRound ? state.lastRound.round : state.round,
+      round: state.round,
       ammo: state.ammo,
       alivePlayerIds: state.alivePlayerIds,
       submittedPlayerIds: state.submittedPlayerIds,
