@@ -86,7 +86,7 @@ function render() {
   else if(!finished){$("submission-input").disabled=false;$("submission-status").textContent=""}
   $("return-lobby").hidden=!player(myPlayerId)?.isHost;
   $("replay-game").hidden=!finished;
-  $("replay-game").disabled=Boolean(gameState?.myRematchVote);
+  $("replay-game").disabled=Boolean(room?.rematchVotes?.[myPlayerId]);
   $("leave-game").hidden=false;
   $("replay-status").hidden=!finished;
   if(finished){
