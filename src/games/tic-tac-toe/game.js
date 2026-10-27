@@ -46,9 +46,9 @@ function render() {
   });
   $("game-result").hidden = !finished;
   const isHost = Boolean(room.players.find(p => p.id === myPlayerId)?.isHost);
-  const opponentDisconnected = room.players.some(p => p.id !== myPlayerId && !p.connected);
-  $("return-lobby").hidden = !isHost || (!finished && !opponentDisconnected);
-  $("return-lobby").textContent = finished ? "↩ Return to party lobby" : "↩ Opponent disconnected — return to lobby";
+  $("return-lobby").hidden = !isHost;
+  $("return-lobby").textContent = finished ? "↩ Return to party lobby" : "↩ End game and return to lobby";
+  $("back-to-lobby").hidden = !isHost;
   if (gameState.winnerId) {
     const winner = room.players.find(p => p.id === gameState.winnerId);
     $("game-result").textContent = (winner?.nickname || "A player") + " wins! 🎉";
@@ -169,11 +169,24 @@ document.querySelectorAll(".tic-cell").forEach(cell => {
     }
   });
 });
-$("return-lobby").addEventListener("click", async () => {
-  $("return-lobby").disabled = true;
+async function returnEveryoneToLobby(button) {
+  if (!room?.players.find(p => p.id === myPlayerId)?.isHost) {
+    showError("Only the host can return everyone to the party lobby.");
+    return;
+  }
+  button.disabled = true;
   try {
     await api("/api/rooms/" + encodeURIComponent(code) + "/game/reset", { method: "POST", body: "{}" });
-  } catch (error) { showError(error.message); $("return-lobby").disabled = false; }
+    location.href = $("back-to-lobby").href;
+  } catch (error) {
+    showError(error.message);
+    button.disabled = false;
+  }
+}
+$("return-lobby").addEventListener("click", () => returnEveryoneToLobby($("return-lobby")));
+$("back-to-lobby").addEventListener("click", event => {
+  event.preventDefault();
+  returnEveryoneToLobby($("back-to-lobby"));
 });
 window.addEventListener("beforeunload", () => {
   leaving = true;
