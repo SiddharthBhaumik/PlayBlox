@@ -144,6 +144,7 @@ function connect(){
   if(m.room&&["room-snapshot","room-updated","game-started"].includes(m.type)){room=m.room;myPlayerId=m.playerId||myPlayerId;gameState=room.gameState||gameState;stateVersion=room.stateVersion??stateVersion;if(room.lifecycle==="lobby"){location.href=$("back-to-lobby").href;return}render()}
   if(m.type==="game-state"){gameState=m.gameState;stateVersion=m.stateVersion;if(room){room.lifecycle=m.lifecycle;room.gameState=gameState;room.stateVersion=stateVersion;room.results=m.results}render()}
   if(m.type==="rematch-vote"&&room){room.rematchVotes=m.votes||{};render()}
+  if(m.type==="host-ended-round")sessionStorage.setItem("playblox:"+code+":notice",m.message||"The host ended the round and returned everyone to the lobby.");
   if(m.type==="error")help(m.message||"A connection error occurred.",true);
  });
  current.addEventListener("close",()=>{if(gen!==generation||current!==socket||leaving)return;if(heartbeatTimer){clearInterval(heartbeatTimer);heartbeatTimer=null}setConnection("Connection interrupted · reconnecting",true);reconnectTimer=setTimeout(connect,reconnectDelay);reconnectDelay=Math.min(15000,reconnectDelay*2)});
