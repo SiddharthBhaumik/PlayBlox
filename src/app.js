@@ -6,6 +6,11 @@ const API_BASE_URL = window.PLAYBLOX_API_BASE_URL
     ? 'http://localhost:8787'
     : 'https://playblox-party-service.playblox-party.workers.dev');
 let roomSocket = null;
+let socketGeneration = 0;
+let heartbeatTimer = null;
+let reconnectTimer = null;
+let reconnectAttempt = 0;
+let leavingLobby = false;
 
 $('year').textContent = new Date().getFullYear();
 renderGameCards($('games-grid'), gameRegistry);
@@ -50,7 +55,10 @@ function renderPlayers(room) {
     const details=document.createElement('span'); details.className='player-details';
     const name=document.createElement('strong'); name.textContent=player.nickname;
     const role=document.createElement('small'); role.textContent=player.isHost?'HOST':'PLAYER';
-    details.append(name,role); item.append(avatar,details);
+    const presence=document.createElement('small'); presence.className='player-presence';
+    presence.textContent=player.connected===false?'Reconnecting…':'Connected';
+    presence.classList.toggle('offline',player.connected===false);
+    details.append(name,role,presence); item.append(avatar,details);
     if(player.isHost){const badge=document.createElement('span');badge.className='host-badge';badge.textContent='👑 Host';item.append(badge);}
     list.append(item);
   });
@@ -61,13 +69,52 @@ function renderPlayers(room) {
   }
   lastRoomPlayers=room.players.map(p=>({...p}));
 }
+function clearSocketTimers(){
+  if(heartbeatTimer){clearInterval(heartbeatTimer);heartbeatTimer=null;}
+  if(reconnectTimer){clearTimeout(reconnectTimer);reconnectTimer=null;}
+}
 function connectRoom(code,token){
-  if(roomSocket) roomSocket.close(); if(!API_BASE_URL)return;
-  roomSocket=new WebSocket(API_BASE_URL.replace(/^http/,'ws')+`/api/rooms/${encodeURIComponent(code)}/ws?token=${encodeURIComponent(token)}`);
-  roomSocket.addEventListener('message',event=>{let message;try{message=JSON.parse(event.data)}catch{return}
-    if(['room-snapshot','room-updated'].includes(message.type)&&message.room)renderPlayers(message.room);});
-  roomSocket.addEventListener('open',()=>{$('lobby-connection').textContent='Live · updates appear automatically';$('lobby-connection').classList.remove('offline');});
-  roomSocket.addEventListener('close',()=>{if(activeRoomCode===code){$('lobby-connection').textContent='Connection closed — the host may have ended the party.';$('lobby-connection').classList.add('offline');}});
+  const generation=++socketGeneration;
+  clearSocketTimers();
+  if(roomSocket){const previous=roomSocket;roomSocket=null;previous.close();}
+  if(!API_BASE_URL)return;
+  leavingLobby=false;
+  const connect=()=>{
+    if(generation!==socketGeneration||leavingLobby||activeRoomCode!==code)return;
+    $('lobby-connection').textContent=reconnectAttempt?'Reconnecting to the party…':'Connecting to live lobby…';
+    const socket=new WebSocket(API_BASE_URL.replace(/^http/,'ws')+`/api/rooms/${encodeURIComponent(code)}/ws?token=${encodeURIComponent(token)}`);
+    roomSocket=socket;
+    socket.addEventListener('message',event=>{
+      if(generation!==socketGeneration||socket!==roomSocket)return;
+      let message;try{message=JSON.parse(event.data)}catch{return}
+      if(['room-snapshot','room-updated'].includes(message.type)&&message.room)renderPlayers(message.room);
+      if(message.type==='error'&&/session/i.test(message.message||'')){
+        $('lobby-connection').textContent='Session expired — please rejoin the party.';
+        $('lobby-connection').classList.add('offline');
+      }
+    });
+    socket.addEventListener('open',()=>{
+      if(generation!==socketGeneration||socket!==roomSocket)return;
+      reconnectAttempt=0;
+      $('lobby-connection').textContent='Live · updates appear automatically';
+      $('lobby-connection').classList.remove('offline');
+      if(heartbeatTimer)clearInterval(heartbeatTimer);
+      heartbeatTimer=setInterval(()=>{
+        if(socket.readyState===WebSocket.OPEN)socket.send(JSON.stringify({type:'ping'}));
+      },15000);
+    });
+    socket.addEventListener('close',()=>{
+      if(generation!==socketGeneration||socket!==roomSocket||leavingLobby)return;
+      if(heartbeatTimer){clearInterval(heartbeatTimer);heartbeatTimer=null;}
+      $('lobby-connection').textContent='Connection interrupted · trying to reconnect…';
+      $('lobby-connection').classList.add('offline');
+      reconnectAttempt++;
+      const delay=Math.min(15000,1000*Math.pow(2,Math.min(reconnectAttempt-1,4)));
+      reconnectTimer=setTimeout(connect,delay);
+    });
+    socket.addEventListener('error',()=>{try{socket.close();}catch{}});
+  };
+  connect();
 }
 function openParty({room,token}){
   activeRoomCode=room.code;activePlayerToken=token;lastRoomPlayers=null;
@@ -141,9 +188,9 @@ $('leave-lobby').addEventListener('click',async()=>{
  const button=$('leave-lobby');button.disabled=true;
  try{await api('/api/rooms/'+encodeURIComponent(code)+'/leave',{method:'POST',headers:{Authorization:'Bearer '+token}});}
  catch(error){addLobbyActivity('⚠️ '+error.message);}
- finally{sessionStorage.removeItem('playblox:'+code+':token');if(roomSocket){roomSocket.close();roomSocket=null;}button.disabled=false;returnToPlayground();}
+ finally{sessionStorage.removeItem('playblox:'+code+':token');leavingLobby=true;socketGeneration++;clearSocketTimers();if(roomSocket){roomSocket.close();roomSocket=null;}button.disabled=false;returnToPlayground();}
 });
-function returnToPlayground(){if(roomSocket){roomSocket.close();roomSocket=null;}activeRoomCode=null;activePlayerToken=null;lastRoomPlayers=null;
+function returnToPlayground(){leavingLobby=true;socketGeneration++;clearSocketTimers();if(roomSocket){roomSocket.close();roomSocket=null;}activeRoomCode=null;activePlayerToken=null;lastRoomPlayers=null;
  $('lobby-screen').hidden=true;document.querySelectorAll('[data-home-section]').forEach(s=>s.hidden=false);window.scrollTo({top:0,behavior:'smooth'});}
 
 
