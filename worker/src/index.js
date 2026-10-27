@@ -163,7 +163,7 @@ export class PartyRoom extends DurableObject {
       if (activeGame.lateJoinPolicy === "wait") {
         return json({ error: "This game has started. Please wait until the host returns to the lobby." }, 409, request);
       }
-      if (activeGame.lateJoinPolicy === "spectate") role = "spectator";
+      if (activeGame.lateJoinPolicy === "spectate") role = activeGame.spectators?.supported ? "spectator" : "waiting";
       if (activeGame.lateJoinPolicy === "participate" && this.room.players.length >= Math.min(activeGame.players?.max ?? ROOM_CAP, ROOM_CAP)) {
         return json({ error: "This game has reached its player limit. You cannot join this round." }, 409, request);
       }
@@ -269,7 +269,7 @@ export class PartyRoom extends DurableObject {
     if (!player.isHost) return json({ error: "Only the host can return the party to the lobby." }, 403, request);
     if (!["results", "playing"].includes(this.room.lifecycle)) return json({ error: "There is no game to reset." }, 409, request);
     this.room.lifecycle = "lobby";
-    for (const entry of this.room.players) if (entry.role === "spectator") entry.role = "player";
+    for (const entry of this.room.players) if (entry.role === "spectator" || entry.role === "waiting") entry.role = "player";
     this.room.gameId = null;
     this.room.gameMetadata = null;
     this.room.gameState = null;
