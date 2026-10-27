@@ -335,7 +335,7 @@ if (incomingCode) {
       // before opening the lobby. Otherwise the lobby loads correctly but the server
       // still considers the old game active, so starting another game fails.
       if (explicitlyReturningToLobby && result.room?.lifecycle !== 'lobby'
-          && result.room?.players?.some(player => player.token === result.playerToken && player.isHost)) {
+          && result.playerId === result.room?.hostId) {
         await api('/api/rooms/' + encodeURIComponent(code) + '/game/reset', {
           method: 'POST',
           headers: { Authorization: 'Bearer ' + result.playerToken },
