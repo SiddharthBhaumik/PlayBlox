@@ -64,7 +64,9 @@ function render() {
   const rematchPrompt = $("rematch-prompt");
   const canVoteRematch = finished && activeIds.has(myPlayerId);
   rematchPrompt.hidden = !canVoteRematch;
-  $("return-lobby").hidden = !isHost || (finished && activeIds.has(myPlayerId));
+  $("return-lobby").hidden = !isHost;
+  $("leave-game").hidden = isHost;
+  $("leave-game").disabled = leaving;
   if (canVoteRematch) {
     const votes = room.rematchVotes || {};
     const voted = Boolean(votes[myPlayerId]);
@@ -233,6 +235,21 @@ async function voteRematch(playAgain) {
 $("play-again").addEventListener("click", () => voteRematch(true));
 $("no-rematch").addEventListener("click", () => voteRematch(false));
 $("return-lobby").addEventListener("click", () => returnEveryoneToLobby($("return-lobby")));
+$("leave-game").addEventListener("click", async () => {
+  if (leaving) return;
+  if (!window.confirm("Leave this game and party? You will need to rejoin to play again.")) return;
+  leaving = true;
+  $("leave-game").disabled = true;
+  try {
+    await api("/api/rooms/" + encodeURIComponent(code) + "/leave", { method: "POST", body: "{}" });
+    sessionStorage.removeItem("playblox:" + code + ":token");
+    location.href = "../../../";
+  } catch (error) {
+    leaving = false;
+    $("leave-game").disabled = false;
+    showError(error.message);
+  }
+});
 $("back-to-lobby").addEventListener("click", event => {
   event.preventDefault();
   returnEveryoneToLobby($("back-to-lobby"));
