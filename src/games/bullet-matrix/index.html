@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#fff8e9">
+  <title>Bullet Matrix — PlayBlox</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Nunito:wght@500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../../styles.css">
+  <link rel="stylesheet" href="./game.css">
+  <script type="module" src="./game.js"></script>
+</head>
+<body>
+  <div class="page-shell game-shell">
+    <header class="topbar">
+      <a class="brand" href="../../../" aria-label="PlayBlox home"><span class="brand-mark" aria-hidden="true">🧸</span><span class="brand-name">Play<span>Blox</span></span></a>
+      <a class="back-link" id="back-to-lobby" href="../../../" hidden aria-hidden="true" tabindex="-1">Back to party</a>
+    </header>
+    <div class="game-layout">
+      <aside class="game-roster" aria-label="Players in this game"><h2>In this game</h2><ul id="game-players"><li>Connecting to party…</li></ul></aside>
+      <main class="bullet-game">
+        <div class="eyebrow">✦ PLAYBLOX SHOWDOWN ✦</div>
+        <div class="game-title-row"><span class="game-title-icon" aria-hidden="true">🔫</span><h1>Bullet <span>Matrix</span></h1></div>
+        <p class="game-intro">Reload. Predict. Survive.</p>
+        <div class="game-room-meta"><span id="room-label">Connecting to party…</span><span id="connection-status">Connecting…</span></div>
+        <section class="bullet-card">
+          <p class="round-pill" id="round-label">Round 1</p>
+          <div class="round-banner" id="round-banner" role="status">Waiting for the game state…</div>
+          <div id="player-grid" class="player-grid" aria-live="polite"></div>
+          <section class="action-panel" id="action-panel">
+            <h2>Choose your action</h2>
+            <p class="action-note" id="action-note">Your choice stays secret until everyone has submitted.</p>
+            <div class="action-buttons">
+              <button type="button" class="action-button" data-action="reload"><span>↻</span> Reload <small>+1 bullet</small></button>
+              <button type="button" class="action-button" data-action="shoot"><span>➤</span> Shoot <small>Allocate bullets</small></button>
+              <button type="button" class="action-button" data-action="shield"><span>⬡</span> Shield <small>Exact block count</small></button>
+            </div>
+            <div id="action-form" class="action-form" hidden></div>
+            <div class="submit-row"><span id="selection-summary">Choose one action for this round.</span><button id="submit-action" type="button" disabled>Lock action</button></div>
+          </section>
+          <section id="round-reveal" class="round-reveal" hidden>
+            <h2>Round results</h2><div id="round-details"></div>
+          </section>
+          <section id="match-result" class="match-result" hidden>
+            <h2 id="winner-title">Match finished</h2><p id="winner-copy"></p>
+            <div id="rematch-prompt" class="rematch-prompt" hidden>
+              <p id="rematch-status">Both players must agree to rematch.</p>
+              <div class="rematch-buttons"><button id="play-again" type="button">Play again</button><button id="no-rematch" type="button" class="secondary-button">Return to lobby</button></div>
+            </div>
+          </section>
+          <p id="game-help" class="game-help" role="status"></p>
+          <button id="return-lobby" class="host-end-button" type="button" hidden>↩ End game and return to lobby</button>
+          <button id="leave-game" class="secondary-button leave-button" type="button" hidden>Leave game and party</button>
+        </section>
+      </main>
+    </div>
+  </div>
+</body>
+</html>
