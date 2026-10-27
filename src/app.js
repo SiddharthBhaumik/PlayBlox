@@ -41,6 +41,19 @@ async function api(path, options = {}) {
 let lastRoomPlayers = null;
 let activeRoomCode = null;
 let activePlayerToken = null;
+function gameFeedback(message, success = false) {
+  const node = $('game-launch-feedback');
+  if (!node) return;
+  node.textContent = message;
+  node.classList.toggle('success', success);
+}
+function openActiveGame(gameId) {
+  const game = gameRegistry.find(entry => entry.id === gameId && entry.status === 'ready');
+  if (!game?.path || !activeRoomCode) return;
+  const url = new URL(game.path, location.href);
+  url.searchParams.set('party', activeRoomCode);
+  location.href = url.href;
+}
 function addLobbyActivity(message) {
   const feed = $('lobby-activity'); if (!feed) return;
   const item = document.createElement('li'); item.textContent = message; feed.prepend(item);
@@ -88,9 +101,13 @@ function connectRoom(code,token){
       if(generation!==socketGeneration||socket!==roomSocket)return;
       let message;try{message=JSON.parse(event.data)}catch{return}
       if(['room-snapshot','room-updated','game-started'].includes(message.type)&&message.room)renderPlayers(message.room);
+      if(message.type==='room-snapshot'&&message.room?.lifecycle&&message.room.lifecycle!=='lobby'&&message.room.gameId){
+        openActiveGame(message.room.gameId);
+      }
       if(message.type==='game-started'){
         addLobbyActivity('🎮 '+(message.room?.game?.name||'A game')+' started');
-        $('lobby-connection').textContent='Game in progress · live party connection';
+        $('lobby-connection').textContent='Game in progress · opening game…';
+        openActiveGame(message.room?.gameId);
       }
       if(message.type==='game-state'){
         // Game-specific screens subscribe to the same shared state event.
@@ -191,6 +208,28 @@ $('join-party-form').addEventListener('submit', async event => {
 
 async function copyInvite(button){const url=button.dataset.inviteUrl||'';try{await navigator.clipboard.writeText(url);button.textContent='✅ Invite link copied!';}catch{window.prompt('Copy your party invite link:',url);}}
 $('lobby-invite').addEventListener('click',()=>copyInvite($('lobby-invite')));
+
+$('start-game').addEventListener('click', async () => {
+  if (!activeRoomCode || !activePlayerToken) return;
+  const button = $('start-game');
+  button.disabled = true;
+  gameFeedback('Starting game…');
+  try {
+    const gameId = $('lobby-game-select').value;
+    await api('/api/rooms/' + encodeURIComponent(activeRoomCode) + '/game/start', {
+      method: 'POST',
+      headers: { Authorization: 'Bearer ' + activePlayerToken },
+      body: JSON.stringify({ gameId }),
+    });
+    // The server broadcasts game-started to every connected player, including this host.
+    gameFeedback('Game starting!', true);
+  } catch (error) {
+    gameFeedback(error.message);
+  } finally {
+    button.disabled = false;
+  }
+});
+
 $('leave-lobby').addEventListener('click',async()=>{
  const code=activeRoomCode,token=activePlayerToken;if(!code||!token)return returnToPlayground();
  const button=$('leave-lobby');button.disabled=true;
