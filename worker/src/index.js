@@ -93,6 +93,7 @@ export default {
     if (action === "game/start" && request.method === "POST") return withCors(await stub.fetch("https://party-room.internal/game/start", request), request);
     if (action === "game/action" && request.method === "POST") return withCors(await stub.fetch("https://party-room.internal/game/action", request), request);
     if (action === "game/reset" && request.method === "POST") return withCors(await stub.fetch("https://party-room.internal/game/reset", request), request);
+    if (action === "game/rematch" && request.method === "POST") return withCors(await stub.fetch("https://party-room.internal/game/rematch", request), request);
     if (action === "ws" && request.headers.get("Upgrade")?.toLowerCase() === "websocket") {
       if (!isAllowedOrigin(request)) return json({ error: "This website origin is not allowed." }, 403, request);
       return stub.fetch("https://party-room.internal/ws" + url.search, request);
@@ -119,6 +120,7 @@ export class PartyRoom extends DurableObject {
     if (url.pathname === "/game/start" && request.method === "POST") return this.startGame(request);
     if (url.pathname === "/game/action" && request.method === "POST") return this.gameAction(request);
     if (url.pathname === "/game/reset" && request.method === "POST") return this.resetGame(request);
+    if (url.pathname === "/game/rematch" && request.method === "POST") return this.rematch(request);
     if (url.pathname === "/ws" && request.method === "GET" && request.headers.get("Upgrade")?.toLowerCase() === "websocket") {
       if (!isAllowedOrigin(request)) return json({ error: "This website origin is not allowed." }, 403, request);
       return this.connect(url);
@@ -133,7 +135,7 @@ export class PartyRoom extends DurableObject {
     this.room = {
       code: body.code, name: body.partyName, hostId,
       players: [{ id: hostId, token: hostToken, nickname: body.hostName, isHost: true, joinedAt: now, connected: false, disconnectExpiresAt: null }],
-      gameId: null, gameMetadata: null, lifecycle: "lobby", gameState: null, stateVersion: 0, recentActionIds: [],
+      gameId: null, gameMetadata: null, lifecycle: "lobby", gameState: null, stateVersion: 0, recentActionIds: [], rematchVotes: {},
       createdAt: now, lastActivityAt: now, emptySinceAt: null,
     };
     await this.persistAndSchedule();
@@ -263,6 +265,49 @@ export class PartyRoom extends DurableObject {
     this.broadcast({ type: "game-state", gameId: this.room.gameId, lifecycle: this.room.lifecycle, gameState: this.room.gameState, results: this.room.results ?? null, stateVersion: this.room.stateVersion });
     return json({ ok: true, stateVersion: this.room.stateVersion, lifecycle: this.room.lifecycle }, 200, request);
   }
+  async rematch(request) {
+    const player = this.authorizePlayer(request);
+    if (!player) return json({ error: "A valid player session is required." }, 401, request);
+    if (this.room.lifecycle !== "results") return json({ error: "The round must finish before a rematch." }, 409, request);
+    const game = getServerGame(this.room.gameId);
+    if (!game?.createInitialState || !Array.isArray(this.room.gameState?.playerOrder)) return json({ error: "This game does not support rematches yet." }, 409, request);
+    const participants = this.room.gameState.playerOrder;
+    if (!participants.includes(player.id)) return json({ error: "Only players from this round can vote on a rematch." }, 403, request);
+    let body;
+    try { body = await request.json(); } catch { return json({ error: "Send a valid JSON body." }, 400, request); }
+    if (typeof body.playAgain !== "boolean") return json({ error: "Choose whether to play again." }, 400, request);
+    if (!body.playAgain) {
+      this.room.lifecycle = "lobby";
+      for (const entry of this.room.players) if (entry.role === "spectator" || entry.role === "waiting") entry.role = "player";
+      this.room.gameId = null; this.room.gameMetadata = null; this.room.gameState = null;
+      this.room.results = null; this.room.rematchVotes = {};
+      this.room.stateVersion = (this.room.stateVersion || 0) + 1;
+      this.room.recentActionIds = [];
+      this.room.lastActivityAt = Date.now();
+      await this.persistAndSchedule();
+      this.broadcast({ type: "room-updated", room: publicRoom(this.room), stateVersion: this.room.stateVersion });
+      return json({ ok: true, status: "lobby", room: publicRoom(this.room) }, 200, request);
+    }
+    this.room.rematchVotes = { ...(this.room.rematchVotes || {}), [player.id]: true };
+    const bothAgreed = participants.every(id => this.room.rematchVotes[id] === true &&
+      this.room.players.some(entry => entry.id === id && entry.connected && entry.role === "player"));
+    if (bothAgreed) {
+      const context = this.gameContext(game, player);
+      try { this.room.gameState = await game.createInitialState(context, this.room.gameState); }
+      catch { return json({ error: "The next round could not be initialized." }, 500, request); }
+      if (!this.room.gameState) return json({ error: "The game returned no initial state." }, 500, request);
+      this.room.lifecycle = "playing"; this.room.results = null; this.room.rematchVotes = {};
+      this.room.stateVersion = (this.room.stateVersion || 0) + 1; this.room.recentActionIds = [];
+      this.room.lastActivityAt = Date.now();
+      await this.persistAndSchedule();
+      this.broadcast({ type: "game-started", room: publicRoom(this.room), stateVersion: this.room.stateVersion, rematch: true });
+      return json({ ok: true, status: "started", room: publicRoom(this.room) }, 200, request);
+    }
+    this.room.lastActivityAt = Date.now();
+    await this.persistAndSchedule();
+    this.broadcast({ type: "rematch-vote", votes: this.room.rematchVotes, playerIds: participants });
+    return json({ ok: true, status: "waiting", votes: this.room.rematchVotes }, 200, request);
+  }
   async resetGame(request) {
     const player = this.authorizePlayer(request);
     if (!player) return json({ error: "A valid player session is required." }, 401, request);
@@ -276,6 +321,7 @@ export class PartyRoom extends DurableObject {
     this.room.results = null;
     this.room.stateVersion = (this.room.stateVersion || 0) + 1;
     this.room.recentActionIds = [];
+    this.room.rematchVotes = {};
     this.room.lastActivityAt = Date.now();
     await this.persistAndSchedule();
     this.broadcast({ type: "room-updated", room: publicRoom(this.room), stateVersion: this.room.stateVersion });
