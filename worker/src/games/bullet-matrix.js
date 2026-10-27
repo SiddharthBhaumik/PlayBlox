@@ -48,6 +48,7 @@ export const bulletMatrix = {
     if (!state.alivePlayerIds.includes(id)) return { ok: false, reason: "Eliminated players cannot submit actions." };
     if (state.pendingActions?.[id]) return { ok: false, reason: "Your action is already locked for this round." };
     if (!action || typeof action.type !== "string") return { ok: false, reason: "Choose Reload, Shoot, or Shield." };
+    if (action.round !== state.round) return { ok: false, reason: "That action belongs to an earlier round. Sync and choose again." };
 
     if (action.type === "reload") return { ok: true };
     if (action.type === "shield") {
