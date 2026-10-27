@@ -29,6 +29,7 @@ export const questionableAnswers = {
     return {
       playerOrder,
       phase: "assign",
+      round: 1,
       assignedWords: {},
       pendingAssignments: {},
       pendingQuestions: {},
@@ -40,6 +41,7 @@ export const questionableAnswers = {
   validateAction(context, state, action) {
     if (!state || !Array.isArray(state.playerOrder)) return { ok: false, reason: "The game state is invalid." };
     if (state.phase === "finished") return { ok: false, reason: "The game has finished." };
+    if (!Number.isInteger(action?.round) || action.round !== state.round) return { ok: false, reason: "That submission belongs to an earlier round. Sync and try again." };
     const id = context.player.id;
     if (!state.playerOrder.includes(id)) return { ok: false, reason: "Only selected players can submit." };
 
@@ -75,7 +77,7 @@ export const questionableAnswers = {
         const receiverId = state.playerOrder[(index + 1) % state.playerOrder.length];
         assignedWords[receiverId] = pendingAssignments[assignerId];
       });
-      return { ...state, phase: "questions", assignedWords, pendingAssignments: {}, submittedPlayerIds: [] };
+      return { ...state, phase: "questions", round: 2, assignedWords, pendingAssignments: {}, submittedPlayerIds: [] };
     }
 
     const pendingQuestions = { ...state.pendingQuestions, [id]: action.question.trim() };
@@ -98,6 +100,7 @@ export const questionableAnswers = {
     return {
       ...state,
       phase: "finished",
+      round: 3,
       pendingQuestions: {},
       submittedPlayerIds: state.playerOrder.slice(),
       reveal: pairs,
@@ -109,6 +112,7 @@ export const questionableAnswers = {
     const publicState = {
       playerOrder: state.playerOrder,
       phase: state.phase,
+      round: state.round,
       submittedPlayerIds: state.submittedPlayerIds,
       reveal: state.phase === "finished" ? state.reveal : null,
     };
