@@ -12,6 +12,10 @@ PlayBlox/
 │   ├── app.js
 │   └── games/
 │       └── registry.js
+├── worker/
+│   ├── src/index.js
+│   ├── wrangler.jsonc
+│   └── README.md
 ├── README.md
 └── CONTRIBUTING.md
 ```
@@ -20,6 +24,9 @@ PlayBlox/
 - `styles.css` — global visual system and responsive styles.
 - `src/app.js` — lobby interactions and game registry integration.
 - `src/games/registry.js` — source of truth for game cards.
+- `worker/src/index.js` — Cloudflare Worker API and Durable Object party-room implementation.
+- `worker/wrangler.jsonc` — Cloudflare Worker and Durable Object binding configuration.
+- `worker/README.md` — backend API and deployment instructions.
 
 ## Add a game
 
@@ -54,17 +61,26 @@ The registry automatically renders each game card. Use a unique URL-friendly `id
 - If a theme selector is introduced, centralize its theme definitions and make sure every game remains readable under supported themes.
 - Avoid introducing a separate incompatible design system inside an individual game.
 
+## Multiplayer architecture
+
+The frontend is hosted as a static site on GitHub Pages. Cloudflare Workers provides the API, and a Durable Object instance coordinates each party room. The same room contract should serve all games; individual games should not create their own room backend.
+
+Initial party cap: **8 players including the host**, with a future hard ceiling of 16 unless a specific game needs a different limit. Keep the cap configurable in the backend and, eventually, in game metadata.
+
+The current backend foundation lives in `worker/`. It supports creating rooms, joining/leaving, public room snapshots, WebSocket snapshots/player-list updates, and idle expiry. It is not yet wired into the GitHub Pages UI and does not yet implement authoritative game actions. Read `worker/README.md` before deploying it.
+
+Security rules:
+- Treat room codes as locators, not passwords.
+- Require server-issued player tokens for authenticated actions.
+- Validate every game action on the server; never trust client-submitted scores or winners.
+- Do not commit Cloudflare credentials or private player/host tokens.
+- Add origin restrictions and rate limiting before wider public use.
+
 ## Pull requests and changes
 
 1. Create a feature branch for substantial work rather than committing unrelated changes together.
 2. Keep each game self-contained and avoid unnecessary changes to the shared lobby.
-3. Test locally using a static server, for example `python -m http.server 8000`, then open `http://localhost:8000`.
-4. Check the browser console, game links, and mobile/desktop layouts.
-5. Open a pull request describing the change, how to test it, and any known limitations. Include screenshots for visible UI changes where helpful.
-
-## Important architecture notes
-
-- GitHub Pages can host the static lobby and game pages, but it cannot provide a private-room database or real-time server by itself.
-- The current party create/join flows are front-end previews. Do not describe them as working multiplayer until a backend/realtime service is implemented.
-- When multiplayer is added, define a shared room/session contract so individual games can use the same room, player list, and host controls without each game implementing a separate room system.
-- Keep game logic, rules, and game-specific assets inside the relevant game folder. Use the registry to make games discoverable from the lobby.
+3. Test the static site locally using `python -m http.server 8000`, then open `http://localhost:8000`.
+4. Test the backend from `worker/` with Wrangler after setting up a Cloudflare account.
+5. Check the browser console, game links, and mobile/desktop layouts.
+6. Open a pull request describing the change, how to test it, and any known limitations. Include screenshots for visible UI changes where helpful.
