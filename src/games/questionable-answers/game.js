@@ -73,7 +73,7 @@ function render() {
   if(submitted){$("submission-status").textContent="Your submission is locked. Waiting for "+Math.max(0,total-submittedCount)+" player(s).";$("submission-input").value="";$("submission-input").disabled=true}
   else if(!finished){$("submission-input").disabled=false;$("submission-status").textContent=""}
   $("return-lobby").hidden=!player(myPlayerId)?.isHost;
-  $("leave-game").hidden=Boolean(player(myPlayerId)?.isHost);
+  $("leave-game").hidden=false;
   $("leave-game").disabled=leaving;
   renderSeats();renderReveal();
   if(finished)help("The game is complete. Every question and automatic answer is now visible.");
