@@ -239,7 +239,11 @@ function openParty({room,token}){
   $('lobby-title').textContent=room.name||'Party lobby';$('lobby-code').textContent=room.code;
   $('lobby-invite').dataset.inviteUrl=new URL('./?party='+encodeURIComponent(room.code),location.href).href;
   $('lobby-activity').replaceChildren();addLobbyActivity('🎉 Lobby opened — invite your friends to join!');
-  renderPlayers(room);document.querySelectorAll('[data-home-section]').forEach(s=>s.hidden=true);
+  renderPlayers(room);
+  const noticeKey='playblox:'+room.code+':notice';
+  const notice=sessionStorage.getItem(noticeKey);
+  if(notice){addLobbyActivity('📣 '+notice);sessionStorage.removeItem(noticeKey);}
+  document.querySelectorAll('[data-home-section]').forEach(s=>s.hidden=true);
   $('lobby-screen').hidden=false;window.scrollTo({top:0,behavior:'smooth'});connectRoom(room.code,token);
 }
 
