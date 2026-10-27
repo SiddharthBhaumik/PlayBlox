@@ -93,7 +93,7 @@ function renderPlayers(room) {
     const avatar=document.createElement('span'); avatar.className='player-avatar'; avatar.textContent=[...player.nickname][0]?.toUpperCase()||'?';
     const details=document.createElement('span'); details.className='player-details';
     const name=document.createElement('strong'); name.textContent=player.nickname;
-    const role=document.createElement('small'); role.textContent=player.isHost?'HOST':'PLAYER';
+    const role=document.createElement('small'); role.textContent=player.isHost?'HOST':(player.role||'player').toUpperCase();
     const presence=document.createElement('small'); presence.className='player-presence';
     presence.textContent=player.connected===false?'Reconnecting…':'Connected';
     presence.classList.toggle('offline',player.connected===false);
