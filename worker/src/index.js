@@ -184,10 +184,25 @@ export class PartyRoom extends DurableObject {
     try { body = await request.json(); } catch { return json({ error: "Send a valid JSON body." }, 400, request); }
     const game = getServerGame(body.gameId);
     if (!game) return json({ error: "This game is not registered with the multiplayer engine yet." }, 404, request);
-    const connectedPlayers = this.room.players.filter(entry => entry.connected && entry.role !== "spectator");
+    const connectedPlayers = this.room.players.filter(entry => entry.connected && entry.role !== "spectator" && entry.role !== "waiting");
     const min = game.players?.min ?? 2, max = Math.min(game.players?.max ?? ROOM_CAP, ROOM_CAP);
-    if (connectedPlayers.length < min) return json({ error: `This game needs at least ${min} connected players.` }, 409, request);
-    if (connectedPlayers.length > max) return json({ error: `This game supports at most ${max} players.` }, 409, request);
+    let selectedIds = body.selectedPlayerIds;
+    if (selectedIds === undefined) selectedIds = connectedPlayers.map(entry => entry.id);
+    if (!Array.isArray(selectedIds) || selectedIds.some(id => typeof id !== "string") || new Set(selectedIds).size !== selectedIds.length) {
+      return json({ error: "Choose a valid participant list." }, 400, request);
+    }
+    const selectedPlayers = connectedPlayers.filter(entry => selectedIds.includes(entry.id));
+    if (selectedPlayers.length !== selectedIds.length) return json({ error: "Only currently connected party members can be selected." }, 409, request);
+    if (selectedPlayers.length < min) return json({ error: `This game needs at least ${min} selected, connected players.` }, 409, request);
+    if (selectedPlayers.length > max) return json({ error: `Choose no more than ${max} participants for this game.` }, 409, request);
+    const unselectedPlayers = this.room.players.filter(entry => !selectedIds.includes(entry.id));
+    if (unselectedPlayers.length && !game.spectators?.supported) {
+      // Non-participants remain in the party lobby while the selected players play.
+      for (const entry of unselectedPlayers) entry.role = "waiting";
+    } else {
+      for (const entry of unselectedPlayers) entry.role = "spectator";
+    }
+    for (const entry of selectedPlayers) entry.role = "player";
     const context = this.gameContext(game, player);
     let allowed;
     try { allowed = game.canStart ? await game.canStart(context) : { ok: true }; }
@@ -198,7 +213,7 @@ export class PartyRoom extends DurableObject {
     catch { return json({ error: "The game could not initialize its state." }, 500, request); }
     if (initialState === undefined) return json({ error: "The game returned no initial state." }, 500, request);
     this.room.gameId = game.id;
-    this.room.gameMetadata = { id: game.id, name: game.name, interactionModel: game.interactionModel, lateJoinPolicy: game.lateJoinPolicy };
+    this.room.gameMetadata = { id: game.id, name: game.name, interactionModel: game.interactionModel, lateJoinPolicy: game.lateJoinPolicy, players: game.players, spectators: game.spectators ?? { supported: false } };
     this.room.lifecycle = "starting";
     this.room.gameState = initialState;
     this.room.stateVersion = (this.room.stateVersion || 0) + 1;
