@@ -267,7 +267,7 @@ export class PartyRoom extends DurableObject {
     return json({ ok: true, room: publicRoom(this.room) }, 200, request);
   }
   authorizePlayer(request) {
-    const token = request.headers.get("Authorization")?.replace(/^Bearer\\s+/i, "");
+    const token = request.headers.get("Authorization")?.replace(/^Bearer\s+/i, "");
     return this.room.players.find(entry => entry.token === token) || null;
   }
   gameContext(game, player) {
