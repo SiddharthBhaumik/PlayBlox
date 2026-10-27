@@ -3,9 +3,47 @@ import { DurableObject } from "cloudflare:workers";
 const ROOM_CAP = 8;
 const ROOM_IDLE_TTL_MS = 2 * 60 * 60 * 1000;
 const CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+const ALLOWED_ORIGINS = new Set([
+  "https://siddharthbhaumik.github.io",
+  "http://localhost:5500",
+  "http://127.0.0.1:5500",
+  "http://localhost:5173",
+  "http://127.0.0.1:5173",
+]);
 
-function json(data, status = 200) {
-  return Response.json(data, { status, headers: { "Cache-Control": "no-store", "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Methods": "GET, POST, OPTIONS", "Access-Control-Allow-Headers": "Content-Type, Authorization" } });
+function corsHeaders(request) {
+  const headers = {
+    "Cache-Control": "no-store",
+    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type, Authorization",
+    "Vary": "Origin",
+  };
+  const origin = request?.headers.get("Origin");
+  if (origin && ALLOWED_ORIGINS.has(origin)) {
+    headers["Access-Control-Allow-Origin"] = origin;
+  }
+  return headers;
+}
+
+function isAllowedOrigin(request) {
+  const origin = request?.headers.get("Origin");
+  return !origin || ALLOWED_ORIGINS.has(origin);
+}
+
+function json(data, status = 200, request = null) {
+  return Response.json(data, { status, headers: corsHeaders(request) });
+}
+
+function withCors(response, request) {
+  const headers = new Headers(response.headers);
+  for (const [name, value] of Object.entries(corsHeaders(request))) {
+    headers.set(name, value);
+  }
+  return new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers,
+  });
 }
 
 function cleanText(value, maxLength) {
@@ -38,18 +76,20 @@ function publicRoom(room) {
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
-    if (request.method === "OPTIONS") return new Response(null, { status: 204 });
+    if (request.method === "OPTIONS") {
+      return new Response(null, { status: 204, headers: corsHeaders(request) });
+    }
 
     if (url.pathname === "/api/health" && request.method === "GET") {
-      return json({ ok: true, service: "playblox-worker", roomCap: ROOM_CAP });
+      return json({ ok: true, service: "playblox-worker", roomCap: ROOM_CAP }, 200, request);
     }
 
     if (url.pathname === "/api/rooms" && request.method === "POST") {
       let body;
-      try { body = await request.json(); } catch { return json({ error: "Send a valid JSON body." }, 400); }
+      try { body = await request.json(); } catch { return json({ error: "Send a valid JSON body." }, 400, request); }
       const hostName = cleanText(body.hostName, 18);
       const partyName = cleanText(body.partyName, 28) || (hostName ? hostName + "'s Party" : "");
-      if (!hostName) return json({ error: "A nickname is required." }, 400);
+      if (!hostName) return json({ error: "A nickname is required." }, 400, request);
 
       // A code collision is very unlikely, but creation retries rather than overwriting a room.
       for (let attempt = 0; attempt < 5; attempt++) {
@@ -57,28 +97,32 @@ export default {
         const stub = env.PARTY_ROOMS.get(env.PARTY_ROOMS.idFromName(code));
         const response = await stub.fetch("https://party-room.internal/create", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            ...(request.headers.get("Origin") ? { "Origin": request.headers.get("Origin") } : {}),
+          },
           body: JSON.stringify({ code, hostName, partyName }),
         });
-        if (response.status === 201) return response;
-        if (response.status !== 409) return response;
+        if (response.status === 201) return withCors(response, request);
+        if (response.status !== 409) return withCors(response, request);
       }
-      return json({ error: "Couldn't create a room right now. Please try again." }, 503);
+      return json({ error: "Couldn't create a room right now. Please try again." }, 503, request);
     }
 
     const match = url.pathname.match(/^\/api\/rooms\/([A-Z0-9]{6})(?:\/(join|leave|ws))?$/i);
-    if (!match) return json({ error: "Not found." }, 404);
+    if (!match) return json({ error: "Not found." }, 404, request);
     const code = match[1].toUpperCase();
     const action = match[2] || "";
     const stub = env.PARTY_ROOMS.get(env.PARTY_ROOMS.idFromName(code));
 
-    if (!action && request.method === "GET") return stub.fetch("https://party-room.internal/room");
-    if (action === "join" && request.method === "POST") return stub.fetch("https://party-room.internal/join", request);
-    if (action === "leave" && request.method === "POST") return stub.fetch("https://party-room.internal/leave", request);
+    if (!action && request.method === "GET") return withCors(await stub.fetch("https://party-room.internal/room", request), request);
+    if (action === "join" && request.method === "POST") return withCors(await stub.fetch("https://party-room.internal/join", request), request);
+    if (action === "leave" && request.method === "POST") return withCors(await stub.fetch("https://party-room.internal/leave", request), request);
     if (action === "ws" && request.headers.get("Upgrade")?.toLowerCase() === "websocket") {
+      if (!isAllowedOrigin(request)) return json({ error: "This website origin is not allowed." }, 403, request);
       return stub.fetch("https://party-room.internal/ws" + url.search, request);
     }
-    return json({ error: "Method not allowed." }, 405);
+    return json({ error: "Method not allowed." }, 405, request);
   },
 };
 
@@ -94,21 +138,24 @@ export class PartyRoom extends DurableObject {
     await this.ready;
     const url = new URL(request.url);
     if (url.pathname === "/create" && request.method === "POST") return this.create(request);
-    if (!this.room) return json({ error: "That party doesn't exist or has expired." }, 404);
+    if (!this.room) return json({ error: "That party doesn't exist or has expired." }, 404, request);
     if (url.pathname === "/room" && request.method === "GET") {
       await this.touch();
-      return json({ room: publicRoom(this.room) });
+      return json({ room: publicRoom(this.room) }, 200, request);
     }
     if (url.pathname === "/join" && request.method === "POST") return this.join(request);
     if (url.pathname === "/leave" && request.method === "POST") return this.leave(request);
-    if (url.pathname === "/ws" && request.headers.get("Upgrade")?.toLowerCase() === "websocket") return this.connect(url);
+    if (url.pathname === "/ws" && request.headers.get("Upgrade")?.toLowerCase() === "websocket") {
+      if (!isAllowedOrigin(request)) return json({ error: "This website origin is not allowed." }, 403, request);
+      return this.connect(url);
+    }
     return json({ error: "Not found." }, 404);
   }
 
   async create(request) {
-    if (this.room) return json({ error: "Code collision." }, 409);
+    if (this.room) return json({ error: "Code collision." }, 409, request);
     let body;
-    try { body = await request.json(); } catch { return json({ error: "Invalid request." }, 400); }
+    try { body = await request.json(); } catch { return json({ error: "Invalid request." }, 400, request); }
     const hostId = crypto.randomUUID();
     const hostToken = randomToken();
     const now = Date.now();
@@ -122,28 +169,28 @@ export class PartyRoom extends DurableObject {
       lastActivityAt: now,
     };
     await this.persistAndSchedule();
-    return json({ room: publicRoom(this.room), playerToken: hostToken }, 201);
+    return json({ room: publicRoom(this.room), playerToken: hostToken }, 201, request);
   }
 
   async join(request) {
     let body;
     try { body = await request.json(); } catch { return json({ error: "Send a valid JSON body." }, 400); }
     const nickname = cleanText(body.nickname, 18);
-    if (!nickname) return json({ error: "A nickname is required." }, 400);
-    if (this.room.players.length >= ROOM_CAP) return json({ error: "This party is full (8 players maximum)." }, 409);
+    if (!nickname) return json({ error: "A nickname is required." }, 400, request);
+    if (this.room.players.length >= ROOM_CAP) return json({ error: "This party is full (8 players maximum)." }, 409, request);
     const id = crypto.randomUUID();
     const playerToken = randomToken();
     this.room.players.push({ id, token: playerToken, nickname, isHost: false, joinedAt: Date.now() });
     this.room.lastActivityAt = Date.now();
     await this.persistAndSchedule();
     this.broadcast({ type: "room-updated", room: publicRoom(this.room) });
-    return json({ room: publicRoom(this.room), playerToken }, 201);
+    return json({ room: publicRoom(this.room), playerToken }, 201, request);
   }
 
   async leave(request) {
     const token = request.headers.get("Authorization")?.replace(/^Bearer\s+/i, "");
     const player = this.room.players.find((entry) => entry.token === token);
-    if (!player) return json({ error: "Invalid player session." }, 401);
+    if (!player) return json({ error: "Invalid player session." }, 401, request);
     this.room.players = this.room.players.filter((entry) => entry.id !== player.id);
     this.room.lastActivityAt = Date.now();
     const playerSocket = this.ctx.getWebSockets().find((socket) => socket.deserializeAttachment()?.playerId === player.id);
@@ -157,12 +204,12 @@ export class PartyRoom extends DurableObject {
         for (const socket of this.ctx.getWebSockets()) socket.close(1000, "Host closed the party");
         this.room = null;
         await this.ctx.storage.deleteAll();
-        return json({ ok: true, roomClosed: true });
+        return json({ ok: true, roomClosed: true }, 200, request);
       }
       await this.persistAndSchedule();
       this.broadcast({ type: "room-updated", room: publicRoom(this.room) });
     }
-    return json({ ok: true, roomClosed: !this.room || this.room.players.length === 0 });
+    return json({ ok: true, roomClosed: !this.room || this.room.players.length === 0 }, 200, request);
   }
 
   async connect(url) {
