@@ -2,7 +2,9 @@ import { renderGameCards, gameRegistry } from './games/registry.js';
 
 const $ = (id) => document.getElementById(id);
 const API_BASE_URL = window.PLAYBLOX_API_BASE_URL
-  || (['localhost', '127.0.0.1'].includes(window.location.hostname) ? 'http://localhost:8787' : '');
+  || (['localhost', '127.0.0.1'].includes(window.location.hostname)
+    ? 'http://localhost:8787'
+    : 'https://playblox-party-service.playblox-party.workers.dev');
 let roomSocket = null;
 
 $('year').textContent = new Date().getFullYear();
