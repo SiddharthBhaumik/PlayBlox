@@ -64,7 +64,7 @@ function render() {
   const rematchPrompt = $("rematch-prompt");
   const canVoteRematch = finished && activeIds.has(myPlayerId);
   rematchPrompt.hidden = !canVoteRematch;
-  $("return-lobby").hidden = !isHost || finished;
+  $("return-lobby").hidden = !isHost || (finished && activeIds.has(myPlayerId));
   if (canVoteRematch) {
     const votes = room.rematchVotes || {};
     const voted = Boolean(votes[myPlayerId]);
