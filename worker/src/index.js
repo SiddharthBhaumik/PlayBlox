@@ -3,6 +3,7 @@ import { DurableObject } from "cloudflare:workers";
 const ROOM_CAP = 8;
 const ROOM_IDLE_TTL_MS = 2 * 60 * 60 * 1000;
 const EMPTY_ROOM_TTL_MS = 10 * 60 * 1000;
+const RECONNECT_GRACE_MS = 60 * 1000;
 const CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 const ALLOWED_ORIGINS = new Set([
   "https://siddharthbhaumik.github.io",
@@ -13,95 +14,67 @@ const ALLOWED_ORIGINS = new Set([
 ]);
 
 function corsHeaders(request) {
-  const headers = {
-    "Cache-Control": "no-store",
-    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type, Authorization",
-    "Vary": "Origin",
-  };
+  const headers = { "Cache-Control": "no-store", "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type, Authorization", "Vary": "Origin" };
   const origin = request?.headers.get("Origin");
-  if (origin && ALLOWED_ORIGINS.has(origin)) {
-    headers["Access-Control-Allow-Origin"] = origin;
-  }
+  if (origin && ALLOWED_ORIGINS.has(origin)) headers["Access-Control-Allow-Origin"] = origin;
   return headers;
 }
-
 function isAllowedOrigin(request) {
   const origin = request?.headers.get("Origin");
   return !origin || ALLOWED_ORIGINS.has(origin);
 }
-
 function json(data, status = 200, request = null) {
   return Response.json(data, { status, headers: corsHeaders(request) });
 }
-
 function withCors(response, request) {
   const headers = new Headers(response.headers);
-  for (const [name, value] of Object.entries(corsHeaders(request))) {
-    headers.set(name, value);
-  }
-  return new Response(response.body, {
-    status: response.status,
-    statusText: response.statusText,
-    headers,
-  });
+  for (const [name, value] of Object.entries(corsHeaders(request))) headers.set(name, value);
+  return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
 }
-
 function cleanText(value, maxLength) {
   return typeof value === "string" ? value.trim().replace(/\s+/g, " ").slice(0, maxLength) : "";
 }
-
-function randomToken() {
-  return crypto.randomUUID() + crypto.randomUUID().replaceAll("-", "");
-}
-
+function randomToken() { return crypto.randomUUID() + crypto.randomUUID().replaceAll("-", ""); }
 function randomCode() {
   const bytes = new Uint8Array(6);
   crypto.getRandomValues(bytes);
-  return Array.from(bytes, (byte) => CODE_ALPHABET[byte % CODE_ALPHABET.length]).join("");
+  return Array.from(bytes, byte => CODE_ALPHABET[byte % CODE_ALPHABET.length]).join("");
 }
-
+function randomItem(items) {
+  return items[crypto.getRandomValues(new Uint32Array(1))[0] % items.length];
+}
 function publicRoom(room) {
   return {
-    code: room.code,
-    name: room.name,
-    hostId: room.hostId,
-    players: room.players.map(({ id, nickname, isHost }) => ({ id, nickname, isHost })),
-    playerCount: room.players.length,
-    playerCap: ROOM_CAP,
-    createdAt: room.createdAt,
-    gameId: room.gameId ?? null,
+    code: room.code, name: room.name, hostId: room.hostId,
+    players: room.players.map(({ id, nickname, isHost, connected = false, disconnectExpiresAt = null }) => ({
+      id, nickname, isHost, connected, connectionState: connected ? "connected" : "reconnecting",
+      disconnectExpiresAt,
+    })),
+    playerCount: room.players.length, playerCap: ROOM_CAP, createdAt: room.createdAt,
+    gameId: room.gameId ?? null, lifecycle: room.lifecycle ?? "lobby",
   };
 }
 
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
-    if (request.method === "OPTIONS") {
-      return new Response(null, { status: 204, headers: corsHeaders(request) });
-    }
-
+    if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: corsHeaders(request) });
     if (url.pathname === "/api/health" && request.method === "GET") {
-      return json({ ok: true, service: "playblox-worker", roomCap: ROOM_CAP }, 200, request);
+      return json({ ok: true, service: "playblox-worker", roomCap: ROOM_CAP, reconnectGraceSeconds: RECONNECT_GRACE_MS / 1000 }, 200, request);
     }
-
     if (url.pathname === "/api/rooms" && request.method === "POST") {
       let body;
       try { body = await request.json(); } catch { return json({ error: "Send a valid JSON body." }, 400, request); }
       const hostName = cleanText(body.hostName, 18);
       const partyName = cleanText(body.partyName, 28) || (hostName ? hostName + "'s Party" : "");
       if (!hostName) return json({ error: "A nickname is required." }, 400, request);
-
-      // A code collision is very unlikely, but creation retries rather than overwriting a room.
       for (let attempt = 0; attempt < 5; attempt++) {
         const code = randomCode();
         const stub = env.PARTY_ROOMS.get(env.PARTY_ROOMS.idFromName(code));
         const response = await stub.fetch("https://party-room.internal/create", {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            ...(request.headers.get("Origin") ? { "Origin": request.headers.get("Origin") } : {}),
-          },
+          headers: { "Content-Type": "application/json", ...(request.headers.get("Origin") ? { Origin: request.headers.get("Origin") } : {}) },
           body: JSON.stringify({ code, hostName, partyName }),
         });
         if (response.status === 201) return withCors(response, request);
@@ -109,13 +82,10 @@ export default {
       }
       return json({ error: "Couldn't create a room right now. Please try again." }, 503, request);
     }
-
     const match = url.pathname.match(/^\/api\/rooms\/([A-Z0-9]{6})(?:\/(join|leave|ws))?$/i);
     if (!match) return json({ error: "Not found." }, 404, request);
-    const code = match[1].toUpperCase();
-    const action = match[2] || "";
+    const code = match[1].toUpperCase(), action = match[2] || "";
     const stub = env.PARTY_ROOMS.get(env.PARTY_ROOMS.idFromName(code));
-
     if (!action && request.method === "GET") return withCors(await stub.fetch("https://party-room.internal/room", request), request);
     if (action === "join" && request.method === "POST") return withCors(await stub.fetch("https://party-room.internal/join", request), request);
     if (action === "leave" && request.method === "POST") return withCors(await stub.fetch("https://party-room.internal/leave", request), request);
@@ -130,181 +100,212 @@ export default {
 export class PartyRoom extends DurableObject {
   constructor(ctx, env) {
     super(ctx, env);
-    this.ready = ctx.blockConcurrencyWhile(async () => {
-      this.room = (await ctx.storage.get("room")) ?? null;
-    });
+    this.ready = ctx.blockConcurrencyWhile(async () => { this.room = (await ctx.storage.get("room")) ?? null; });
   }
-
   async fetch(request) {
     await this.ready;
     const url = new URL(request.url);
     if (url.pathname === "/create" && request.method === "POST") return this.create(request);
     if (!this.room) return json({ error: "That party doesn't exist or has expired." }, 404, request);
     if (url.pathname === "/room" && request.method === "GET") {
-      await this.touch();
-      return json({ room: publicRoom(this.room) }, 200, request);
+      await this.touch(); return json({ room: publicRoom(this.room) }, 200, request);
     }
     if (url.pathname === "/join" && request.method === "POST") return this.join(request);
     if (url.pathname === "/leave" && request.method === "POST") return this.leave(request);
-    if (url.pathname === "/ws" && request.headers.get("Upgrade")?.toLowerCase() === "websocket") {
+    if (url.pathname === "/ws" && request.method === "GET" && request.headers.get("Upgrade")?.toLowerCase() === "websocket") {
       if (!isAllowedOrigin(request)) return json({ error: "This website origin is not allowed." }, 403, request);
       return this.connect(url);
     }
-    return json({ error: "Not found." }, 404);
+    return json({ error: "Not found." }, 404, request);
   }
-
   async create(request) {
     if (this.room) return json({ error: "Code collision." }, 409, request);
     let body;
     try { body = await request.json(); } catch { return json({ error: "Invalid request." }, 400, request); }
-    const hostId = crypto.randomUUID();
-    const hostToken = randomToken();
-    const now = Date.now();
+    const hostId = crypto.randomUUID(), hostToken = randomToken(), now = Date.now();
     this.room = {
-      code: body.code,
-      name: body.partyName,
-      hostId,
-      players: [{ id: hostId, token: hostToken, nickname: body.hostName, isHost: true, joinedAt: now }],
-      gameId: null,
-      createdAt: now,
-      lastActivityAt: now,
-      emptySinceAt: null,
+      code: body.code, name: body.partyName, hostId,
+      players: [{ id: hostId, token: hostToken, nickname: body.hostName, isHost: true, joinedAt: now, connected: false, disconnectExpiresAt: null }],
+      gameId: null, lifecycle: "lobby", gameState: null, stateVersion: 0,
+      createdAt: now, lastActivityAt: now, emptySinceAt: null,
     };
     await this.persistAndSchedule();
     return json({ room: publicRoom(this.room), playerToken: hostToken }, 201, request);
   }
-
   async join(request) {
     let body;
     try { body = await request.json(); } catch { return json({ error: "Send a valid JSON body." }, 400, request); }
     const nickname = cleanText(body.nickname, 18);
     if (!nickname) return json({ error: "A nickname is required." }, 400, request);
-
-    // Reuse this tab's existing identity when it rejoins the same room.
     const existingToken = typeof body.playerToken === "string" ? body.playerToken : "";
     if (existingToken) {
-      const existingPlayer = this.room.players.find((entry) => entry.token === existingToken);
-      if (existingPlayer) {
+      const player = this.room.players.find(entry => entry.token === existingToken);
+      if (player) {
+        player.nickname = nickname;
         this.room.lastActivityAt = Date.now();
         await this.persistAndSchedule();
-        return json({ room: publicRoom(this.room), playerToken: existingPlayer.token, reused: true }, 200, request);
+        return json({ room: publicRoom(this.room), playerToken: player.token, reused: true }, 200, request);
       }
       return json({ error: "Your saved player session has expired. Please join again." }, 401, request);
     }
-
     if (this.room.players.length >= ROOM_CAP) return json({ error: "This party is full (8 players maximum)." }, 409, request);
-    const id = crypto.randomUUID();
-    const playerToken = randomToken();
-    this.room.players.push({ id, token: playerToken, nickname, isHost: false, joinedAt: Date.now() });
-    this.room.emptySinceAt = null;
-    this.room.lastActivityAt = Date.now();
+    if (this.room.lifecycle && this.room.lifecycle !== "lobby") {
+      return json({ error: "This party's game has already started. This game does not currently accept late joins." }, 409, request);
+    }
+    const now = Date.now(), id = crypto.randomUUID(), playerToken = randomToken();
+    this.room.players.push({ id, token: playerToken, nickname, isHost: false, joinedAt: now, connected: false, disconnectExpiresAt: null });
+    this.room.emptySinceAt = null; this.room.lastActivityAt = now;
     await this.persistAndSchedule();
     this.broadcast({ type: "room-updated", room: publicRoom(this.room) });
     return json({ room: publicRoom(this.room), playerToken }, 201, request);
   }
-
   async leave(request) {
     const token = request.headers.get("Authorization")?.replace(/^Bearer\s+/i, "");
-    const player = this.room.players.find((entry) => entry.token === token);
+    const player = this.room.players.find(entry => entry.token === token);
     if (!player) return json({ error: "Invalid player session." }, 401, request);
-    this.room.players = this.room.players.filter((entry) => entry.id !== player.id);
-    const now = Date.now();
-    this.room.lastActivityAt = now;
-    const playerSocket = this.ctx.getWebSockets().find((socket) => socket.deserializeAttachment()?.playerId === player.id);
-    playerSocket?.close(1000, "Player left");
-
+    this.room.players = this.room.players.filter(entry => entry.id !== player.id);
+    const now = Date.now(); this.room.lastActivityAt = now;
+    for (const socket of this.ctx.getWebSockets()) {
+      if (socket.deserializeAttachment()?.playerId === player.id) {
+        try { socket.close(1000, "Player left"); } catch {}
+      }
+    }
     if (this.room.players.length === 0) {
-      // Keep an empty room reserved briefly so players can rejoin, then delete it.
       this.room.emptySinceAt = now;
       await this.persistAndSchedule();
       return json({ ok: true, roomClosed: false, emptyRoomExpiresAt: now + EMPTY_ROOM_TTL_MS }, 200, request);
     }
-
     this.room.emptySinceAt = null;
-    if (player.isHost) {
-      // Transfer host to a random remaining player instead of closing the lobby.
-      const nextHost = this.room.players[crypto.getRandomValues(new Uint32Array(1))[0] % this.room.players.length];
-      this.room.hostId = nextHost.id;
-      for (const remaining of this.room.players) remaining.isHost = remaining.id === nextHost.id;
-    }
+    if (player.isHost) this.assignHost();
     await this.persistAndSchedule();
     this.broadcast({ type: "room-updated", room: publicRoom(this.room) });
     return json({ ok: true, roomClosed: false, room: publicRoom(this.room) }, 200, request);
   }
-
   async connect(url) {
     const token = url.searchParams.get("token") || "";
-    const player = this.room.players.find((entry) => entry.token === token);
+    const player = this.room.players.find(entry => entry.token === token);
     if (!player) return json({ error: "Invalid player session." }, 401);
-    const pair = new WebSocketPair();
-    const client = pair[0];
-    const server = pair[1];
+    const connectionId = crypto.randomUUID();
+    for (const oldSocket of this.ctx.getWebSockets()) {
+      const attachment = oldSocket.deserializeAttachment();
+      if (attachment?.playerId === player.id) {
+        try { oldSocket.close(4001, "Replaced by a newer connection"); } catch {}
+      }
+    }
+    const pair = new WebSocketPair(), client = pair[0], server = pair[1];
     this.ctx.acceptWebSocket(server);
-    server.serializeAttachment({ playerId: player.id });
-    server.send(JSON.stringify({ type: "room-snapshot", room: publicRoom(this.room) }));
-    await this.touch();
+    server.serializeAttachment({ playerId: player.id, connectionId });
+    player.connected = true; player.disconnectExpiresAt = null;
+    this.room.emptySinceAt = null; this.room.lastActivityAt = Date.now();
+    await this.persistAndSchedule();
+    server.send(JSON.stringify({ type: "room-snapshot", room: publicRoom(this.room), stateVersion: this.room.stateVersion || 0 }));
+    this.broadcast({ type: "room-updated", room: publicRoom(this.room) });
     return new Response(null, { status: 101, webSocket: client });
   }
-
   async webSocketMessage(socket, message) {
     await this.ready;
-    // This first version only broadcasts authoritative room state. Game-specific
-    // actions will be added through validated message handlers in later iterations.
     let data;
-    try { data = JSON.parse(message); } catch { socket.send(JSON.stringify({ type: "error", message: "Invalid message." })); return; }
+    try { data = JSON.parse(message); } catch {
+      try { socket.send(JSON.stringify({ type: "error", message: "Invalid message." })); } catch {}
+      return;
+    }
+    const attachment = socket.deserializeAttachment();
+    const player = this.room?.players.find(entry => entry.id === attachment?.playerId);
+    if (!player) return;
     if (data?.type === "ping") {
       this.room.lastActivityAt = Date.now();
       await this.persistAndSchedule();
-      socket.send(JSON.stringify({ type: "pong", at: Date.now() }));
+      try { socket.send(JSON.stringify({ type: "pong", at: Date.now() })); } catch {}
+    } else {
+      try { socket.send(JSON.stringify({ type: "error", message: "Game actions are not enabled yet." })); } catch {}
     }
-    else socket.send(JSON.stringify({ type: "error", message: "That action isn't supported yet." }));
   }
-
-  async webSocketClose(_socket) {
-    // Cloudflare manages accepted WebSockets; no in-memory registry is needed.
+  async webSocketClose(socket) { await this.markDisconnected(socket); }
+  async webSocketError(socket) { await this.markDisconnected(socket); }
+  async markDisconnected(socket) {
+    await this.ready;
+    if (!this.room) return;
+    const attachment = socket.deserializeAttachment();
+    if (!attachment?.playerId) return;
+    const player = this.room.players.find(entry => entry.id === attachment.playerId);
+    if (!player) return; // Explicit leave or expiry already removed the player.
+    const hasNewerConnection = this.ctx.getWebSockets().some(other => {
+      if (other === socket || other.readyState !== WebSocket.OPEN) return false;
+      const otherAttachment = other.deserializeAttachment();
+      return otherAttachment?.playerId === player.id && otherAttachment?.connectionId !== attachment.connectionId;
+    });
+    if (hasNewerConnection) return;
+    if (!player.connected) return;
+    player.connected = false;
+    player.disconnectExpiresAt = Date.now() + RECONNECT_GRACE_MS;
+    this.room.lastActivityAt = Date.now();
+    await this.persistAndSchedule();
+    this.broadcast({ type: "room-updated", room: publicRoom(this.room) });
   }
-
-  async webSocketError(_socket) {
-    // Cloudflare manages accepted WebSockets; no in-memory registry is needed.
+  assignHost() {
+    if (!this.room.players.length) { this.room.hostId = null; return; }
+    const nextHost = randomItem(this.room.players);
+    this.room.hostId = nextHost.id;
+    for (const player of this.room.players) player.isHost = player.id === nextHost.id;
   }
-
   broadcast(message) {
     const serialized = JSON.stringify(message);
     for (const socket of this.ctx.getWebSockets()) {
-      try {
-        if (socket.readyState === WebSocket.OPEN) socket.send(serialized);
-      } catch {
-        // A socket may close while a broadcast is in progress.
-      }
+      try { if (socket.readyState === WebSocket.OPEN) socket.send(serialized); } catch {}
     }
   }
-
   async touch() {
     this.room.lastActivityAt = Date.now();
-    // Viewing an empty room must not extend its cleanup deadline.
     if (this.room.players.length > 0) await this.persistAndSchedule();
   }
-
   async persistAndSchedule() {
     await this.ctx.storage.put("room", this.room);
-    const expiresAt = this.room.players.length === 0 && this.room.emptySinceAt
-      ? this.room.emptySinceAt + EMPTY_ROOM_TTL_MS
-      : Date.now() + ROOM_IDLE_TTL_MS;
-    await this.ctx.storage.setAlarm(expiresAt);
+    const deadlines = [];
+    if (this.room.players.length === 0 && this.room.emptySinceAt) deadlines.push(this.room.emptySinceAt + EMPTY_ROOM_TTL_MS);
+    if (this.room.players.length > 0) {
+      deadlines.push(this.room.lastActivityAt + ROOM_IDLE_TTL_MS);
+      for (const player of this.room.players) {
+        if (!player.connected && player.disconnectExpiresAt) deadlines.push(player.disconnectExpiresAt);
+      }
+    }
+    if (deadlines.length) await this.ctx.storage.setAlarm(Math.min(...deadlines));
+    else await this.ctx.storage.deleteAlarm();
   }
-
   async alarm() {
     await this.ready;
     if (!this.room) return;
-    const expiresAt = this.room.players.length === 0 && this.room.emptySinceAt
-      ? this.room.emptySinceAt + EMPTY_ROOM_TTL_MS
-      : this.room.lastActivityAt + ROOM_IDLE_TTL_MS;
-    if (Date.now() >= expiresAt) {
-      for (const socket of this.ctx.getWebSockets()) socket.close(1000, "Party expired");
-      this.room = null;
-      await this.ctx.storage.deleteAll();
-    } else {
-      await this.ctx.storage.setAlarm(expiresAt);
+    const now = Date.now();
+    if (this.room.players.length === 0) {
+      if (this.room.emptySinceAt && now >= this.room.emptySinceAt + EMPTY_ROOM_TTL_MS) {
+        for (const socket of this.ctx.getWebSockets()) { try { socket.close(1000, "Party expired"); } catch {} }
+        this.room = null; await this.ctx.storage.deleteAll(); return;
+      }
+      await this.persistAndSchedule(); return;
     }
+    if (now >= this.room.lastActivityAt + ROOM_IDLE_TTL_MS) {
+      for (const socket of this.ctx.getWebSockets()) { try { socket.close(1000, "Party expired"); } catch {} }
+      this.room = null; await this.ctx.storage.deleteAll(); return;
+    }
+    const expired = this.room.players.filter(player => !player.connected && player.disconnectExpiresAt && now >= player.disconnectExpiresAt);
+    if (expired.length) {
+      const expiredIds = new Set(expired.map(player => player.id));
+      const hostExpired = expired.some(player => player.isHost);
+      this.room.players = this.room.players.filter(player => !expiredIds.has(player.id));
+      if (this.room.players.length === 0) {
+        this.room.hostId = null; this.room.emptySinceAt = now;
+      } else if (hostExpired) {
+        const connected = this.room.players.filter(player => player.connected);
+        this.assignSpecificHost(connected.length ? randomItem(connected) : randomItem(this.room.players));
+      }
+      this.room.lastActivityAt = now;
+      await this.persistAndSchedule();
+      this.broadcast({ type: "room-updated", room: publicRoom(this.room), expiredPlayerIds: [...expiredIds] });
+      return;
+    }
+    await this.persistAndSchedule();
+  }
+  assignSpecificHost(host) {
+    this.room.hostId = host.id;
+    for (const player of this.room.players) player.isHost = player.id === host.id;
   }
 }
