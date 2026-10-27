@@ -14,6 +14,25 @@ let leavingLobby = false;
 
 $('year').textContent = new Date().getFullYear();
 renderGameCards($('games-grid'), gameRegistry);
+function populateGameSelector() {
+  const selector = $('lobby-game-select');
+  if (!selector) return;
+  const playable = gameRegistry.filter(game => game.status === 'ready' && game.players);
+  selector.replaceChildren(...playable.map(game => {
+    const option = document.createElement('option');
+    option.value = game.id;
+    const limits = game.players.min === game.players.max
+      ? game.players.min + ' players'
+      : game.players.min + '–' + game.players.max + ' players';
+    option.textContent = (game.emoji || '🎮') + ' ' + game.name + ' · ' + limits;
+    return option;
+  }));
+  const hasGames = playable.length > 0;
+  selector.disabled = !hasGames;
+  $('start-game').disabled = !hasGames;
+  if (!hasGames) gameFeedback('No playable games are registered yet.');
+}
+populateGameSelector();
 
 function feedback(id, message, success = false) {
   const node = $(id);
