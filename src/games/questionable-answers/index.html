@@ -25,10 +25,18 @@
       <div class="game-room-meta"><span id="room-label">Connecting to party…</span><span id="connection-status">Connecting…</span></div>
       <section class="qa-card">
         <div class="phase-heading"><span class="phase-pill" id="phase-pill">Round 1 of 2</span><h2 id="phase-title">Assign a secret word</h2><p id="phase-copy">Give the player on your right a word, term, or phrase. They won't see it until the reveal.</p></div>
+        <div class="qa-flow" aria-label="How a round works">
+          <div class="qa-flow-step" id="flow-assign"><span>1</span><strong>Assign a word</strong><small>Clockwise ↻ · give the next seat a secret word</small></div>
+          <span class="qa-flow-arrow" aria-hidden="true">➜</span>
+          <div class="qa-flow-step" id="flow-questions"><span>2</span><strong>Ask a question</strong><small>Counter-clockwise ↶ · ask the previous seat</small></div>
+          <span class="qa-flow-arrow" aria-hidden="true">➜</span>
+          <div class="qa-flow-step" id="flow-reveal"><span>3</span><strong>Reveal</strong><small>Questions meet their automatic answers</small></div>
+        </div>
         <div class="table-scene" id="table-scene" aria-label="Players seated around the central table">
           <div class="round-table"><div class="table-center"><span class="table-sparkle">✦</span><strong id="table-title">Secret words</strong><p id="table-copy">Choose a word for the seat on your right.</p><div class="table-progress" id="table-progress">0 / 0 submitted</div></div></div>
           <div id="seats" class="seats"></div>
         </div>
+        <section class="qa-roster" aria-labelledby="roster-title"><h3 id="roster-title">👥 Players in this round</h3><ul id="player-roster" class="player-roster"></ul></section>
         <section class="submission-panel" id="submission-panel">
           <label for="submission-input" id="submission-label">Your secret word or phrase</label>
           <textarea id="submission-input" maxlength="240" rows="3" placeholder="Type something unexpected…"></textarea>
@@ -37,7 +45,8 @@
         </section>
         <section class="reveal-panel" id="reveal-panel" hidden><h2>🎉 The big reveal</h2><p>Every question and its automatic answer, all at once.</p><div id="reveal-pairs" class="reveal-pairs"></div></section>
         <p id="game-help" class="game-help" role="status">Submissions stay private until everyone is ready.</p>
-        <div class="game-exit-actions"><button id="return-lobby" class="primary-button" type="button" hidden>↩ End game and return to lobby</button><button id="leave-game" class="secondary-button" type="button" hidden>Leave game and party</button></div>
+        <div class="game-exit-actions"><button id="replay-game" class="primary-button" type="button" hidden>🔁 Play again</button><button id="return-lobby" class="primary-button" type="button" hidden>↩ End game and return to lobby</button><button id="leave-game" class="secondary-button" type="button" hidden>Leave game and party</button></div>
+        <p id="replay-status" class="replay-status" role="status" hidden></p>
       </section>
     </main>
   </div>
