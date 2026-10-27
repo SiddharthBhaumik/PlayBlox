@@ -174,6 +174,10 @@ async function returnEveryoneToLobby(button) {
     showError("Only the host can return everyone to the party lobby.");
     return;
   }
+  const confirmed = window.confirm(
+    "End this round and return everyone to the party lobby? The current game will be reset."
+  );
+  if (!confirmed) return;
   button.disabled = true;
   try {
     await api("/api/rooms/" + encodeURIComponent(code) + "/game/reset", { method: "POST", body: "{}" });
