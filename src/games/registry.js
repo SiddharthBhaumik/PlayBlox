@@ -20,6 +20,18 @@
  * own its own files and use this registry only to announce itself to the lobby.
  */
 export const gameRegistry = [
+  {
+    id: 'tic-tac-toe',
+    name: 'Tic-Tac-Toe',
+    description: 'A classic little battle of Xs and Os. First to line up three wins.',
+    emoji: '⭕',
+    color: '#ffe4a8',
+    status: 'ready',
+    path: './src/games/tic-tac-toe/index.html',
+    players: { min: 2, max: 2 },
+    interactionModel: 'turn-based',
+    lateJoinPolicy: 'wait',
+  },
   // Example for a future game (uncomment and edit when its page exists):
   // {
   //   id: 'memory-match',
