@@ -1,64 +1,124 @@
-/**
- * PlayBlox lobby behaviour.
- * Keep the lobby independent from individual games. Game metadata and future
- * launch handlers belong in src/games/registry.js, not in this file.
- */
 import { renderGameCards, gameRegistry } from './games/registry.js';
 
 const $ = (id) => document.getElementById(id);
+const API_BASE_URL = window.PLAYBLOX_API_BASE_URL
+  || (['localhost', '127.0.0.1'].includes(window.location.hostname) ? 'http://localhost:8787' : '');
+let roomSocket = null;
+
 $('year').textContent = new Date().getFullYear();
 renderGameCards($('games-grid'), gameRegistry);
 
-function makeRoomCode() {
-  const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-  const bytes = new Uint8Array(6);
-  if (globalThis.crypto?.getRandomValues) crypto.getRandomValues(bytes);
-  else for (let i = 0; i < bytes.length; i++) bytes[i] = Math.floor(Math.random() * 256);
-  return Array.from(bytes, (byte) => alphabet[byte % alphabet.length]).join('');
+function feedback(id, message, success = false) {
+  const node = $(id);
+  node.textContent = message;
+  node.classList.toggle('success', success);
+  node.classList.add('visible');
 }
 
-function openPartyDialog({ code, partyName, hostName }) {
-  const inviteUrl = new URL('./?party=' + encodeURIComponent(code), window.location.href).href;
-  $('room-code').textContent = code;
-  $('dialog-title').textContent = 'Your party is ready!';
-  $('dialog-description').textContent = 'Nice one, ' + hostName + '! “' + partyName + '” has a preview invite code to share.';
+async function api(path, options = {}) {
+  if (!API_BASE_URL) throw new Error('The multiplayer service is not configured on the live site yet.');
+  let response;
+  try {
+    response = await fetch(API_BASE_URL + path, {
+      ...options,
+      headers: { ...(options.body ? { 'Content-Type': 'application/json' } : {}), ...(options.headers || {}) },
+    });
+  } catch {
+    throw new Error('Could not reach the party service. Please try again.');
+  }
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(data.error || 'Something went wrong. Please try again.');
+  return data;
+}
+
+function renderPlayers(room) {
+  let list = $('party-players');
+  if (!list) {
+    list = document.createElement('div');
+    list.id = 'party-players';
+    list.className = 'party-players';
+    $('room-code').insertAdjacentElement('afterend', list);
+  }
+  list.replaceChildren();
+  const count = document.createElement('p');
+  count.className = 'dialog-note';
+  count.textContent = `Players: ${room.playerCount}/${room.playerCap}`;
+  const names = document.createElement('p');
+  names.textContent = room.players.map(p => p.nickname + (p.isHost ? ' (host)' : '')).join(' · ');
+  list.append(count, names);
+}
+
+function connectRoom(code, token) {
+  if (roomSocket) roomSocket.close();
+  if (!API_BASE_URL) return;
+  roomSocket = new WebSocket(API_BASE_URL.replace(/^http/, 'ws') +
+    `/api/rooms/${encodeURIComponent(code)}/ws?token=${encodeURIComponent(token)}`);
+  roomSocket.addEventListener('message', event => {
+    let message;
+    try { message = JSON.parse(event.data); } catch { return; }
+    if (['room-snapshot', 'room-updated'].includes(message.type) && message.room) renderPlayers(message.room);
+  });
+}
+
+function openParty({ room, token, hostName = '' }) {
+  $('room-code').textContent = room.code;
+  $('dialog-title').textContent = room.name || 'Your party is ready!';
+  $('dialog-description').textContent = hostName
+    ? `Nice one, ${hostName}! Share this invite with your friends.`
+    : 'You joined the party! Share the invite link with other friends.';
   $('copy-invite').textContent = '📋 Copy invite link';
-  $('copy-invite').dataset.inviteUrl = inviteUrl;
+  $('copy-invite').dataset.inviteUrl = new URL('./?party=' + encodeURIComponent(room.code), location.href).href;
+  renderPlayers(room);
   $('party-dialog').showModal();
+  connectRoom(room.code, token);
 }
 
-function showFeedback(id, message, success = false) {
-  const element = $(id);
-  element.textContent = message;
-  element.classList.toggle('success', success);
-  element.classList.add('visible');
-}
-
-$('create-party-form').addEventListener('submit', (event) => {
+$('create-party-form').addEventListener('submit', async event => {
   event.preventDefault();
+  const form = event.currentTarget;
+  const button = form.querySelector('button[type="submit"]');
   const hostName = $('host-name').value.trim();
   const partyName = $('party-name').value.trim() || hostName + "'s Party";
-  if (hostName) openPartyDialog({ code: makeRoomCode(), partyName, hostName });
+  if (!hostName) return;
+  button.disabled = true;
+  try {
+    const result = await api('/api/rooms', { method: 'POST', body: JSON.stringify({ hostName, partyName }) });
+    sessionStorage.setItem('playblox:' + result.room.code + ':token', result.playerToken);
+    feedback('create-feedback', 'Your party is ready!', true);
+    openParty({ room: result.room, token: result.playerToken, hostName });
+  } catch (error) {
+    feedback('create-feedback', error.message);
+  } finally { button.disabled = false; }
 });
 
-$('join-party-form').addEventListener('submit', (event) => {
+$('join-party-form').addEventListener('submit', async event => {
   event.preventDefault();
+  const form = event.currentTarget;
+  const button = form.querySelector('button[type="submit"]');
   const nickname = $('guest-name').value.trim();
   const raw = $('invite-code').value.trim();
   if (!nickname || !raw) return;
-
   let code = raw.toUpperCase();
   try {
     const url = new URL(raw);
     if (url.searchParams.has('party')) code = url.searchParams.get('party').toUpperCase();
-  } catch { /* The user may have entered a plain room code. */ }
+  } catch { /* Plain code input. */ }
   code = code.replace(/[^A-Z0-9]/g, '');
-
-  if (code.length < 4 || code.length > 12) {
-    showFeedback('join-feedback', 'Hmm, that invite looks a little wonky. Check the code or paste the full invite link from your buddy.');
+  if (!/^[A-Z0-9]{6}$/.test(code)) {
+    feedback('join-feedback', 'Please enter a valid six-character party code or invite link.');
     return;
   }
-  showFeedback('join-feedback', 'Hey, ' + nickname + '! The code ' + code + ' looks valid. Actual room lookup and joining will be enabled when the multiplayer service is connected.', true);
+  button.disabled = true;
+  try {
+    const result = await api('/api/rooms/' + encodeURIComponent(code) + '/join', {
+      method: 'POST', body: JSON.stringify({ nickname }),
+    });
+    sessionStorage.setItem('playblox:' + result.room.code + ':token', result.playerToken);
+    feedback('join-feedback', 'You joined the party!', true);
+    openParty({ room: result.room, token: result.playerToken });
+  } catch (error) {
+    feedback('join-feedback', error.message);
+  } finally { button.disabled = false; }
 });
 
 $('copy-invite').addEventListener('click', async () => {
@@ -66,16 +126,18 @@ $('copy-invite').addEventListener('click', async () => {
   try {
     await navigator.clipboard.writeText(url);
     $('copy-invite').textContent = '✅ Invite link copied!';
-  } catch {
-    window.prompt('Copy your party invite link:', url);
-  }
+  } catch { window.prompt('Copy your party invite link:', url); }
 });
-$('close-dialog').addEventListener('click', () => $('party-dialog').close());
-$('party-dialog').addEventListener('click', (event) => {
-  if (event.target === $('party-dialog')) $('party-dialog').close();
+function closePartyDialog() {
+  if (roomSocket) { roomSocket.close(); roomSocket = null; }
+  $('party-dialog').close();
+}
+$('close-dialog').addEventListener('click', closePartyDialog);
+$('party-dialog').addEventListener('click', event => {
+  if (event.target === $('party-dialog')) closePartyDialog();
 });
 
-const incomingCode = new URLSearchParams(window.location.search).get('party');
+const incomingCode = new URLSearchParams(location.search).get('party');
 if (incomingCode) {
   $('invite-code').value = incomingCode;
   $('join-party-form').scrollIntoView({ block: 'center', behavior: 'smooth' });
