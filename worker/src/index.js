@@ -53,7 +53,7 @@ function publicRoom(room) {
       disconnectExpiresAt,
     })),
     playerCount: room.players.length, playerCap: ROOM_CAP, createdAt: room.createdAt,
-    gameId: room.gameId ?? null, lifecycle: room.lifecycle ?? "lobby", stateVersion: room.stateVersion ?? 0, game: room.gameMetadata ?? null, gameState: room.gameState ?? null, results: room.results ?? null,
+    gameId: room.gameId ?? null, lifecycle: room.lifecycle ?? "lobby", stateVersion: room.stateVersion ?? 0, game: room.gameMetadata ?? null, gameState: room.gameState ?? null, results: room.results ?? null, rematchVotes: room.rematchVotes ?? {},
   };
 }
 
