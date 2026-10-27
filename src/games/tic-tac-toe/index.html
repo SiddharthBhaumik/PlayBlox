@@ -16,7 +16,7 @@
   <div class="page-shell game-shell">
     <header class="topbar">
       <a class="brand" href="../../../" aria-label="PlayBlox home"><span class="brand-mark" aria-hidden="true">🧸</span><span class="brand-name">Play<span>Blox</span></span></a>
-      <a class="back-link" id="back-to-lobby" href="../../../">← Back to party</a>
+
     </header>
     <div class="game-layout">
       <aside class="game-roster" aria-label="Players in this game"><h2>In this game</h2><ul id="game-players"><li>Connecting to party…</li></ul></aside>
@@ -40,7 +40,7 @@
         </div>
         <div class="game-result" id="game-result" hidden aria-live="polite"></div>
         <section class="rematch-prompt" id="rematch-prompt" hidden aria-live="polite"><h2>Another round?</h2><p id="rematch-status">Would you like to play again?</p><div class="rematch-actions"><button class="primary-button" id="play-again" type="button">Play again</button><button class="secondary-button" id="no-rematch" type="button">Back to lobby</button></div></section>
-        <button class="primary-button rematch-button" id="return-lobby" type="button" hidden>↩ End game and return to lobby</button>
+        <div class="game-exit-actions"><button class="primary-button rematch-button" id="return-lobby" type="button" hidden>↩ End game and return to lobby</button><button class="secondary-button leave-game-button" id="leave-game" type="button" hidden>Leave game</button></div>
       </section>
       <p class="game-help" id="game-help">The host can return everyone to the lobby when the round is over.</p>
       </main>
