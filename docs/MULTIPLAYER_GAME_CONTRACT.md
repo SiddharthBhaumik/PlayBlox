@@ -53,3 +53,16 @@ A temporary network loss is not an intentional leave. The platform reserves the 
 5. Verify start/finish conditions, invalid actions, late joins, reconnects, and host disconnects.
 
 If adding a game requires editing the lobby, room transport, or shared lifecycle for that game's rules, the boundary has been violated and the abstraction should be improved first.
+
+
+## Shared HTTP endpoints
+
+All endpoints are scoped to `/api/rooms/:code`. Authenticated endpoints require the player's session token in the `Authorization: Bearer <token>` header.
+
+- `POST /game/start` with `{ "gameId": "..." }`: host-only. Checks the registered module, connected player count, maximum room size, and `canStart`; creates authoritative initial state and moves the room into `playing`.
+- `POST /game/action` with `{ "actionId": "...", "expectedStateVersion": 1, "action": { ... } }`: validates the session, lifecycle, expected state version, and action ID before calling the game's `validateAction` and `reduceAction` hooks. Accepted state updates are broadcast to room sockets.
+- `POST /game/reset`: host-only. Returns a running or finished game to the shared lobby and clears game state.
+
+The room's public snapshot includes `lifecycle`, `gameId`, `game`, `gameState`, and `stateVersion`. Clients must treat server state as authoritative and must not decide whether an action is valid locally.
+
+The server-side registry lives at `worker/src/games/registry.js`. A game must be registered there before the start endpoint can launch it. The registry intentionally starts empty until a real game module implements the contract; the platform must not pretend an unimplemented game is playable.
