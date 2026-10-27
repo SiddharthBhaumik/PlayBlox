@@ -32,7 +32,6 @@ export const ticTacToe = {
     } else if (crypto.getRandomValues(new Uint8Array(1))[0] % 2 === 1) {
       order.reverse();
     }
-    const byId = Object.fromEntries(players.map(player => [player.id, player]));
     return {
       board: Array(9).fill(null),
       playerOrder: order,
