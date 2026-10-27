@@ -154,6 +154,7 @@ function connect() {
       if (room) { room.lifecycle = message.lifecycle; room.gameState = gameState; room.stateVersion = stateVersion; room.results = message.results; }
       render();
     }
+    if (message.type === "host-ended-round") sessionStorage.setItem("playblox:" + code + ":notice", message.message || "The host ended the round and returned everyone to the lobby.");
     if (message.type === "error") showError(message.message || "A connection error occurred.");
 
   });
