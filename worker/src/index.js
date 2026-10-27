@@ -477,7 +477,18 @@ export class PartyRoom extends DurableObject {
       for (const socket of this.ctx.getWebSockets()) { try { socket.close(1000, "Party expired"); } catch {} }
       this.room = null; await this.ctx.storage.deleteAll(); return;
     }
-    const expired = this.room.players.filter(player => !player.connected && player.disconnectExpiresAt && now >= player.disconnectExpiresAt\n      && !(this.room.lifecycle === "playing" && player.role === "player" && this.room.gameState?.alivePlayerIds?.includes(player.id)));
+    // Active Bullet Matrix participants are never silently removed mid-match.
+    // Once their reconnect grace period elapses, stop scheduling that expired deadline
+    // and keep the round waiting until they reconnect and submit.
+    if (this.room.lifecycle === "playing" && this.room.gameId === "bullet-matrix") {
+      for (const player of this.room.players) {
+        if (!player.connected && player.role === "player" && this.room.gameState?.alivePlayerIds?.includes(player.id)
+          && player.disconnectExpiresAt && now >= player.disconnectExpiresAt) {
+          player.disconnectExpiresAt = null;
+        }
+      }
+    }
+    const expired = this.room.players.filter(player => !player.connected && player.disconnectExpiresAt && now >= player.disconnectExpiresAt);
     if (expired.length) {
       const expiredIds = new Set(expired.map(player => player.id));
       const hostExpired = expired.some(player => player.isHost);
