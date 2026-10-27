@@ -35,7 +35,7 @@ export const gameRegistry = [
     lateJoinPolicy: 'wait',
     spectators: { supported: true },
   },
-  // Example for a future game (uncomment and edit when its page exists):
+  {\n    id: 'bullet-matrix',\n    name: 'Bullet Matrix',\n    description: 'Reload, shoot, and shield in secret. Predict everyone else to be the last one standing.',\n    emoji: '🔫',\n    color: '#ffd9c7',\n    status: 'ready',\n    path: './src/games/bullet-matrix/index.html',\n    entryMode: 'party',\n    players: { min: 2, max: 8 },\n    interactionModel: 'simultaneous',\n    lateJoinPolicy: 'spectate',\n    spectators: { supported: true },\n  },\n  // Example for a future game (uncomment and edit when its page exists):
   // {
   //   id: 'memory-match',
   //   name: 'Memory Match',
