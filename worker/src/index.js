@@ -151,7 +151,7 @@ export class PartyRoom extends DurableObject {
         player.nickname = nickname;
         this.room.lastActivityAt = Date.now();
         await this.persistAndSchedule();
-        return json({ room: publicRoom(this.room), playerToken: player.token, reused: true }, 200, request);
+        return json({ room: publicRoom(this.room), playerToken: player.token, playerId: player.id, reused: true }, 200, request);
       }
       return json({ error: "Your saved player session has expired. Please join again." }, 401, request);
     }
@@ -173,7 +173,7 @@ export class PartyRoom extends DurableObject {
     this.room.emptySinceAt = null; this.room.lastActivityAt = now;
     await this.persistAndSchedule();
     this.broadcast({ type: "room-updated", room: publicRoom(this.room) });
-    return json({ room: publicRoom(this.room), playerToken }, 201, request);
+    return json({ room: publicRoom(this.room), playerToken, playerId: id }, 201, request);
   }
   async startGame(request) {
     const player = this.authorizePlayer(request);
