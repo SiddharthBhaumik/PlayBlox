@@ -92,6 +92,16 @@
           </section>
           <section class="lobby-panel activity-panel" aria-labelledby="activity-heading"><p class="section-kicker">WHAT'S HAPPENING</p><h2 id="activity-heading">Lobby activity</h2><p class="activity-caption">New arrivals and departures will appear here.</p><ul class="lobby-activity" id="lobby-activity" aria-live="polite"></ul></section>
         </div>
+        <section class="lobby-panel game-launch-panel" aria-labelledby="game-launch-title">
+          <p class="section-kicker">PICK A GAME</p><h2 id="game-launch-title">Ready for a round?</h2>
+          <p class="activity-caption">The host chooses a game. Each game brings its own rules, player limits, and join policy.</p>
+          <div class="game-launch-controls">
+            <label class="visually-hidden" for="lobby-game-select">Choose a game</label>
+            <select id="lobby-game-select" class="game-select"><option value="tic-tac-toe">⭕ Tic-Tac-Toe · 2 players</option></select>
+            <button class="primary-button" id="start-game" type="button">🎮 Start game</button>
+          </div>
+          <p id="game-launch-feedback" class="game-launch-feedback" role="status" aria-live="polite"></p>
+        </section>
         <div class="lobby-footer"><p>Waiting for your friends? Keep this lobby open while they join.</p><button class="secondary-button" id="leave-lobby" type="button">← Leave lobby</button></div>
       </section>
 
