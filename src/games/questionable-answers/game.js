@@ -95,7 +95,7 @@ $("submit-button").addEventListener("click",async()=>{
   const action=phase==="assign"?{type:"assign-word",word:value}:{type:"ask-question",question:value};
   submitting=true;$("submit-button").disabled=true;
   try {
-    await api("/api/rooms/"+encodeURIComponent(code)+"/game/action",{method:"POST",body:JSON.stringify({actionId:crypto.randomUUID(),expectedStateVersion:stateVersion,action:{...action,round:phase}})});
+    await api("/api/rooms/"+encodeURIComponent(code)+"/game/action",{method:"POST",body:JSON.stringify({actionId:crypto.randomUUID(),expectedStateVersion:stateVersion,action:{...action,round:gameState.round}})});
     $("submission-input").value="";await syncRoom();
   } catch(e) {help(e.message,true);if(Number.isInteger(e.stateVersion))stateVersion=e.stateVersion;try{await syncRoom()}catch{}}
   finally{submitting=false;render()}
