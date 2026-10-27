@@ -51,14 +51,14 @@ function render() {
   $("back-to-lobby").hidden = true;
   const activeIds = new Set(gameState.playerOrder || []);
   const roster = $("game-players");
-  roster.replaceChildren(...room.players.filter(p => activeIds.has(p.id)).map(p => {
+  roster.replaceChildren(...room.players.map(p => {
     const item = document.createElement("li");
     item.className = "game-player" + (p.id === gameState.currentPlayerId ? " is-turn" : "");
     const dot = document.createElement("span"); dot.className = "player-dot"; dot.setAttribute("aria-hidden", "true");
     const info = document.createElement("span");
     const name = document.createElement("strong"); name.textContent = p.nickname + (p.id === myPlayerId ? " (you)" : "");
     const detail = document.createElement("small");
-    detail.textContent = p.connected === false ? "Reconnecting…" : (gameState.symbols?.[p.id] ? "Player · " + gameState.symbols[p.id] : "Player");
+    detail.textContent = p.connected === false ? "Reconnecting…" : p.role === "spectator" ? "Watching" : p.role === "waiting" ? "Waiting" : (gameState.symbols?.[p.id] ? "Player · " + gameState.symbols[p.id] : "Player");
     info.append(name, detail); item.append(dot, info); return item;
   }));
   const rematchPrompt = $("rematch-prompt");
