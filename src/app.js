@@ -82,8 +82,18 @@ function addLobbyActivity(message) {
   const item = document.createElement('li'); item.textContent = message; feed.prepend(item);
   while (feed.children.length > 8) feed.lastElementChild.remove();
 }
+function renderLobbyHistory(room) {
+  const feed = $('lobby-activity'); if (!feed || !Array.isArray(room.history)) return;
+  feed.replaceChildren(...room.history.slice(-20).reverse().map(entry => {
+    const item = document.createElement('li');
+    const when = new Date(entry.at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    item.textContent = when + ' · ' + (entry.message || entry.type || 'Lobby activity');
+    return item;
+  }));
+}
 function renderPlayers(room) {
   latestLobbyRoom = room;
+  renderLobbyHistory(room);
   const me = room.players.find(player => player.id === activePlayerId);
   $('start-game').hidden = Boolean(me && !me.isHost);
   $('lobby-game-select').hidden = Boolean(me && !me.isHost);
