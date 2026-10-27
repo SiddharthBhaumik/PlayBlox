@@ -174,9 +174,22 @@ export class PartyRoom extends DurableObject {
 
   async join(request) {
     let body;
-    try { body = await request.json(); } catch { return json({ error: "Send a valid JSON body." }, 400); }
+    try { body = await request.json(); } catch { return json({ error: "Send a valid JSON body." }, 400, request); }
     const nickname = cleanText(body.nickname, 18);
     if (!nickname) return json({ error: "A nickname is required." }, 400, request);
+
+    // Reuse this tab's existing identity when it rejoins the same room.
+    const existingToken = typeof body.playerToken === "string" ? body.playerToken : "";
+    if (existingToken) {
+      const existingPlayer = this.room.players.find((entry) => entry.token === existingToken);
+      if (existingPlayer) {
+        this.room.lastActivityAt = Date.now();
+        await this.persistAndSchedule();
+        return json({ room: publicRoom(this.room), playerToken: existingPlayer.token, reused: true }, 200, request);
+      }
+      return json({ error: "Your saved player session has expired. Please join again." }, 401, request);
+    }
+
     if (this.room.players.length >= ROOM_CAP) return json({ error: "This party is full (8 players maximum)." }, 409, request);
     const id = crypto.randomUUID();
     const playerToken = randomToken();
