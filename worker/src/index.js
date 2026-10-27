@@ -5,7 +5,7 @@ const ROOM_IDLE_TTL_MS = 2 * 60 * 60 * 1000;
 const CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 
 function json(data, status = 200) {
-  return Response.json(data, { status, headers: { "Cache-Control": "no-store" } });
+  return Response.json(data, { status, headers: { "Cache-Control": "no-store", "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Methods": "GET, POST, OPTIONS", "Access-Control-Allow-Headers": "Content-Type, Authorization" } });
 }
 
 function cleanText(value, maxLength) {
@@ -135,6 +135,7 @@ export class PartyRoom extends DurableObject {
     const id = crypto.randomUUID();
     const playerToken = randomToken();
     this.room.players.push({ id, token: playerToken, nickname, isHost: false, joinedAt: Date.now() });
+    this.room.lastActivityAt = Date.now();
     await this.persistAndSchedule();
     this.broadcast({ type: "room-updated", room: publicRoom(this.room) });
     return json({ room: publicRoom(this.room), playerToken }, 201);
@@ -145,6 +146,7 @@ export class PartyRoom extends DurableObject {
     const player = this.room.players.find((entry) => entry.token === token);
     if (!player) return json({ error: "Invalid player session." }, 401);
     this.room.players = this.room.players.filter((entry) => entry.id !== player.id);
+    this.room.lastActivityAt = Date.now();
     this.sockets.get(player.id)?.close(1000, "Player left");
     this.sockets.delete(player.id);
     if (this.room.players.length === 0) {
@@ -185,7 +187,11 @@ export class PartyRoom extends DurableObject {
     // actions will be added through validated message handlers in later iterations.
     let data;
     try { data = JSON.parse(message); } catch { socket.send(JSON.stringify({ type: "error", message: "Invalid message." })); return; }
-    if (data?.type === "ping") socket.send(JSON.stringify({ type: "pong", at: Date.now() }));
+    if (data?.type === "ping") {
+      this.room.lastActivityAt = Date.now();
+      await this.persistAndSchedule();
+      socket.send(JSON.stringify({ type: "pong", at: Date.now() }));
+    }
     else socket.send(JSON.stringify({ type: "error", message: "That action isn't supported yet." }));
   }
 
