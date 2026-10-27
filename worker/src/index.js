@@ -355,7 +355,6 @@ export class PartyRoom extends DurableObject {
     const token = request.headers.get("Authorization")?.replace(/^Bearer\s+/i, "");
     const player = this.room.players.find(entry => entry.token === token);
     if (!player) return json({ error: "Invalid player session." }, 401, request);
-    if (player.isHost) return json({ error: "The host cannot leave the party. Transfer hosting first or close the party." }, 403, request);
     this.room.players = this.room.players.filter(entry => entry.id !== player.id);
     const now = Date.now(); this.room.lastActivityAt = now;
     // If an active participant leaves explicitly, end the round cleanly instead of
