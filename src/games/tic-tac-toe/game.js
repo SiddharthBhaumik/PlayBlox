@@ -17,7 +17,7 @@ let reconnectDelay = 1000;
 let generation = 0;
 let leaving = false;
 
-$("back-to-lobby").href = "../../../" + (code ? "?party=" + encodeURIComponent(code) : "");
+$("back-to-lobby").href = "../../../" + (code ? "?party=" + encodeURIComponent(code) + "&lobby=1" : "");
 
 function setConnection(message, offline = false) {
   $("connection-status").textContent = message;
