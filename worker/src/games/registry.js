@@ -2,6 +2,8 @@
  * Server-side game module registry. Register game modules here; shared room
  * code calls their contract hooks and must not branch on individual game IDs.
  */
+import { ticTacToe } from "./tic-tac-toe.js";
+
 const serverGames = new Map();
 
 export function registerServerGame(game) {
@@ -14,6 +16,8 @@ export function registerServerGame(game) {
   }
   serverGames.set(game.id, Object.freeze({ ...game }));
 }
+
+registerServerGame(ticTacToe);
 
 export function getServerGame(id) { return serverGames.get(id) || null; }
 export function listServerGames() {
