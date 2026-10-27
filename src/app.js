@@ -87,7 +87,15 @@ function connectRoom(code,token){
     socket.addEventListener('message',event=>{
       if(generation!==socketGeneration||socket!==roomSocket)return;
       let message;try{message=JSON.parse(event.data)}catch{return}
-      if(['room-snapshot','room-updated'].includes(message.type)&&message.room)renderPlayers(message.room);
+      if(['room-snapshot','room-updated','game-started'].includes(message.type)&&message.room)renderPlayers(message.room);
+      if(message.type==='game-started'){
+        addLobbyActivity('🎮 '+(message.room?.game?.name||'A game')+' started');
+        $('lobby-connection').textContent='Game in progress · live party connection';
+      }
+      if(message.type==='game-state'){
+        // Game-specific screens subscribe to the same shared state event.
+        window.dispatchEvent(new CustomEvent('playblox:game-state',{detail:message}));
+      }
       if(message.type==='error'&&/session/i.test(message.message||'')){
         $('lobby-connection').textContent='Session expired — please rejoin the party.';
         $('lobby-connection').classList.add('offline');
