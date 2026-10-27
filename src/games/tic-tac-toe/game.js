@@ -144,6 +144,10 @@ function connect() {
       if (room.lifecycle === "lobby") { location.href = $("back-to-lobby").href; return; }
       render();
     }
+    if (message.type === "rematch-vote") {
+      if (room) room.rematchVotes = message.votes || {};
+      render();
+    }
     if (message.type === "game-state") {
       gameState = message.gameState;
       stateVersion = message.stateVersion;
