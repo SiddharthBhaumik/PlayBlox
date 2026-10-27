@@ -45,7 +45,9 @@ function render() {
     cell.setAttribute("aria-label", mark ? "Square " + (index + 1) + ": " + mark : "Empty square " + (index + 1));
   });
   $("game-result").hidden = !finished;
-  $("return-lobby").hidden = !finished || !room.players.find(p => p.id === myPlayerId)?.isHost;
+  const isHost = Boolean(room.players.find(p => p.id === myPlayerId)?.isHost);
+  $("return-lobby").hidden = !isHost;
+  $("return-lobby").textContent = finished ? "↩ Return to party lobby" : "↩ End round & return to lobby";
   if (gameState.winnerId) {
     const winner = room.players.find(p => p.id === gameState.winnerId);
     $("game-result").textContent = (winner?.nickname || "A player") + " wins! 🎉";
@@ -60,10 +62,12 @@ function render() {
   } else {
     setBanner((currentPlayer?.nickname || "Your opponent") + "'s turn · " + (currentPlayer ? gameState.symbols[currentPlayer.id] : ""));
   }
-  if (finished && !room.players.find(p => p.id === myPlayerId)?.isHost) {
+  if (!finished) {
+    $("game-help").textContent = isHost
+      ? "The host can return everyone to the lobby at any time, including if someone disconnects."
+      : "The host can return everyone to the lobby when the round is over.";
+  } else if (!isHost) {
     $("game-help").textContent = "The host will return everyone to the party lobby.";
-  } else if (!finished) {
-    $("game-help").textContent = "The host can return everyone to the lobby when the round is over.";
   }
 }
 function applyRoom(nextRoom) {
