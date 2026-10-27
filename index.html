@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#fff8e9">
+  <meta name="description" content="PlayBlox is a little playground for you and your friends.">
+  <title>PlayBlox — Let's play together!</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Nunito:wght@500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./styles.css">
+  <script type="module" src="./src/app.js"></script>
+</head>
+<body>
+  <div class="page-shell">
+    <header class="topbar">
+      <a class="brand" href="./" aria-label="PlayBlox home">
+        <span class="brand-mark" aria-hidden="true">🧸</span>
+        <span class="brand-name">Play<span>Blox</span></span>
+      </a>
+      <div class="top-note"><span class="status-dot"></span> YOUR FRIENDS' PLAYGROUND</div>
+    </header>
+
+    <main>
+      <section class="hero" aria-labelledby="hero-title">
+        <span class="doodle doodle-star" aria-hidden="true">✳</span>
+        <span class="doodle doodle-sun" aria-hidden="true">☀️</span>
+        <span class="doodle doodle-wave" aria-hidden="true">〰</span>
+        <span class="doodle doodle-cloud" aria-hidden="true">☁️</span>
+        <div class="eyebrow">✦ LITTLE PLAYERS, BIG FUN ✦</div>
+        <h1 id="hero-title">Ready, set…<br><span class="highlight">PLAY TOGETHER!</span></h1>
+        <p>Grab your buddies, make a little party, and let the giggles begin. Your next favourite hangout is right here!</p>
+      </section>
+
+      <section class="party-grid" aria-label="Party options">
+        <article class="party-card create-card">
+          <div class="card-top"><div class="card-icon" aria-hidden="true">🎪</div><span class="sticker">BE THE HOST!</span></div>
+          <h2>Make a Party</h2>
+          <p class="card-description">You're in charge! Give your party a name and invite your besties.</p>
+          <form id="create-party-form">
+            <div class="field-group">
+              <label for="host-name">Your nickname</label>
+              <input id="host-name" name="hostName" maxlength="18" placeholder="e.g. Captain Cookie" autocomplete="nickname" required>
+            </div>
+            <div class="field-group">
+              <label for="party-name">Party name <span class="optional">(optional)</span></label>
+              <input id="party-name" name="partyName" maxlength="28" placeholder="e.g. The Giggle Gang">
+            </div>
+            <button class="primary-button" type="submit">🎉 Create my party <span aria-hidden="true">→</span></button>
+            <p class="tiny-note">One little link. All your favourite people.</p>
+          </form>
+          <div id="create-feedback" class="feedback" role="status" aria-live="polite"></div>
+        </article>
+
+        <article class="party-card join-card">
+          <div class="card-top"><div class="card-icon" aria-hidden="true">🚂</div><span class="sticker">COME ON IN!</span></div>
+          <h2>Join a Party</h2>
+          <p class="card-description">Got an invite from a buddy? Hop aboard and join their party.</p>
+          <form id="join-party-form">
+            <div class="field-group">
+              <label for="guest-name">Your nickname</label>
+              <input id="guest-name" name="guestName" maxlength="18" placeholder="What should we call you?" autocomplete="nickname" required>
+            </div>
+            <div class="field-group">
+              <label for="invite-code">Party code or invite link</label>
+              <input id="invite-code" name="inviteCode" placeholder="Paste your buddy's invite" autocomplete="off" required>
+            </div>
+            <button class="primary-button" type="submit">🚪 Join the fun <span aria-hidden="true">→</span></button>
+            <p class="tiny-note">No invite yet? Ask your party host!</p>
+          </form>
+          <div id="join-feedback" class="feedback" role="status" aria-live="polite"></div>
+        </article>
+      </section>
+
+      <section class="coming-soon" aria-labelledby="games-heading">
+        <div class="coming-soon-heading">
+          <span class="mini-doodle" aria-hidden="true">🖍️</span>
+          <div><p class="section-kicker">THE PLAYROOM</p><h2 id="games-heading">A whole lot of fun is on its way!</h2></div>
+          <span class="mini-doodle kite" aria-hidden="true">🪁</span>
+        </div>
+        <p class="games-intro">The toy box is still being filled. New games will show up here as we add them!</p>
+        <div id="games-grid" class="games-grid" aria-live="polite">
+          <div class="empty-toybox"><span aria-hidden="true">🧩</span><strong>Room for more games!</strong><span>Our first games are coming soon.</span></div>
+        </div>
+      </section>
+      <section class="friendship-strip" aria-label="PlayBlox highlights">
+        <div><span aria-hidden="true">🧩</span> New games on the way</div>
+        <div><span aria-hidden="true">📱</span> Made for phones and PCs</div>
+        <div><span aria-hidden="true">💛</span> Better with buddies</div>
+      </section>
+    </main>
+    <footer><span>© <span id="year"></span> PlayBlox · Made for fun-sized adventures</span><a href="https://github.com/SiddharthBhaumik/PlayBlox" target="_blank" rel="noreferrer">Made with ☀️ on GitHub</a></footer>
+  </div>
+
+  <dialog class="party-dialog" id="party-dialog" aria-labelledby="dialog-title">
+    <div class="dialog-emoji" aria-hidden="true">🎊</div>
+    <h2 id="dialog-title">Your party is ready!</h2>
+    <p id="dialog-description"></p>
+    <div class="room-code" id="room-code"></div>
+    <button class="primary-button" id="copy-invite" type="button">📋 Copy invite link</button>
+    <button class="secondary-button" id="close-dialog" type="button">Back to the playground</button>
+    <p class="dialog-note">Preview only: real private rooms and live joining need a multiplayer service, which we'll add in a later step.</p>
+  </dialog>
+</body>
+</html>
