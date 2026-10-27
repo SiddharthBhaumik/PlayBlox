@@ -59,7 +59,6 @@ export function setupHostEndRound(button, { getRoom, getPlayerId, onEnd }) {
     const room = getRoom();
     const player = room?.players?.find(entry => entry.id === getPlayerId());
     if (!player?.isHost) return;
-    if (!window.confirm("End this round and return everyone to the party lobby? The current game will be reset.")) return;
     onEnd(button);
   });
   return sync;
