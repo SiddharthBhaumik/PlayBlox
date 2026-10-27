@@ -32,6 +32,7 @@ export const gameRegistry = [
     players: { min: 2, max: 2 },
     interactionModel: 'turn-based',
     lateJoinPolicy: 'wait',
+    spectators: { supported: true },
   },
   // Example for a future game (uncomment and edit when its page exists):
   // {
