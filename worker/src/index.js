@@ -55,7 +55,7 @@ function publicRoom(room) {
     playerCount: room.players.length, playerCap: ROOM_CAP, createdAt: room.createdAt,
     gameId: room.gameId ?? null, lifecycle: room.lifecycle ?? "lobby", stateVersion: room.stateVersion ?? 0, game: room.gameMetadata ?? null, gameState: room.gameId && getServerGame(room.gameId)?.getPublicState
       ? getServerGame(room.gameId).getPublicState(room.gameState)
-      : (room.gameState ?? null), results: room.results ?? null, rematchVotes: room.rematchVotes ?? {},
+      : (room.gameState ?? null), results: room.results ?? null, rematchVotes: room.rematchVotes ?? {}, history: room.history ?? [],
   };
 }
 
@@ -139,6 +139,7 @@ export class PartyRoom extends DurableObject {
       players: [{ id: hostId, token: hostToken, nickname: body.hostName, isHost: true, joinedAt: now, connected: false, disconnectExpiresAt: null }],
       gameId: null, gameMetadata: null, lifecycle: "lobby", gameState: null, stateVersion: 0, recentActionIds: [], rematchVotes: {},
       createdAt: now, lastActivityAt: now, emptySinceAt: null,
+      history: [{ type: "created", message: `${body.hostName} created the lobby`, at: now }],
     };
     await this.persistAndSchedule();
     return json({ room: publicRoom(this.room), playerToken: hostToken }, 201, request);
@@ -174,6 +175,7 @@ export class PartyRoom extends DurableObject {
     }
     const now = Date.now(), id = crypto.randomUUID(), playerToken = randomToken();
     this.room.players.push({ id, token: playerToken, nickname, role, isHost: false, joinedAt: now, connected: false, disconnectExpiresAt: null });
+    this.recordHistory("joined", `${nickname} joined the lobby`, { playerId: id });
     this.room.emptySinceAt = null; this.room.lastActivityAt = now;
     await this.persistAndSchedule();
     this.broadcast({ type: "room-updated", room: publicRoom(this.room) });
@@ -224,6 +226,7 @@ export class PartyRoom extends DurableObject {
     this.room.recentActionIds = [];
     this.room.lastActivityAt = Date.now();
     this.room.lifecycle = "playing";
+    this.recordHistory("game-started", `${game.name} started`, { gameId: game.id, playerIds: selectedPlayers.map(entry => entry.id) });
     await this.persistAndSchedule();
     this.broadcast({ type: "game-started", room: publicRoom(this.room), stateVersion: this.room.stateVersion });
     return json({ room: publicRoom(this.room), stateVersion: this.room.stateVersion }, 200, request);
@@ -271,6 +274,7 @@ export class PartyRoom extends DurableObject {
     if (game.getStatus && await game.getStatus(this.gameContext(game, player), nextState) === "finished") {
       this.room.lifecycle = "results";
       this.room.results = game.getResults ? await game.getResults(this.gameContext(game, player), nextState) : null;
+      this.recordHistory("game-finished", `${game.name} finished`, { gameId: game.id });
     }
     this.room.lastActivityAt = Date.now();
     await this.persistAndSchedule();
@@ -289,6 +293,7 @@ export class PartyRoom extends DurableObject {
     try { body = await request.json(); } catch { return json({ error: "Send a valid JSON body." }, 400, request); }
     if (typeof body.playAgain !== "boolean") return json({ error: "Choose whether to play again." }, 400, request);
     if (!body.playAgain) {
+      this.recordHistory("returned-to-lobby", `${game.name} ended; returned to lobby`, { gameId: game.id });
       this.room.lifecycle = "lobby";
       for (const entry of this.room.players) if (entry.role === "spectator" || entry.role === "waiting") entry.role = "player";
       this.room.gameId = null; this.room.gameMetadata = null; this.room.gameState = null;
@@ -301,6 +306,7 @@ export class PartyRoom extends DurableObject {
       return json({ ok: true, status: "lobby", room: publicRoom(this.room) }, 200, request);
     }
     this.room.rematchVotes = { ...(this.room.rematchVotes || {}), [player.id]: true };
+    this.recordHistory("rematch-vote", `${player.nickname} voted to replay ${game.name}`, { gameId: game.id });
     const bothAgreed = participants.every(id => this.room.rematchVotes[id] === true &&
       this.room.players.some(entry => entry.id === id && entry.connected && entry.role === "player"));
     if (bothAgreed) {
@@ -309,6 +315,7 @@ export class PartyRoom extends DurableObject {
       catch { return json({ error: "The next round could not be initialized." }, 500, request); }
       if (!this.room.gameState) return json({ error: "The game returned no initial state." }, 500, request);
       this.room.lifecycle = "playing"; this.room.results = null; this.room.rematchVotes = {};
+      this.recordHistory("rematch-started", `${game.name} replay started`, { gameId: game.id });
       this.room.stateVersion = (this.room.stateVersion || 0) + 1; this.room.recentActionIds = [];
       this.room.lastActivityAt = Date.now();
       await this.persistAndSchedule();
@@ -325,6 +332,7 @@ export class PartyRoom extends DurableObject {
     if (!player) return json({ error: "A valid player session is required." }, 401, request);
     if (!player.isHost) return json({ error: "Only the host can return the party to the lobby." }, 403, request);
     if (!["results", "playing"].includes(this.room.lifecycle)) return json({ error: "There is no game to reset." }, 409, request);
+    this.recordHistory("returned-to-lobby", `${this.room.gameMetadata?.name || "Game"} ended; returned to lobby`, { gameId: this.room.gameId });
     this.room.lifecycle = "lobby";
     for (const entry of this.room.players) if (entry.role === "spectator" || entry.role === "waiting") entry.role = "player";
     this.room.gameId = null;
@@ -357,6 +365,7 @@ export class PartyRoom extends DurableObject {
     if (!player) return json({ error: "Invalid player session." }, 401, request);
     this.room.players = this.room.players.filter(entry => entry.id !== player.id);
     const now = Date.now(); this.room.lastActivityAt = now;
+    this.recordHistory("left", `${player.nickname} left the lobby`, { playerId: player.id });
     // If an active participant leaves explicitly, end the round cleanly instead of
     // leaving a game whose required player can never return.
     if (this.room.lifecycle !== "lobby" && player.role === "player") {
@@ -397,7 +406,9 @@ export class PartyRoom extends DurableObject {
     const pair = new WebSocketPair(), client = pair[0], server = pair[1];
     this.ctx.acceptWebSocket(server);
     server.serializeAttachment({ playerId: player.id, connectionId });
+    const wasDisconnected = !player.connected;
     player.connected = true; player.disconnectExpiresAt = null;
+    if (wasDisconnected) this.recordHistory("reconnected", `${player.nickname} reconnected`, { playerId: player.id });
     this.room.emptySinceAt = null; this.room.lastActivityAt = Date.now();
     await this.persistAndSchedule();
     server.send(JSON.stringify({ type: "room-snapshot", room: publicRoom(this.room), playerId: player.id, stateVersion: this.room.stateVersion || 0 }));
@@ -440,9 +451,17 @@ export class PartyRoom extends DurableObject {
     if (!player.connected) return;
     player.connected = false;
     player.disconnectExpiresAt = Date.now() + RECONNECT_GRACE_MS;
+    this.recordHistory("disconnected", `${player.nickname} disconnected; reconnect grace started`, { playerId: player.id });
     this.room.lastActivityAt = Date.now();
     await this.persistAndSchedule();
     this.broadcast({ type: "room-updated", room: publicRoom(this.room) });
+  }
+  recordHistory(type, message, details = {}) {
+    if (!this.room) return;
+    const history = this.room.history || (this.room.history = []);
+    history.push({ type, message, at: Date.now(), ...details });
+    // Keep the room timeline useful without allowing it to grow without bound.
+    if (history.length > 150) history.splice(0, history.length - 150);
   }
   assignHost() {
     if (!this.room.players.length) { this.room.hostId = null; return; }
@@ -515,6 +534,7 @@ export class PartyRoom extends DurableObject {
         this.assignSpecificHost(connected.length ? randomItem(connected) : randomItem(this.room.players));
       }
       this.room.lastActivityAt = now;
+      for (const entry of expired) this.recordHistory("left-after-disconnect", `${entry.nickname} was removed after the reconnect window expired`, { playerId: entry.id });
       await this.persistAndSchedule();
       this.broadcast({ type: "room-updated", room: publicRoom(this.room), expiredPlayerIds: [...expiredIds] });
       return;
