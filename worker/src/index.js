@@ -241,7 +241,7 @@ export class PartyRoom extends DurableObject {
     }
     const game = getServerGame(this.room.gameId);
     if (!game) return json({ error: "The active game module is unavailable." }, 500, request);
-    if (player.role === "spectator") return json({ error: "Spectators cannot submit game actions." }, 403, request);
+    if (player.role !== "player") return json({ error: "Only selected players can submit game actions." }, 403, request);
     const context = this.gameContext(game, player);
     let validation;
     try { validation = game.validateAction ? await game.validateAction(context, this.room.gameState, body.action) : { ok: false, reason: "This game does not accept actions yet." }; }
