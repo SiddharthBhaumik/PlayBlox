@@ -47,8 +47,32 @@ function render() {
   $("game-result").hidden = !finished;
   const isHost = Boolean(room.players.find(p => p.id === myPlayerId)?.isHost);
   $("return-lobby").hidden = !isHost;
-  $("return-lobby").textContent = finished ? "↩ Return to party lobby" : "↩ End game and return to lobby";
-  $("back-to-lobby").hidden = !isHost;
+  $("return-lobby").textContent = "↩ End game and return to lobby";
+  $("back-to-lobby").hidden = true;
+  const activeIds = new Set(gameState.playerOrder || []);
+  const roster = $("game-players");
+  roster.replaceChildren(...room.players.filter(p => activeIds.has(p.id)).map(p => {
+    const item = document.createElement("li");
+    item.className = "game-player" + (p.id === gameState.currentPlayerId ? " is-turn" : "");
+    const dot = document.createElement("span"); dot.className = "player-dot"; dot.setAttribute("aria-hidden", "true");
+    const info = document.createElement("span");
+    const name = document.createElement("strong"); name.textContent = p.nickname + (p.id === myPlayerId ? " (you)" : "");
+    const detail = document.createElement("small");
+    detail.textContent = p.connected === false ? "Reconnecting…" : (gameState.symbols?.[p.id] ? "Player · " + gameState.symbols[p.id] : "Player");
+    info.append(name, detail); item.append(dot, info); return item;
+  }));
+  const rematchPrompt = $("rematch-prompt");
+  const canVoteRematch = finished && activeIds.has(myPlayerId);
+  rematchPrompt.hidden = !canVoteRematch;
+  $("return-lobby").hidden = !isHost || finished;
+  if (canVoteRematch) {
+    const votes = room.rematchVotes || {};
+    const voted = Boolean(votes[myPlayerId]);
+    $("play-again").disabled = voted;
+    $("play-again").textContent = voted ? "Waiting for opponent…" : "Play again";
+    $("rematch-status").textContent = voted ? "You’re in! Waiting for the other player to agree." : "Both players must agree before the next round starts.";
+    $("no-rematch").disabled = false;
+  }
   if (gameState.winnerId) {
     const winner = room.players.find(p => p.id === gameState.winnerId);
     $("game-result").textContent = (winner?.nickname || "A player") + " wins! 🎉";
@@ -112,7 +136,7 @@ function connect() {
   socket.addEventListener("open", () => {
     if (myGeneration !== generation || currentSocket !== socket) return;
     reconnectDelay = 1000;
-    setConnection("Live");
+    setConnection("Server connected");
     if (heartbeatTimer) clearInterval(heartbeatTimer);
     heartbeatTimer = setInterval(() => { if (currentSocket.readyState === WebSocket.OPEN) currentSocket.send(JSON.stringify({ type: "ping" })); }, 15000);
   });
@@ -187,6 +211,27 @@ async function returnEveryoneToLobby(button) {
     button.disabled = false;
   }
 }
+async function voteRematch(playAgain) {
+  $("play-again").disabled = true;
+  $("no-rematch").disabled = true;
+  try {
+    const result = await api("/api/rooms/" + encodeURIComponent(code) + "/game/rematch", {
+      method: "POST", body: JSON.stringify({ playAgain }),
+    });
+    if (result.status === "waiting") {
+      room.rematchVotes = result.votes || {};
+      render();
+    } else if (result.status === "lobby") {
+      location.href = $("back-to-lobby").href;
+    }
+  } catch (error) {
+    showError(error.message);
+    $("play-again").disabled = false;
+    $("no-rematch").disabled = false;
+  }
+}
+$("play-again").addEventListener("click", () => voteRematch(true));
+$("no-rematch").addEventListener("click", () => voteRematch(false));
 $("return-lobby").addEventListener("click", () => returnEveryoneToLobby($("return-lobby")));
 $("back-to-lobby").addEventListener("click", event => {
   event.preventDefault();
