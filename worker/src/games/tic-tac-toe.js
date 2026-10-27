@@ -14,14 +14,14 @@ export const ticTacToe = {
   lateJoinPolicy: "wait",
 
   canStart(context) {
-    const players = context.players.filter(player => player.role !== "spectator" && player.connected);
+    const players = context.players.filter(player => player.role === "player" && player.connected);
     return players.length === 2
       ? { ok: true }
       : { ok: false, reason: "Tic-Tac-Toe needs exactly two connected players." };
   },
 
   createInitialState(context) {
-    const players = context.players.filter(player => player.role !== "spectator" && player.connected);
+    const players = context.players.filter(player => player.role === "player" && player.connected);
     return {
       board: Array(9).fill(null),
       playerOrder: players.slice(0, 2).map(player => player.id),
