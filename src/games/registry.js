@@ -1,0 +1,69 @@
+/**
+ * PLAYBLOX GAME REGISTRY
+ * ======================
+ * Add one entry here for every game you add to the project.
+ *
+ * Each entry describes how the game appears in the lobby:
+ *   id          unique, URL-friendly identifier
+ *   name        title shown on the game card
+ *   description short lobby description
+ *   emoji       friendly icon (emoji for now)
+ *   color       pastel card background
+ *   status      "coming-soon" or "ready"
+ *   path        relative URL to the game's own page (only needed when ready)
+ *
+ * When a game is implemented, create its own folder/page under src/games/<id>/
+ * (or games/<id>/ for a static standalone game), set status to "ready", and
+ * set path to that entry point. The lobby renderer will make the card clickable.
+ *
+ * Do not put game rules, rendering, or gameplay code in app.js. Each game should
+ * own its own files and use this registry only to announce itself to the lobby.
+ */
+export const gameRegistry = [
+  // Example for a future game (uncomment and edit when its page exists):
+  // {
+  //   id: 'memory-match',
+  //   name: 'Memory Match',
+  //   description: 'Flip the cards and find all the matching pairs.',
+  //   emoji: '🃏',
+  //   color: '#ffe4a8',
+  //   status: 'coming-soon',
+  //   path: './src/games/memory-match/index.html',
+  // },
+];
+
+export function renderGameCards(container, games) {
+  const availableGames = games.filter((game) => game.status === 'ready' || game.status === 'coming-soon');
+  if (availableGames.length === 0) {
+    container.innerHTML = `
+      <div class="empty-toybox">
+        <span aria-hidden="true">🧩</span>
+        <strong>Room for more games!</strong>
+        <span>Our first games are coming soon. The next toy can go right here!</span>
+      </div>`;
+    return;
+  }
+
+  container.replaceChildren(...availableGames.map((game) => {
+    const card = document.createElement(game.status === 'ready' && game.path ? 'a' : 'article');
+    card.className = 'game-card';
+    card.style.setProperty('--game-color', game.color || '#e8e0ff');
+    if (card.tagName === 'A') {
+      card.href = game.path;
+      card.setAttribute('aria-label', 'Play ' + game.name);
+    }
+    const emoji = document.createElement('span');
+    emoji.className = 'game-emoji';
+    emoji.setAttribute('aria-hidden', 'true');
+    emoji.textContent = game.emoji || '🎮';
+    const title = document.createElement('h3');
+    title.textContent = game.name;
+    const description = document.createElement('p');
+    description.textContent = game.description || 'A new game for your party.';
+    const status = document.createElement('span');
+    status.className = 'game-tag';
+    status.textContent = game.status === 'ready' && game.path ? '▶ Play game' : '✦ Coming soon';
+    card.append(emoji, title, description, status);
+    return card;
+  }));
+}
