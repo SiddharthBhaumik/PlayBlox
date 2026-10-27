@@ -28,6 +28,7 @@ export const gameRegistry = [
     color: '#ffe4a8',
     status: 'ready',
     path: './src/games/tic-tac-toe/index.html',
+    entryMode: 'party',
     players: { min: 2, max: 2 },
     interactionModel: 'turn-based',
     lateJoinPolicy: 'wait',
@@ -59,7 +60,7 @@ export function renderGameCards(container, games) {
   container.replaceChildren(...availableGames.map((game) => {
     const partyCode = new URLSearchParams(location.search).get('party');
     const hasSavedSession = partyCode && sessionStorage.getItem('playblox:' + partyCode.toUpperCase() + ':token');
-    const canOpen = game.status === 'ready' && game.path && hasSavedSession;
+    const canOpen = game.status === 'ready' && game.path && hasSavedSession && game.entryMode !== 'party';
     const card = document.createElement(canOpen ? 'a' : 'article');
     card.className = 'game-card';
     card.style.setProperty('--game-color', game.color || '#e8e0ff');
