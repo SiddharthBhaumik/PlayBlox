@@ -16,7 +16,7 @@ function finished(){return room?.lifecycle==="results" || Boolean(gameState?.win
 function render(){
  if(!room||!gameState)return;
  $("room-label").textContent=(room.name||"Party")+" · "+code;
- $("round-label").textContent="Round "+(gameState.lastRound?.round || gameState.round || 1);
+ $("round-label").textContent="Round "+(finished() ? (gameState.lastRound?.round || gameState.round || 1) : (gameState.round || 1));
  renderGamePlayerPanel({container:$("game-players"),room,gameState,myPlayerId});
  const alive=gameState.alivePlayerIds||[];
  $("player-grid").replaceChildren(...(gameState.playerOrder||[]).map(id=>{
@@ -78,7 +78,7 @@ function renderActionForm(){
   input.addEventListener("input",()=>{selectedTargets[id]=Number(input.value)||0;const total=Object.values(selectedTargets).reduce((a,b)=>a+(Number(b)||0),0);$("selection-summary").textContent=total+" bullet(s) allocated · "+(gameState.ammo?.[myPlayerId]||0)+" available";$("submit-action").disabled=total<1||total>(gameState.ammo?.[myPlayerId]||0)||submitting;});
   row.append(name,input);form.append(row);
  }
- $("selection-summary").textContent="Allocate at least one bullet; total cannot exceed your inventory.";
+ $("selection-summary").textContent="Allocate at least one bullet; total cannot exceed your inventory.";$("submit-action").disabled=true;
 }
 document.querySelectorAll("[data-action]").forEach(button=>button.addEventListener("click",()=>{selectedAction=button.dataset.action;selectedTargets={};renderActionForm()}));
 $("submit-action").addEventListener("click",async()=>{
@@ -87,7 +87,7 @@ $("submit-action").addEventListener("click",async()=>{
  if(selectedAction==="shield"){if(!Number.isInteger(shieldStrength)||shieldStrength<1||shieldStrength>100){help("Shield strength must be a whole number from 1 to 100.",true);return}action.strength=shieldStrength}
  if(selectedAction==="shoot"){action.targets=Object.entries(selectedTargets).filter(([,bullets])=>Number.isInteger(bullets)&&bullets>0).map(([targetId,bullets])=>({targetId,bullets}));const total=action.targets.reduce((s,t)=>s+t.bullets,0);if(total<1||total>(gameState.ammo?.[myPlayerId]||0)){help("Allocate a valid number of bullets.",true);return}}
  submitting=true;$("submit-action").disabled=true;
- try{await api("/api/rooms/"+encodeURIComponent(code)+"/game/action",{method:"POST",body:JSON.stringify({actionId:crypto.randomUUID(),expectedStateVersion:stateVersion,action})});selectedAction=null;selectedTargets={};await syncRoom();help("Action submitted privately.");}
+ try{await api("/api/rooms/"+encodeURIComponent(code)+"/game/action",{method:"POST",body:JSON.stringify({actionId:crypto.randomUUID(),expectedStateVersion:stateVersion,action:{...action,round:gameState.round}})});selectedAction=null;selectedTargets={};await syncRoom();help("Action submitted privately.");}
  catch(e){help(e.message,true);if(Number.isInteger(e.stateVersion))stateVersion=e.stateVersion;try{await syncRoom()}catch{}}
  finally{submitting=false;renderActionForm();if(gameState&&!finished()&&isAlive()&&!(gameState.submittedPlayerIds||[]).includes(myPlayerId))$("submit-action").disabled=!selectedAction}
 });
