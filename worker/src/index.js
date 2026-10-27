@@ -184,10 +184,10 @@ export class PartyRoom extends DurableObject {
     try { body = await request.json(); } catch { return json({ error: "Send a valid JSON body." }, 400, request); }
     const game = getServerGame(body.gameId);
     if (!game) return json({ error: "This game is not registered with the multiplayer engine yet." }, 404, request);
-    const connectedPlayers = this.room.players.filter(entry => entry.connected);
+    const connectedPlayers = this.room.players.filter(entry => entry.connected && entry.role !== "spectator");
     const min = game.players?.min ?? 2, max = Math.min(game.players?.max ?? ROOM_CAP, ROOM_CAP);
     if (connectedPlayers.length < min) return json({ error: `This game needs at least ${min} connected players.` }, 409, request);
-    if (this.room.players.length > max) return json({ error: `This game supports at most ${max} players.` }, 409, request);
+    if (connectedPlayers.length > max) return json({ error: `This game supports at most ${max} players.` }, 409, request);
     const context = this.gameContext(game, player);
     let allowed;
     try { allowed = game.canStart ? await game.canStart(context) : { ok: true }; }
@@ -226,6 +226,7 @@ export class PartyRoom extends DurableObject {
     }
     const game = getServerGame(this.room.gameId);
     if (!game) return json({ error: "The active game module is unavailable." }, 500, request);
+    if (player.role === "spectator") return json({ error: "Spectators cannot submit game actions." }, 403, request);
     const context = this.gameContext(game, player);
     let validation;
     try { validation = game.validateAction ? await game.validateAction(context, this.room.gameState, body.action) : { ok: false, reason: "This game does not accept actions yet." }; }
@@ -253,6 +254,7 @@ export class PartyRoom extends DurableObject {
     if (!player.isHost) return json({ error: "Only the host can return the party to the lobby." }, 403, request);
     if (!["results", "playing"].includes(this.room.lifecycle)) return json({ error: "There is no game to reset." }, 409, request);
     this.room.lifecycle = "lobby";
+    for (const entry of this.room.players) if (entry.role === "spectator") entry.role = "player";
     this.room.gameId = null;
     this.room.gameMetadata = null;
     this.room.gameState = null;
