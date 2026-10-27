@@ -11,7 +11,7 @@ let heartbeatTimer = null;
 let reconnectTimer = null;
 let reconnectAttempt = 0;
 let leavingLobby = false;
-const explicitlyReturningToLobby = new URLSearchParams(location.search).get('lobby') === '1';
+let explicitlyReturningToLobby = new URLSearchParams(location.search).get('lobby') === '1';
 
 $('year').textContent = new Date().getFullYear();
 renderGameCards($('games-grid'), gameRegistry);
@@ -173,6 +173,11 @@ function connectRoom(code,token){
       let message;try{message=JSON.parse(event.data)}catch{return}
       if(message.type==='room-snapshot'&&message.playerId)activePlayerId=message.playerId;
       if(['room-snapshot','room-updated','game-started'].includes(message.type)&&message.room)renderPlayers(message.room);
+      if(message.type==='room-snapshot'&&message.room?.lifecycle==='lobby'){
+        // The lobby flag prevents redirecting back into the old round only on arrival.
+        // Once the reset is confirmed, the host must be able to open the next round.
+        explicitlyReturningToLobby = false;
+      }
       if(message.type==='room-snapshot'&&message.room?.lifecycle&&message.room.lifecycle!=='lobby'&&message.room.gameId){
         const me=message.room.players.find(p=>p.id===activePlayerId);
         if(!explicitlyReturningToLobby&&(me?.role==='player'||me?.role==='spectator')) openActiveGame(message.room.gameId);
