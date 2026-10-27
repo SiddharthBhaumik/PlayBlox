@@ -7,7 +7,7 @@
  *   id          unique, URL-friendly identifier
  *   name        title shown on the game card
  *   description short lobby description
- *   emoji       friendly icon (emoji for now)
+ *   icon        optional path to a PNG/SVG game icon (emoji is the fallback)
  *   color       pastel card background
  *   status      "coming-soon" or "ready"
  *   path        relative URL to the game's own page (only needed when ready)
@@ -25,6 +25,7 @@ export const gameRegistry = [
     name: 'Tic-Tac-Toe',
     description: 'A classic little battle of Xs and Os. First to line up three wins.',
     emoji: '⭕',
+    icon: './assets/game-icons/tic-tac-toe.svg',
     color: '#ffe4a8',
     status: 'ready',
     path: './src/games/tic-tac-toe/index.html',
@@ -69,10 +70,19 @@ export function renderGameCards(container, games) {
       card.href = game.path;
       card.setAttribute('aria-label', 'Play ' + game.name);
     }
-    const emoji = document.createElement('span');
-    emoji.className = 'game-emoji';
-    emoji.setAttribute('aria-hidden', 'true');
-    emoji.textContent = game.emoji || '🎮';
+    const icon = document.createElement('span');
+    icon.className = 'game-emoji';
+    icon.setAttribute('aria-hidden', 'true');
+    if (game.icon) {
+      const image = document.createElement('img');
+      image.src = game.icon;
+      image.alt = '';
+      image.loading = 'lazy';
+      image.onerror = () => { icon.textContent = game.emoji || '🎮'; };
+      icon.append(image);
+    } else {
+      icon.textContent = game.emoji || '🎮';
+    }
     const title = document.createElement('h3');
     title.textContent = game.name;
     const description = document.createElement('p');
@@ -80,7 +90,7 @@ export function renderGameCards(container, games) {
     const status = document.createElement('span');
     status.className = 'game-tag';
     status.textContent = game.status === 'ready' && game.path ? (canOpen ? '▶ Play game' : '✦ Start from a party lobby') : '✦ Coming soon';
-    card.append(emoji, title, description, status);
+    card.append(icon, title, description, status);
     return card;
   }));
 }
