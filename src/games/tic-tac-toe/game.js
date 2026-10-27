@@ -55,7 +55,7 @@ function render() {
   const canVoteRematch = finished && activeIds.has(myPlayerId);
   rematchPrompt.hidden = !canVoteRematch;
   $("return-lobby").hidden = !isHost;
-  $("leave-game").hidden = isHost;
+  $("leave-game").hidden = false;
   $("leave-game").disabled = leaving;
   if (canVoteRematch) {
     const votes = room.rematchVotes || {};
