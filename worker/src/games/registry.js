@@ -17,7 +17,6 @@ export function registerServerGame(game) {
   if (game.spectators !== undefined && typeof game.spectators.supported !== "boolean") {
     throw new TypeError("spectators.supported must be a boolean for " + game.id);
   }
-  if (!["participate", "spectate", "wait"].includes(game.lateJoinPolicy)) throw new TypeError("Invalid lateJoinPolicy for " + game.id);
   serverGames.set(game.id, Object.freeze({ ...game, spectators: Object.freeze({ supported: game.spectators?.supported === true }) }));
 }
 
