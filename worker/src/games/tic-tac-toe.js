@@ -12,6 +12,7 @@ export const ticTacToe = {
   players: { min: 2, max: 2 },
   interactionModel: "turn-based",
   lateJoinPolicy: "wait",
+  spectators: { supported: true },
 
   canStart(context) {
     const players = context.players.filter(player => player.role === "player" && player.connected);
