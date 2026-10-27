@@ -53,7 +53,9 @@ function publicRoom(room) {
       disconnectExpiresAt,
     })),
     playerCount: room.players.length, playerCap: ROOM_CAP, createdAt: room.createdAt,
-    gameId: room.gameId ?? null, lifecycle: room.lifecycle ?? "lobby", stateVersion: room.stateVersion ?? 0, game: room.gameMetadata ?? null, gameState: room.gameId && getServerGame(room.gameId)?.getPublicState\n      ? getServerGame(room.gameId).getPublicState(room.gameState)\n      : (room.gameState ?? null), results: room.results ?? null, rematchVotes: room.rematchVotes ?? {},
+    gameId: room.gameId ?? null, lifecycle: room.lifecycle ?? "lobby", stateVersion: room.stateVersion ?? 0, game: room.gameMetadata ?? null, gameState: room.gameId && getServerGame(room.gameId)?.getPublicState
+      ? getServerGame(room.gameId).getPublicState(room.gameState)
+      : (room.gameState ?? null), results: room.results ?? null, rematchVotes: room.rematchVotes ?? {},
   };
 }
 
@@ -466,7 +468,11 @@ export class PartyRoom extends DurableObject {
     if (this.room.players.length > 0) {
       deadlines.push(this.room.lastActivityAt + ROOM_IDLE_TTL_MS);
       for (const player of this.room.players) {
-        if (!player.connected && player.disconnectExpiresAt) {\n          const activeParticipant = this.room.lifecycle === "playing" && player.role === "player"\n            && this.room.gameState?.alivePlayerIds?.includes(player.id);\n          if (!activeParticipant) deadlines.push(player.disconnectExpiresAt);\n        }
+        if (!player.connected && player.disconnectExpiresAt) {
+          const activeParticipant = this.room.lifecycle === "playing" && player.role === "player"
+            && this.room.gameState?.alivePlayerIds?.includes(player.id);
+          if (!activeParticipant) deadlines.push(player.disconnectExpiresAt);
+        }
       }
     }
     if (deadlines.length) await this.ctx.storage.setAlarm(Math.min(...deadlines));
