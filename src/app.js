@@ -58,6 +58,8 @@ async function api(path, options = {}) {
 }
 
 let lastRoomPlayers = null;
+let latestLobbyRoom = null;
+let selectedParticipantIds = new Set();
 let activeRoomCode = null;
 let activePlayerToken = null;
 let activePlayerId = null;
@@ -80,6 +82,7 @@ function addLobbyActivity(message) {
   while (feed.children.length > 8) feed.lastElementChild.remove();
 }
 function renderPlayers(room) {
+  latestLobbyRoom = room;
   const me = room.players.find(player => player.id === activePlayerId);
   $('start-game').hidden = Boolean(me && !me.isHost);
   $('lobby-game-select').hidden = Boolean(me && !me.isHost);
@@ -104,7 +107,51 @@ function renderPlayers(room) {
     lastRoomPlayers.filter(p=>!curr.has(p.id)).forEach(p=>addLobbyActivity(`👋 ${p.nickname} left the lobby`));
   }
   lastRoomPlayers=room.players.map(p=>({...p}));
+  renderParticipantPicker(room);
 }
+function renderParticipantPicker(room) {
+  const panel = $('participant-picker');
+  const list = $('participant-list');
+  if (!panel || !list) return;
+  const me = room.players.find(player => player.id === activePlayerId);
+  const hostView = Boolean(me?.isHost) && room.lifecycle === 'lobby';
+  panel.hidden = !hostView;
+  if (!hostView) return;
+  const game = gameRegistry.find(entry => entry.id === $('lobby-game-select').value && entry.status === 'ready');
+  if (!game?.players) { list.replaceChildren(); return; }
+  const max = Math.min(game.players.max, room.playerCap || 8);
+  const min = game.players.min;
+  const eligible = room.players.filter(player => player.connected && player.role !== 'spectator' && player.role !== 'waiting');
+  const eligibleIds = new Set(eligible.map(player => player.id));
+  selectedParticipantIds = new Set([...selectedParticipantIds].filter(id => eligibleIds.has(id)));
+  if (selectedParticipantIds.size === 0) eligible.slice(0, max).forEach(player => selectedParticipantIds.add(player.id));
+  $('participant-picker-help').textContent = `Select ${min}–${max} connected player${max === 1 ? '' : 's'}. ${game.spectators?.supported ? 'Unselected players can watch this game.' : 'Unselected players will stay in the lobby.'}`;
+  list.replaceChildren(...room.players.map(player => {
+    const label = document.createElement('label');
+    label.className = 'participant-option' + (player.connected ? '' : ' is-unavailable');
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.checked = selectedParticipantIds.has(player.id);
+    checkbox.disabled = !player.connected || (!checkbox.checked && selectedParticipantIds.size >= max);
+    checkbox.addEventListener('change', () => {
+      if (checkbox.checked) selectedParticipantIds.add(player.id);
+      else selectedParticipantIds.delete(player.id);
+      renderParticipantPicker(room);
+    });
+    const text = document.createElement('span');
+    const name = document.createElement('strong'); name.textContent = player.nickname + (player.isHost ? ' · Host' : '');
+    const note = document.createElement('small');
+    note.textContent = !player.connected ? 'Reconnecting — unavailable' : selectedParticipantIds.has(player.id) ? 'Selected to play' : (game.spectators?.supported ? 'Will spectate' : 'Will wait in lobby');
+    text.append(name, note); label.append(checkbox, text); return label;
+  }));
+  const count = selectedParticipantIds.size;
+  $('start-game').disabled = count < min || count > max;
+  gameFeedback(count < min ? `Choose at least ${min} connected players.` : count > max ? `Choose at most ${max} players.` : `${count} of up to ${max} players selected.`);
+}
+$('lobby-game-select').addEventListener('change', () => {
+  selectedParticipantIds = new Set();
+  if (latestLobbyRoom) renderParticipantPicker(latestLobbyRoom);
+});
 function clearSocketTimers(){
   if(heartbeatTimer){clearInterval(heartbeatTimer);heartbeatTimer=null;}
   if(reconnectTimer){clearTimeout(reconnectTimer);reconnectTimer=null;}
@@ -126,12 +173,16 @@ function connectRoom(code,token){
       if(message.type==='room-snapshot'&&message.playerId)activePlayerId=message.playerId;
       if(['room-snapshot','room-updated','game-started'].includes(message.type)&&message.room)renderPlayers(message.room);
       if(message.type==='room-snapshot'&&message.room?.lifecycle&&message.room.lifecycle!=='lobby'&&message.room.gameId){
-        openActiveGame(message.room.gameId);
+        const me=message.room.players.find(p=>p.id===activePlayerId);
+        if(me?.role==='player'||me?.role==='spectator') openActiveGame(message.room.gameId);
+        else $('lobby-connection').textContent='Game in progress · you are waiting for the next round';
       }
       if(message.type==='game-started'){
         addLobbyActivity('🎮 '+(message.room?.game?.name||'A game')+' started');
         $('lobby-connection').textContent='Game in progress · opening game…';
-        openActiveGame(message.room?.gameId);
+        const me=message.room?.players.find(p=>p.id===activePlayerId);
+        if(me?.role==='player'||me?.role==='spectator') openActiveGame(message.room?.gameId);
+        else $('lobby-connection').textContent='Game in progress · you are waiting for the next round';
       }
       if(message.type==='game-state'){
         // Game-specific screens subscribe to the same shared state event.
@@ -245,7 +296,7 @@ $('start-game').addEventListener('click', async () => {
     await api('/api/rooms/' + encodeURIComponent(activeRoomCode) + '/game/start', {
       method: 'POST',
       headers: { Authorization: 'Bearer ' + activePlayerToken },
-      body: JSON.stringify({ gameId }),
+      body: JSON.stringify({ gameId, selectedPlayerIds: [...selectedParticipantIds] }),
     });
     // The server broadcasts game-started to every connected player, including this host.
     gameFeedback('Game starting!', true);
