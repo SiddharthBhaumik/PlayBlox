@@ -1,3 +1,4 @@
+import { renderGamePlayerPanel, setupHostEndRound } from "../shared/game-shell.js";
 const API_BASE_URL = window.PLAYBLOX_API_BASE_URL
   || (["localhost", "127.0.0.1"].includes(location.hostname)
     ? "http://localhost:8787"
@@ -49,18 +50,7 @@ function render() {
   $("return-lobby").hidden = !isHost;
   $("return-lobby").textContent = "↩ End game and return to lobby";
   $("back-to-lobby").hidden = true;
-  const activeIds = new Set(gameState.playerOrder || []);
-  const roster = $("game-players");
-  roster.replaceChildren(...room.players.map(p => {
-    const item = document.createElement("li");
-    item.className = "game-player" + (p.id === gameState.currentPlayerId ? " is-turn" : "");
-    const dot = document.createElement("span"); dot.className = "player-dot"; dot.setAttribute("aria-hidden", "true");
-    const info = document.createElement("span");
-    const name = document.createElement("strong"); name.textContent = p.nickname + (p.id === myPlayerId ? " (you)" : "");
-    const detail = document.createElement("small");
-    detail.textContent = p.connected === false ? "Reconnecting…" : p.role === "spectator" ? "Watching" : p.role === "waiting" ? "Waiting" : (gameState.symbols?.[p.id] ? "Player · " + gameState.symbols[p.id] : "Player");
-    info.append(name, detail); item.append(dot, info); return item;
-  }));
+  renderGamePlayerPanel({ container: $("game-players"), room, gameState, myPlayerId });
   const rematchPrompt = $("rematch-prompt");
   const canVoteRematch = finished && activeIds.has(myPlayerId);
   rematchPrompt.hidden = !canVoteRematch;
@@ -234,7 +224,7 @@ async function voteRematch(playAgain) {
 }
 $("play-again").addEventListener("click", () => voteRematch(true));
 $("no-rematch").addEventListener("click", () => voteRematch(false));
-$("return-lobby").addEventListener("click", () => returnEveryoneToLobby($("return-lobby")));
+setupHostEndRound($("return-lobby"), { getRoom: () => room, getPlayerId: () => myPlayerId, onEnd: returnEveryoneToLobby });
 $("leave-game").addEventListener("click", async () => {
   if (leaving) return;
   if (!window.confirm("Leave this game and party? You will need to rejoin to play again.")) return;
