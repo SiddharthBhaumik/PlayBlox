@@ -1,4 +1,5 @@
 import { DurableObject } from "cloudflare:workers";
+import { getServerGame } from "./games/registry.js";
 
 const ROOM_CAP = 8;
 const ROOM_IDLE_TTL_MS = 2 * 60 * 60 * 1000;
@@ -52,7 +53,7 @@ function publicRoom(room) {
       disconnectExpiresAt,
     })),
     playerCount: room.players.length, playerCap: ROOM_CAP, createdAt: room.createdAt,
-    gameId: room.gameId ?? null, lifecycle: room.lifecycle ?? "lobby",
+    gameId: room.gameId ?? null, lifecycle: room.lifecycle ?? "lobby", stateVersion: room.stateVersion ?? 0, game: room.gameMetadata ?? null, gameState: room.gameState ?? null,
   };
 }
 
@@ -89,6 +90,9 @@ export default {
     if (!action && request.method === "GET") return withCors(await stub.fetch("https://party-room.internal/room", request), request);
     if (action === "join" && request.method === "POST") return withCors(await stub.fetch("https://party-room.internal/join", request), request);
     if (action === "leave" && request.method === "POST") return withCors(await stub.fetch("https://party-room.internal/leave", request), request);
+    if (action === "game/start" && request.method === "POST") return withCors(await stub.fetch("https://party-room.internal/game/start", request), request);
+    if (action === "game/action" && request.method === "POST") return withCors(await stub.fetch("https://party-room.internal/game/action", request), request);
+    if (action === "game/reset" && request.method === "POST") return withCors(await stub.fetch("https://party-room.internal/game/reset", request), request);
     if (action === "ws" && request.headers.get("Upgrade")?.toLowerCase() === "websocket") {
       if (!isAllowedOrigin(request)) return json({ error: "This website origin is not allowed." }, 403, request);
       return stub.fetch("https://party-room.internal/ws" + url.search, request);
@@ -112,6 +116,9 @@ export class PartyRoom extends DurableObject {
     }
     if (url.pathname === "/join" && request.method === "POST") return this.join(request);
     if (url.pathname === "/leave" && request.method === "POST") return this.leave(request);
+    if (url.pathname === "/game/start" && request.method === "POST") return this.startGame(request);
+    if (url.pathname === "/game/action" && request.method === "POST") return this.gameAction(request);
+    if (url.pathname === "/game/reset" && request.method === "POST") return this.resetGame(request);
     if (url.pathname === "/ws" && request.method === "GET" && request.headers.get("Upgrade")?.toLowerCase() === "websocket") {
       if (!isAllowedOrigin(request)) return json({ error: "This website origin is not allowed." }, 403, request);
       return this.connect(url);
@@ -126,7 +133,7 @@ export class PartyRoom extends DurableObject {
     this.room = {
       code: body.code, name: body.partyName, hostId,
       players: [{ id: hostId, token: hostToken, nickname: body.hostName, isHost: true, joinedAt: now, connected: false, disconnectExpiresAt: null }],
-      gameId: null, lifecycle: "lobby", gameState: null, stateVersion: 0,
+      gameId: null, gameMetadata: null, lifecycle: "lobby", gameState: null, stateVersion: 0, recentActionIds: [],
       createdAt: now, lastActivityAt: now, emptySinceAt: null,
     };
     await this.persistAndSchedule();
@@ -158,6 +165,107 @@ export class PartyRoom extends DurableObject {
     await this.persistAndSchedule();
     this.broadcast({ type: "room-updated", room: publicRoom(this.room) });
     return json({ room: publicRoom(this.room), playerToken }, 201, request);
+  }
+  async startGame(request) {
+    const player = this.authorizePlayer(request);
+    if (!player) return json({ error: "A valid player session is required." }, 401, request);
+    if (!player.isHost) return json({ error: "Only the host can start a game." }, 403, request);
+    if (this.room.lifecycle !== "lobby") return json({ error: "The party is not in the lobby." }, 409, request);
+    let body;
+    try { body = await request.json(); } catch { return json({ error: "Send a valid JSON body." }, 400, request); }
+    const game = getServerGame(body.gameId);
+    if (!game) return json({ error: "This game is not registered with the multiplayer engine yet." }, 404, request);
+    const connectedPlayers = this.room.players.filter(entry => entry.connected);
+    const min = game.players?.min ?? 2, max = Math.min(game.players?.max ?? ROOM_CAP, ROOM_CAP);
+    if (connectedPlayers.length < min) return json({ error: `This game needs at least ${min} connected players.` }, 409, request);
+    if (this.room.players.length > max) return json({ error: `This game supports at most ${max} players.` }, 409, request);
+    const context = this.gameContext(game, player);
+    let allowed;
+    try { allowed = game.canStart ? await game.canStart(context) : { ok: true }; }
+    catch { return json({ error: "The game could not validate its start conditions." }, 500, request); }
+    if (allowed === false || allowed?.ok === false) return json({ error: allowed?.reason || "The game is not ready to start." }, 409, request);
+    let initialState;
+    try { initialState = game.createInitialState ? await game.createInitialState(context) : {}; }
+    catch { return json({ error: "The game could not initialize its state." }, 500, request); }
+    if (initialState === undefined) return json({ error: "The game returned no initial state." }, 500, request);
+    this.room.gameId = game.id;
+    this.room.gameMetadata = { id: game.id, name: game.name, interactionModel: game.interactionModel, lateJoinPolicy: game.lateJoinPolicy };
+    this.room.lifecycle = "starting";
+    this.room.gameState = initialState;
+    this.room.stateVersion = (this.room.stateVersion || 0) + 1;
+    this.room.recentActionIds = [];
+    this.room.lastActivityAt = Date.now();
+    this.room.lifecycle = "playing";
+    await this.persistAndSchedule();
+    this.broadcast({ type: "game-started", room: publicRoom(this.room), stateVersion: this.room.stateVersion });
+    return json({ room: publicRoom(this.room), stateVersion: this.room.stateVersion }, 200, request);
+  }
+  async gameAction(request) {
+    const player = this.authorizePlayer(request);
+    if (!player) return json({ error: "A valid player session is required." }, 401, request);
+    if (this.room.lifecycle !== "playing") return json({ error: "There is no active game." }, 409, request);
+    let body;
+    try { body = await request.json(); } catch { return json({ error: "Send a valid JSON body." }, 400, request); }
+    if (typeof body.actionId !== "string" || body.actionId.length < 1 || body.actionId.length > 100) {
+      return json({ error: "Every game action needs a unique actionId." }, 400, request);
+    }
+    if (this.room.recentActionIds?.includes(body.actionId)) {
+      return json({ ok: true, duplicate: true, stateVersion: this.room.stateVersion }, 200, request);
+    }
+    if (!Number.isInteger(body.expectedStateVersion) || body.expectedStateVersion !== this.room.stateVersion) {
+      return json({ error: "Game state changed. Sync and try again.", stateVersion: this.room.stateVersion }, 409, request);
+    }
+    const game = getServerGame(this.room.gameId);
+    if (!game) return json({ error: "The active game module is unavailable." }, 500, request);
+    const context = this.gameContext(game, player);
+    let validation;
+    try { validation = game.validateAction ? await game.validateAction(context, this.room.gameState, body.action) : { ok: false, reason: "This game does not accept actions yet." }; }
+    catch { return json({ error: "The game could not validate that action." }, 500, request); }
+    if (validation === false || validation?.ok === false) return json({ error: validation?.reason || "That action is not allowed." }, 403, request);
+    let nextState;
+    try { nextState = await game.reduceAction(context, this.room.gameState, body.action); }
+    catch { return json({ error: "The game could not apply that action." }, 500, request); }
+    if (nextState === undefined) return json({ error: "The game returned no next state." }, 500, request);
+    this.room.gameState = nextState;
+    this.room.stateVersion++;
+    this.room.recentActionIds = [...(this.room.recentActionIds || []), body.actionId].slice(-100);
+    if (game.getStatus && await game.getStatus(this.gameContext(game, player), nextState) === "finished") {
+      this.room.lifecycle = "results";
+      this.room.results = game.getResults ? await game.getResults(this.gameContext(game, player), nextState) : null;
+    }
+    this.room.lastActivityAt = Date.now();
+    await this.persistAndSchedule();
+    this.broadcast({ type: "game-state", gameId: this.room.gameId, lifecycle: this.room.lifecycle, gameState: this.room.gameState, results: this.room.results ?? null, stateVersion: this.room.stateVersion });
+    return json({ ok: true, stateVersion: this.room.stateVersion, lifecycle: this.room.lifecycle }, 200, request);
+  }
+  async resetGame(request) {
+    const player = this.authorizePlayer(request);
+    if (!player) return json({ error: "A valid player session is required." }, 401, request);
+    if (!player.isHost) return json({ error: "Only the host can return the party to the lobby." }, 403, request);
+    if (!["results", "playing"].includes(this.room.lifecycle)) return json({ error: "There is no game to reset." }, 409, request);
+    this.room.lifecycle = "lobby";
+    this.room.gameId = null;
+    this.room.gameMetadata = null;
+    this.room.gameState = null;
+    this.room.results = null;
+    this.room.stateVersion = (this.room.stateVersion || 0) + 1;
+    this.room.recentActionIds = [];
+    this.room.lastActivityAt = Date.now();
+    await this.persistAndSchedule();
+    this.broadcast({ type: "room-updated", room: publicRoom(this.room), stateVersion: this.room.stateVersion });
+    return json({ ok: true, room: publicRoom(this.room) }, 200, request);
+  }
+  authorizePlayer(request) {
+    const token = request.headers.get("Authorization")?.replace(/^Bearer\\s+/i, "");
+    return this.room.players.find(entry => entry.token === token) || null;
+  }
+  gameContext(game, player) {
+    return {
+      room: { code: this.room.code, name: this.room.name, gameId: this.room.gameId, lifecycle: this.room.lifecycle },
+      player: { id: player.id, nickname: player.nickname, isHost: player.isHost },
+      players: this.room.players.map(({ id, nickname, isHost, connected }) => ({ id, nickname, isHost, connected })),
+      game: { id: game.id, interactionModel: game.interactionModel, lateJoinPolicy: game.lateJoinPolicy },
+    };
   }
   async leave(request) {
     const token = request.headers.get("Authorization")?.replace(/^Bearer\s+/i, "");
