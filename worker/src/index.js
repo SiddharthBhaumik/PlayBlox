@@ -380,7 +380,15 @@ export class PartyRoom extends DurableObject {
       this.room.lastActivityAt = Date.now();
       this.recordHistory("rematch-started", `${game.name} replay started`, { gameId: game.id });
       await this.persistAndSchedule();
-      this.broadcast({ type: "game-started", room: publicRoom(this.room), stateVersion: this.room.stateVersion, rematch: true });
+      const publicSnapshot = publicRoom(this.room);
+      for (const ws of this.ctx.getWebSockets()) {
+        try {
+          if (ws.readyState !== WebSocket.OPEN) continue;
+          const socketPlayerId = ws.deserializeAttachment()?.playerId;
+          const privateState = game.getPrivateState ? await game.getPrivateState(this.room.gameState, socketPlayerId) : null;
+          ws.send(JSON.stringify({ type: "game-started", room: publicSnapshot, privateState, stateVersion: this.room.stateVersion, rematch: true }));
+        } catch {}
+      }
       return json({ ok: true, status: "playing", room: publicRoom(this.room) }, 200, request);
     }
     this.room.lastActivityAt = Date.now();
