@@ -16,7 +16,7 @@ export const wavelength = {
   color: "#d9f0e7",
   entry: "./src/games/wavelength/index.html",
   players: { min: 2, max: 8 },
-  interactionModel: "turn-based",
+  interactionModel: "simultaneous",
   lateJoinPolicy: "spectate",
   spectators: { supported: true },
 
@@ -40,6 +40,7 @@ export const wavelength = {
     if (!state || !Array.isArray(state.playerOrder)) return { ok: false, reason: "The game state is invalid." };
     if (state.phase === "finished") return { ok: false, reason: "The game has finished." };
     const id = context.player.id;
+    if (!Number.isInteger(action?.round) || action.round !== state.round) return { ok: false, reason: "That action belongs to an earlier round. Sync and try again." };
     if (!state.playerOrder.includes(id)) return { ok: false, reason: "Only selected players can play." };
     const clueGiverId = state.playerOrder[state.clueGiverIndex];
     if (state.phase === "clue") {
