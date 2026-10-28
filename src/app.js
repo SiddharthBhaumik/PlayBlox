@@ -146,6 +146,7 @@ function renderPlayers(room) {
     lastRoomPlayers.filter(p=>!curr.has(p.id)).forEach(p=>addLobbyActivity(`👋 ${p.nickname} left the lobby`));
   }
   lastRoomPlayers=room.players.map(p=>({...p}));
+  renderGameChoices(room);
   renderParticipantPicker(room);
 }
 function renderParticipantPicker(room) {
