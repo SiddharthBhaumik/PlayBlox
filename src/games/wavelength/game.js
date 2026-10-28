@@ -13,7 +13,7 @@ function setConnection(message,offline=false){$("connection-status").textContent
 async function api(path,options={}){let response;try{response=await fetch(API_BASE_URL+path,{...options,headers:{...(options.body?{"Content-Type":"application/json"}:{}),Authorization:"Bearer "+token,...(options.headers||{})}})}catch{throw new Error("Could not reach the party service.")}const data=await response.json().catch(()=>({}));if(!response.ok){const e=new Error(data.error||"Something went wrong.");e.stateVersion=data.stateVersion;throw e}return data}
 async function syncRoom(){const data=await api("/api/rooms/"+encodeURIComponent(code));room=data.room;gameState=room.gameState;stateVersion=room.stateVersion||0;render()}
 function sendAction(action){return api("/api/rooms/"+encodeURIComponent(code)+"/game/action",{method:"POST",body:JSON.stringify({actionId:crypto.randomUUID(),expectedStateVersion:stateVersion,action:{...action,round:gameState.round,turnNumber:gameState.turnNumber}})})}
-function renderHistory(){const list=$("history-list");list.replaceChildren();(gameState.history||[]).slice().reverse().forEach(result=>{const row=document.createElement("article");row.className="history-item";const title=document.createElement("strong");title.textContent="Round "+result.round+" · "+(player(result.clueGiverId)?.nickname||"Clue-giver");const detail=document.createElement("span");detail.textContent="“"+result.clue+"” · target "+result.target+" · average "+result.average+" · clue-giver +"+result.clueGiverPoints+" · your points: "+(result.guessPoints?.[myPlayerId]?.points ?? (result.clueGiverId===myPlayerId?result.clueGiverPoints:"—"));const points=document.createElement("b");points.textContent="+"+result.points+" pts";row.append(title,detail,points);list.append(row)})}
+function renderHistory(){const list=$("history-list");list.replaceChildren();(gameState.history||[]).slice().reverse().forEach(result=>{const row=document.createElement("article");row.className="history-item";const title=document.createElement("strong");title.textContent="Round "+result.round+" · "+(player(result.clueGiverId)?.nickname||"Clue-giver");const detail=document.createElement("span");detail.textContent="“"+result.clue+"” · target "+result.target+" · average "+result.average+" · clue-giver +"+result.clueGiverPoints+" · your points: "+(result.guessPoints?.[myPlayerId]?.points ?? (result.clueGiverId===myPlayerId?result.clueGiverPoints:"—"));const points=document.createElement("b");const ownPoints=result.clueGiverId===myPlayerId?result.clueGiverPoints:(result.guessPoints?.[myPlayerId]?.points??0);points.textContent="+"+ownPoints+" pts for you";row.append(title,detail,points);list.append(row)})}
 function render(){
  if(!room||!gameState)return;
  renderGameGuide({room,code,token,apiBaseUrl:API_BASE_URL,myPlayerId});
@@ -24,8 +24,10 @@ function render(){
  $("score").textContent=String(gameState.scores?.[myPlayerId]||0);
  const board=$("leaderboard");board.replaceChildren();(gameState.playerOrder||[]).map(id=>({id,name:player(id)?.nickname||"Player",score:gameState.scores?.[id]||0})).sort((a,b)=>b.score-a.score).forEach((item,index)=>{const row=document.createElement("div");row.className="leaderboard-row";const name=document.createElement("span");name.textContent=(index+1)+". "+item.name+(item.id===clueGiverId()?" · clue-giver":"");const score=document.createElement("strong");score.textContent=item.score+" pts";row.append(name,score);board.append(row)});
  $("clue-panel").hidden=finished||!isClue||!isGiver;
+ $("shared-clue-panel").hidden=finished||gameState.phase!=="guess";
+ $("shared-left").textContent=gameState.leftLabel||"";$("shared-right").textContent=gameState.rightLabel||"";$("shared-clue").textContent=gameState.clue||"";
+ $("clue-left").textContent=gameState.leftLabel||"";$("clue-right").textContent=gameState.rightLabel||"";
  $("guess-panel").hidden=finished||isClue||isGiver||submitted;
- $("waiting-panel").hidden=finished||(!isClue&&isGiver===false&& !submitted && gameState.phase==="guess")?false:false;
  // The clue-giver waits during guesses; submitted guessers and the clue phase show progress.
  const guesserIds=gameState.playerOrder.filter(id=>id!==clueGiverId());
  const submittedCount=(gameState.submittedPlayerIds||[]).length;
@@ -56,10 +58,10 @@ function render(){
 $("target-slider").addEventListener("input",()=> $("target-value").textContent=$("target-slider").value);
 $("guess-slider").addEventListener("input",()=> $("guess-value").textContent=$("guess-slider").value);
 $("set-clue").addEventListener("click",async()=>{
- const clue=$("clue-input").value.trim(),leftLabel=$("left-label").value.trim(),rightLabel=$("right-label").value.trim();
- if(!clue||!leftLabel||!rightLabel){help("Fill in both ends of the spectrum and write a clue.",true);return}
+ const clue=$("clue-input").value.trim();
+ if(!clue){help("Write a clue before sharing it.",true);return}
  submitting=true;render();
- try{await sendAction({type:"set-clue",target:Number($("target-slider").value),leftLabel,rightLabel,clue});await syncRoom()}
+ try{await sendAction({type:"set-clue",target:Number($("target-slider").value),clue});await syncRoom()}
  catch(e){help(e.message,true);if(Number.isInteger(e.stateVersion))stateVersion=e.stateVersion;try{await syncRoom()}catch{}}
  finally{submitting=false;render()}
 });
