@@ -52,7 +52,7 @@ function publicRoom(room) {
       disconnectExpiresAt,
     })),
     playerCount: room.players.length, playerCap: ROOM_CAP, createdAt: room.createdAt,
-    gameId: room.gameId ?? null, lifecycle: room.lifecycle ?? "lobby", stateVersion: room.stateVersion ?? 0, game: room.gameMetadata ?? null, gameState: room.gameId && getServerGame(room.gameId)?.getPublicState
+    gameId: room.gameId ?? null, selectedGameId: room.selectedGameId ?? null, lifecycle: room.lifecycle ?? "lobby", stateVersion: room.stateVersion ?? 0, game: room.gameMetadata ?? null, gameState: room.gameId && getServerGame(room.gameId)?.getPublicState
       ? getServerGame(room.gameId).getPublicState(room.gameState)
       : (room.gameState ?? null), results: room.results ?? null, rematchVotes: room.rematchVotes ?? {}, history: room.history ?? [],
   };
@@ -91,6 +91,7 @@ export default {
     if (!action && request.method === "GET") return withCors(await stub.fetch("https://party-room.internal/room", request), request);
     if (action === "join" && request.method === "POST") return withCors(await stub.fetch("https://party-room.internal/join", request), request);
     if (action === "leave" && request.method === "POST") return withCors(await stub.fetch("https://party-room.internal/leave", request), request);
+    if (action === "game/select" && request.method === "POST") return withCors(await stub.fetch("https://party-room.internal/game/select", request), request);
     if (action === "game/start" && request.method === "POST") return withCors(await stub.fetch("https://party-room.internal/game/start", request), request);
     if (action === "game/action" && request.method === "POST") return withCors(await stub.fetch("https://party-room.internal/game/action", request), request);
     if (action === "game/reset" && request.method === "POST") return withCors(await stub.fetch("https://party-room.internal/game/reset", request), request);
@@ -118,6 +119,7 @@ export class PartyRoom extends DurableObject {
     }
     if (url.pathname === "/join" && request.method === "POST") return this.join(request);
     if (url.pathname === "/leave" && request.method === "POST") return this.leave(request);
+    if (url.pathname === "/game/select" && request.method === "POST") return this.selectGame(request);
     if (url.pathname === "/game/start" && request.method === "POST") return this.startGame(request);
     if (url.pathname === "/game/action" && request.method === "POST") return this.gameAction(request);
     if (url.pathname === "/game/reset" && request.method === "POST") return this.resetGame(request);
@@ -136,7 +138,7 @@ export class PartyRoom extends DurableObject {
     this.room = {
       code: body.code, name: body.partyName, hostId,
       players: [{ id: hostId, token: hostToken, nickname: body.hostName, isHost: true, joinedAt: now, connected: false, disconnectExpiresAt: null }],
-      gameId: null, gameMetadata: null, lifecycle: "lobby", gameState: null, stateVersion: 0, recentActionIds: [], rematchVotes: {},
+      gameId: null, selectedGameId: null, gameMetadata: null, lifecycle: "lobby", gameState: null, stateVersion: 0, recentActionIds: [], rematchVotes: {},
       createdAt: now, lastActivityAt: now, emptySinceAt: null,
       history: [{ type: "created", message: `${body.hostName} created the lobby`, at: now }],
     };
@@ -180,6 +182,22 @@ export class PartyRoom extends DurableObject {
     this.broadcast({ type: "room-updated", room: publicRoom(this.room) });
     return json({ room: publicRoom(this.room), playerToken, playerId: id }, 201, request);
   }
+  async selectGame(request) {
+    const player = this.authorizePlayer(request);
+    if (!player) return json({ error: "A valid player session is required." }, 401, request);
+    if (!player.isHost) return json({ error: "Only the host can select a game." }, 403, request);
+    if (this.room.lifecycle !== "lobby") return json({ error: "Games can only be selected in the lobby." }, 409, request);
+    let body;
+    try { body = await request.json(); } catch { return json({ error: "Send a valid JSON body." }, 400, request); }
+    const game = getServerGame(body.gameId);
+    if (!game || typeof game.guide !== "string" || !game.guide.trim()) return json({ error: "That game is missing its required player guide." }, 409, request);
+    this.room.selectedGameId = game.id;
+    this.room.lastActivityAt = Date.now();
+    this.recordHistory("game-selected", `${player.nickname} selected ${game.name}`, { gameId: game.id });
+    await this.persistAndSchedule();
+    this.broadcast({ type: "room-updated", room: publicRoom(this.room), stateVersion: this.room.stateVersion });
+    return json({ ok: true, room: publicRoom(this.room) }, 200, request);
+  }
   async startGame(request) {
     const player = this.authorizePlayer(request);
     if (!player) return json({ error: "A valid player session is required." }, 401, request);
@@ -189,6 +207,8 @@ export class PartyRoom extends DurableObject {
     try { body = await request.json(); } catch { return json({ error: "Send a valid JSON body." }, 400, request); }
     const game = getServerGame(body.gameId);
     if (!game) return json({ error: "This game is not registered with the multiplayer engine yet." }, 404, request);
+    if (!game.guide || !game.guide.trim()) return json({ error: "This game cannot start until its player guide is added." }, 409, request);
+    if (this.room.selectedGameId && this.room.selectedGameId !== game.id) return json({ error: "Start the game selected in the lobby." }, 409, request);
     const connectedPlayers = this.room.players.filter(entry => entry.connected && entry.role !== "spectator" && entry.role !== "waiting");
     const min = game.players?.min ?? 2, max = Math.min(game.players?.max ?? ROOM_CAP, ROOM_CAP);
     let selectedIds = body.selectedPlayerIds;
