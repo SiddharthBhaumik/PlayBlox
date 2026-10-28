@@ -147,6 +147,7 @@ function renderPlayers(room) {
     presence.textContent=player.connected===false?'Reconnecting…':'Connected';
     presence.classList.toggle('offline',player.connected===false);
     details.append(name,role,presence); item.append(avatar,details);
+    if(player.id===activePlayerId){item.classList.add('is-you');const badge=document.createElement('span');badge.className='you-badge';badge.textContent='🙋 You';item.append(badge);}
     if(player.isHost){const badge=document.createElement('span');badge.className='host-badge';badge.textContent='👑 Host';item.append(badge);}
     list.append(item);
   });
