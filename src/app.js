@@ -15,25 +15,50 @@ let explicitlyReturningToLobby = new URLSearchParams(location.search).get('lobby
 
 $('year').textContent = new Date().getFullYear();
 renderGameCards($('games-grid'), gameRegistry);
-function populateGameSelector() {
-  const selector = $('lobby-game-select');
-  if (!selector) return;
-  const playable = gameRegistry.filter(game => game.status === 'ready' && game.players);
-  selector.replaceChildren(...playable.map(game => {
-    const option = document.createElement('option');
-    option.value = game.id;
-    const limits = game.players.min === game.players.max
-      ? game.players.min + ' players'
-      : game.players.min + '–' + game.players.max + ' players';
-    option.textContent = (game.emoji || '🎮') + ' ' + game.name + ' · ' + limits;
-    return option;
+let selectedGameId = null;
+function selectedGame() { return gameRegistry.find(game => game.id === selectedGameId && game.status === 'ready' && game.players); }
+function renderGameChoices(room = latestLobbyRoom) {
+  const container = $('lobby-game-select');
+  if (!container) return;
+  const playable = gameRegistry.filter(game => game.status === 'ready' && game.players && game.guide);
+  const me = room?.players?.find(player => player.id === activePlayerId);
+  const hostView = Boolean(me?.isHost) && room?.lifecycle === 'lobby';
+  container.replaceChildren(...playable.map(game => {
+    const card = document.createElement('button');
+    card.type = 'button';
+    card.className = 'lobby-game-choice' + (selectedGameId === game.id ? ' is-selected' : '');
+    card.disabled = !hostView;
+    card.setAttribute('aria-pressed', String(selectedGameId === game.id));
+    card.style.setProperty('--game-color', game.color || '#e8e0ff');
+    const emoji = document.createElement('span'); emoji.className = 'lobby-game-choice-emoji'; emoji.textContent = game.emoji || '🎮';
+    const title = document.createElement('strong'); title.textContent = game.name;
+    const desc = document.createElement('small'); desc.textContent = game.description || 'A party game';
+    const limits = document.createElement('small'); limits.className = 'game-choice-limits'; limits.textContent = game.players.min === game.players.max ? game.players.min + ' players' : game.players.min + '–' + game.players.max + ' players';
+    const status = document.createElement('span'); status.className = 'game-choice-status'; status.textContent = selectedGameId === game.id ? '✓ Selected by host' : 'Choose game';
+    card.append(emoji,title,desc,limits,status);
+    card.addEventListener('click', async () => {
+      if (!hostView || !activeRoomCode || !activePlayerToken) return;
+      selectedGameId = game.id;
+      renderGameChoices(room);
+      selectedParticipantIds = new Set();
+      renderParticipantPicker(room);
+      try {
+        await api('/api/rooms/' + encodeURIComponent(activeRoomCode) + '/game/select', {
+          method: 'POST',
+          headers: { Authorization: 'Bearer ' + activePlayerToken },
+          body: JSON.stringify({ gameId: game.id }),
+        });
+      } catch (error) { gameFeedback(error.message); }
+    });
+    return card;
   }));
-  const hasGames = playable.length > 0;
-  selector.disabled = !hasGames;
-  $('start-game').disabled = !hasGames;
-  if (!hasGames) gameFeedback('No playable games are registered yet.');
+  const chosen = gameRegistry.find(game => game.id === (room?.selectedGameId || selectedGameId));
+  $('selected-game-summary').textContent = chosen ? '🎯 Host selected: ' + chosen.name + ' — ' + chosen.description : 'The host has not selected a game yet.';
+  $('start-game').hidden = Boolean(me && !me.isHost);
+  $('start-game').disabled = !hostView || !selectedGame();
+  if (!playable.length) gameFeedback('No playable games with guides are registered yet.');
 }
-populateGameSelector();
+renderGameChoices();
 
 function feedback(id, message, success = false) {
   const node = $(id);
@@ -96,7 +121,7 @@ function renderPlayers(room) {
   renderLobbyHistory(room);
   const me = room.players.find(player => player.id === activePlayerId);
   $('start-game').hidden = Boolean(me && !me.isHost);
-  $('lobby-game-select').hidden = Boolean(me && !me.isHost);
+  renderGameChoices(room);
   // Hosts may leave too; the server transfers ownership to a remaining member.
   $('leave-lobby').hidden = !me;
   $('lobby-player-count').textContent = `${room.playerCount}/${room.playerCap} players`;
@@ -130,7 +155,7 @@ function renderParticipantPicker(room) {
   const hostView = Boolean(me?.isHost) && room.lifecycle === 'lobby';
   panel.hidden = !hostView;
   if (!hostView) return;
-  const game = gameRegistry.find(entry => entry.id === $('lobby-game-select').value && entry.status === 'ready');
+  const game = gameRegistry.find(entry => entry.id === (room.selectedGameId || selectedGameId) && entry.status === 'ready');
   if (!game?.players) { list.replaceChildren(); return; }
   const max = Math.min(game.players.max, room.playerCap || 8);
   const min = game.players.min;
@@ -161,10 +186,7 @@ function renderParticipantPicker(room) {
   $('start-game').disabled = count < min || count > max;
   gameFeedback(count < min ? `Choose at least ${min} connected players.` : count > max ? `Choose at most ${max} players.` : `${count} of up to ${max} players selected.`);
 }
-$('lobby-game-select').addEventListener('change', () => {
-  selectedParticipantIds = new Set();
-  if (latestLobbyRoom) renderParticipantPicker(latestLobbyRoom);
-});
+
 function clearSocketTimers(){
   if(heartbeatTimer){clearInterval(heartbeatTimer);heartbeatTimer=null;}
   if(reconnectTimer){clearTimeout(reconnectTimer);reconnectTimer=null;}
@@ -314,7 +336,8 @@ $('start-game').addEventListener('click', async () => {
   button.disabled = true;
   gameFeedback('Starting game…');
   try {
-    const gameId = $('lobby-game-select').value;
+    const gameId = latestLobbyRoom?.selectedGameId || selectedGameId;
+    if (!gameId) throw new Error('Choose a game first.');
     await api('/api/rooms/' + encodeURIComponent(activeRoomCode) + '/game/start', {
       method: 'POST',
       headers: { Authorization: 'Bearer ' + activePlayerToken },
