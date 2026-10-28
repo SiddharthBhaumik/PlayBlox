@@ -100,11 +100,9 @@
             <p class="activity-caption" id="participant-picker-help">Choose the players for this round.</p>
             <div id="participant-list" class="participant-list"></div>
           </div>
-          <div class="game-launch-controls">
-            <label class="visually-hidden" for="lobby-game-select">Choose a game</label>
-            <select id="lobby-game-select" class="game-select" aria-label="Choose a game"></select>
-            <button class="primary-button" id="start-game" type="button">🎮 Start game</button>
-          </div>
+          <div id="lobby-game-select" class="lobby-game-choice-grid" role="group" aria-label="Choose a game"></div>
+          <p id="selected-game-summary" class="selected-game-summary" aria-live="polite">The host has not selected a game yet.</p>
+          <div class="game-launch-controls"><button class="primary-button" id="start-game" type="button" disabled>🎮 Start game</button></div>
           <p id="game-launch-feedback" class="game-launch-feedback" role="status" aria-live="polite"></p>
         </section>
         <div class="lobby-footer"><p>Waiting for your friends? Keep this lobby open while they join.</p><button class="secondary-button" id="leave-lobby" type="button">← Leave lobby</button></div>
