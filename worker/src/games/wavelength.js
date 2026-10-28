@@ -6,7 +6,7 @@ import { SPECTRUMS } from "./wavelength-spectrums.js";
 
 const ROUNDS_TO_WIN = 5;
 const randomSpectrum = (current = null) => {\n  let pair = SPECTRUMS[Math.floor(Math.random() * SPECTRUMS.length)];\n  if (current && SPECTRUMS.length > 1) {\n    while (pair.left === current.leftLabel && pair.right === current.rightLabel) pair = SPECTRUMS[Math.floor(Math.random() * SPECTRUMS.length)];\n  }\n  return { leftLabel: pair.left, rightLabel: pair.right };\n};\nconst REROLLS_PER_TURN = 2;
-const pointsForDistance = distance => distance <= 5 ? 4 : distance <= 12 ? 3 : distance <= 20 ? 2 : distance <= 30 ? 1 : 0;
+const randomTarget = (current = null) => { let target = Math.floor(Math.random() * 101); if (current !== null && target === current) target = (target + 1 + Math.floor(Math.random() * 100)) % 101; return target; };\nconst pointsForDistance = distance => distance <= 5 ? 4 : distance <= 12 ? 3 : distance <= 20 ? 2 : distance <= 30 ? 1 : 0;
 
 export const wavelength = {
   id: "wavelength",
@@ -97,7 +97,7 @@ export const wavelength = {
     return { ...state, phase: finished ? "finished" : "clue",
       round: lastTurnInRound ? (finished ? state.round : state.round + 1) : state.round,
       turnNumber: state.turnNumber + 1, scores, clueGiverIndex: nextClueGiverIndex,
-      target: Math.floor(Math.random() * 101), ...randomSpectrum(state), rerollsUsed: 0, clue: "", guesses: {}, submittedPlayerIds: [],
+      target: randomTarget(state.target), ...randomSpectrum(state), rerollsUsed: 0, clue: "", guesses: {}, submittedPlayerIds: [],
       lastRound: roundResult, history: [...state.history, roundResult] };
   },
 
@@ -113,7 +113,7 @@ export const wavelength = {
       playerOrder: state.playerOrder, round: state.round, totalRounds: state.totalRounds,
       turnNumber: state.turnNumber, score: 0, scores: state.scores,
       clueGiverIndex: state.clueGiverIndex, phase: state.phase,
-      leftLabel: state.leftLabel, rightLabel: state.rightLabel, clue: state.clue,
+      leftLabel: state.leftLabel, rightLabel: state.rightLabel, clue: state.clue, rerollsUsed: state.rerollsUsed || 0,
       submittedPlayerIds: state.submittedPlayerIds, lastRound: state.lastRound, history: state.history,
     };
   },
