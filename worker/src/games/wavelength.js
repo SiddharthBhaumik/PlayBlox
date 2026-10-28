@@ -13,7 +13,8 @@ const randomSpectrum = (current = null) => {
   return { leftLabel: pair.left, rightLabel: pair.right };
 };
 const REROLLS_PER_TURN = 2;
-const randomTarget = (current = null) => { let target = Math.floor(Math.random() * 101); if (current !== null && target === current) target = (target + 1 + Math.floor(Math.random() * 100)) % 101; return target; };\nconst pointsForDistance = distance => distance <= 5 ? 4 : distance <= 12 ? 3 : distance <= 20 ? 2 : distance <= 30 ? 1 : 0;
+const randomTarget = (current = null) => { let target = Math.floor(Math.random() * 101); if (current !== null && target === current) target = (target + 1 + Math.floor(Math.random() * 100)) % 101; return target; };
+const pointsForDistance = distance => distance <= 5 ? 4 : distance <= 12 ? 3 : distance <= 20 ? 2 : distance <= 30 ? 1 : 0;
 
 export const wavelength = {
   id: "wavelength",
