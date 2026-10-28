@@ -50,9 +50,8 @@ export const wavelength = {
     const clueGiverId = state.playerOrder[state.clueGiverIndex];
     if (state.phase === "clue") {
       if (id !== clueGiverId) return { ok: false, reason: "Wait for the clue-giver to set the spectrum and clue." };
-      if (action?.type !== "set-clue" || !Number.isInteger(action.target) || action.target < 0 || action.target > 100
-        || typeof action.clue !== "string" || !action.clue.trim() || action.clue.trim().length > 180) {
-        return { ok: false, reason: "Choose a target and write a clue." };
+      if (action?.type !== "set-clue" || typeof action.clue !== "string" || !action.clue.trim() || action.clue.trim().length > 180) {
+        return { ok: false, reason: "Write a clue for the hidden target." };
       }
       return { ok: true };
     }
@@ -102,7 +101,13 @@ export const wavelength = {
       lastRound: roundResult, history: [...state.history, roundResult] };
   },
 
-  getPrivateState(state, playerId) {\n    if (!state || !Array.isArray(state.playerOrder)) return null;\n    const clueGiverId = state.playerOrder[state.clueGiverIndex];\n    return playerId === clueGiverId && state.phase === "clue" ? { target: state.target } : null;\n  },\n\n  getPublicState(state) {
+  getPrivateState(state, playerId) {
+    if (!state || !Array.isArray(state.playerOrder)) return null;
+    const clueGiverId = state.playerOrder[state.clueGiverIndex];
+    return playerId === clueGiverId && state.phase === "clue" ? { target: state.target } : null;
+  },
+
+  getPublicState(state) {
     if (!state) return state;
     return {
       playerOrder: state.playerOrder, round: state.round, totalRounds: state.totalRounds,
