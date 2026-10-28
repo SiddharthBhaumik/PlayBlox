@@ -1,4 +1,4 @@
-import { renderGamePlayerPanel, setupHostEndRound } from "../shared/game-shell.js";
+import { renderGameGuide, renderGamePlayerPanel, setupHostEndRound } from "../shared/game-shell.js";
 const API_BASE_URL = window.PLAYBLOX_API_BASE_URL || (["localhost","127.0.0.1"].includes(location.hostname) ? "http://localhost:8787" : "https://playblox-party-service.playblox-party.workers.dev");
 const $ = id => document.getElementById(id);
 const params = new URLSearchParams(location.search);
@@ -15,6 +15,7 @@ function isAlive(){return Boolean(gameState?.alivePlayerIds?.includes(myPlayerId
 function finished(){return room?.lifecycle==="results" || Boolean(gameState?.winnerId || gameState?.isDraw)}
 function render(){
  if(!room||!gameState)return;
+ renderGameGuide({room,code,token,apiBaseUrl:API_BASE_URL,myPlayerId});
  $("room-label").textContent=(room.name||"Party")+" · "+code;
  $("round-label").textContent="Round "+(finished() ? (gameState.lastRound?.round || gameState.round || 1) : (gameState.round || 1));
  renderGamePlayerPanel({container:$("game-players"),room,gameState,myPlayerId});
@@ -101,7 +102,7 @@ function connect(){
  socket=new WebSocket(API_BASE_URL.replace(/^http/,"ws")+"/api/rooms/"+encodeURIComponent(code)+"/ws?token="+encodeURIComponent(token));const current=socket;
  current.addEventListener("open",()=>{if(gen!==generation||current!==socket)return;reconnectDelay=1000;setConnection("Server connected");if(heartbeatTimer)clearInterval(heartbeatTimer);heartbeatTimer=setInterval(()=>{if(current.readyState===WebSocket.OPEN)current.send(JSON.stringify({type:"ping"}))},15000)});
  current.addEventListener("message",event=>{if(gen!==generation||current!==socket)return;let m;try{m=JSON.parse(event.data)}catch{return}
-  if(m.room&&["room-snapshot","room-updated","game-started"].includes(m.type)){room=m.room;myPlayerId=m.playerId||myPlayerId;gameState=room.gameState||gameState;stateVersion=room.stateVersion??stateVersion;if(room.lifecycle==="lobby"){location.href=$("back-to-lobby").href;return}render()}
+  if(m.room&&["room-snapshot","room-updated","game-started","game-guide","guide-progress"].includes(m.type)){room=m.room;myPlayerId=m.playerId||myPlayerId;gameState=room.gameState||gameState;stateVersion=room.stateVersion??stateVersion;if(room.lifecycle==="lobby"){location.href=$("back-to-lobby").href;return}render()}
   if(m.type==="rematch-vote"){if(room)room.rematchVotes=m.votes||{};render()}
   if(m.type==="game-state"){gameState=m.gameState;stateVersion=m.stateVersion;if(room){room.lifecycle=m.lifecycle;room.gameState=gameState;room.stateVersion=stateVersion;room.results=m.results}render()}
   if(m.type==="host-ended-round")sessionStorage.setItem("playblox:"+code+":notice",m.message||"The host ended the round and returned everyone to the lobby.");
