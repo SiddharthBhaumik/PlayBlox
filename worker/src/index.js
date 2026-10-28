@@ -352,14 +352,14 @@ export class PartyRoom extends DurableObject {
       try { this.room.gameState = await game.createInitialState(context, this.room.gameState); }
       catch { return json({ error: "The next round could not be initialized." }, 500, request); }
       if (!this.room.gameState) return json({ error: "The game returned no initial state." }, 500, request);
-      this.room.lifecycle = "guide"; this.room.results = null; this.room.rematchVotes = {};
-      this.room.guidePlayerIds = participants.slice(); this.room.guideReadyPlayerIds = [];
-      this.recordHistory("rematch-guide", `${game.name} replay guide opened`, { gameId: game.id });
+      this.room.lifecycle = "playing"; this.room.results = null; this.room.rematchVotes = {};
+      // A rematch reuses the guide already read at the start of this game.
       this.room.stateVersion = (this.room.stateVersion || 0) + 1; this.room.recentActionIds = [];
       this.room.lastActivityAt = Date.now();
+      this.recordHistory("rematch-started", `${game.name} replay started`, { gameId: game.id });
       await this.persistAndSchedule();
-      this.broadcast({ type: "game-guide", room: publicRoom(this.room), stateVersion: this.room.stateVersion, rematch: true });
-      return json({ ok: true, status: "guide", room: publicRoom(this.room) }, 200, request);
+      this.broadcast({ type: "game-started", room: publicRoom(this.room), stateVersion: this.room.stateVersion, rematch: true });
+      return json({ ok: true, status: "playing", room: publicRoom(this.room) }, 200, request);
     }
     this.room.lastActivityAt = Date.now();
     await this.persistAndSchedule();
@@ -449,7 +449,7 @@ export class PartyRoom extends DurableObject {
     server.serializeAttachment({ playerId: player.id, connectionId });
     const wasDisconnected = !player.connected;
     player.connected = true; player.disconnectExpiresAt = null;
-    if (wasDisconnected) this.recordHistory("reconnected", `${player.nickname} reconnected`, { playerId: player.id });
+    // Reconnects are reflected in live presence; avoid cluttering lobby history for transient socket swaps.
     this.room.emptySinceAt = null; this.room.lastActivityAt = Date.now();
     await this.persistAndSchedule();
     server.send(JSON.stringify({ type: "room-snapshot", room: publicRoom(this.room), playerId: player.id, stateVersion: this.room.stateVersion || 0 }));
@@ -492,7 +492,7 @@ export class PartyRoom extends DurableObject {
     if (!player.connected) return;
     player.connected = false;
     player.disconnectExpiresAt = Date.now() + RECONNECT_GRACE_MS;
-    this.recordHistory("disconnected", `${player.nickname} disconnected; reconnect grace started`, { playerId: player.id });
+    // Disconnect state is shown in the player list; do not add transient socket drops to lobby history.
     this.room.lastActivityAt = Date.now();
     await this.persistAndSchedule();
     this.broadcast({ type: "room-updated", room: publicRoom(this.room) });
