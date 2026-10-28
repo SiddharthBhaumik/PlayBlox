@@ -54,7 +54,7 @@ export const gameRegistry = [
   {
     id: 'questionable-answers',
     name: 'Questionable Answers',
-    description: 'Secretly assign words, ask curious questions, then reveal the automatic answers together.',
+    description: 'Secretly assign words, ask questions, then reveal the wonderfully questionable answers.',
     guide: "Round 1: secretly assign a word or phrase to the next player in the arrow direction. Round 2: the arrows reverse; ask the previous player a question. Once everyone submits, reveal the questions and the words paired with them. Keep submissions secret until the reveal.",
     emoji: '🤔',
     color: '#e5e8ff',
