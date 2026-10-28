@@ -58,6 +58,10 @@ export const wavelength = {
     const clueGiverId = state.playerOrder[state.clueGiverIndex];
     if (state.phase === "clue") {
       if (id !== clueGiverId) return { ok: false, reason: "Wait for the clue-giver to set the spectrum and clue." };
+      if (action?.type === "reroll-spectrum") {
+        if ((state.rerollsUsed || 0) >= REROLLS_PER_TURN) return { ok: false, reason: "You have used both spectrum changes for this turn." };
+        return { ok: true };
+      }
       if (action?.type !== "set-clue" || typeof action.clue !== "string" || !action.clue.trim() || action.clue.trim().length > 180) {
         return { ok: false, reason: "Write a clue for the hidden target." };
       }
@@ -75,6 +79,9 @@ export const wavelength = {
   },
 
   reduceAction(context, state, action) {
+    if (action.type === "reroll-spectrum") {
+      return { ...state, target: randomTarget(state.target), ...randomSpectrum(state), rerollsUsed: (state.rerollsUsed || 0) + 1 };
+    }
     if (action.type === "set-clue") {
       return { ...state, phase: "guess", clue: action.clue.trim(), guesses: {}, submittedPlayerIds: [] };
     }
@@ -121,7 +128,7 @@ export const wavelength = {
       playerOrder: state.playerOrder, round: state.round, totalRounds: state.totalRounds,
       turnNumber: state.turnNumber, score: 0, scores: state.scores,
       clueGiverIndex: state.clueGiverIndex, phase: state.phase,
-      leftLabel: state.leftLabel, rightLabel: state.rightLabel, clue: state.clue, rerollsUsed: state.rerollsUsed || 0, rerollsUsed: state.rerollsUsed || 0,
+      leftLabel: state.leftLabel, rightLabel: state.rightLabel, clue: state.clue, rerollsUsed: state.rerollsUsed || 0,
       submittedPlayerIds: state.submittedPlayerIds, lastRound: state.lastRound, history: state.history,
     };
   },
