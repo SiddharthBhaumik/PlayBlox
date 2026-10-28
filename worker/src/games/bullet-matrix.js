@@ -10,6 +10,7 @@ export const bulletMatrix = {
   id: "bullet-matrix",
   name: "Bullet Matrix",
   description: "Reload, shoot, and shield in secret. Predict everyone else to be the last one standing.",
+  guide: "Each round, secretly choose whether to reload, shoot at a target, or shield yourself. Actions resolve together, so predict what other players will do. Manage ammunition and survive to be the last player standing.",
   emoji: "🔫",
   color: "#ffd9c7",
   entry: "./src/games/bullet-matrix/index.html",
