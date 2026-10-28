@@ -156,7 +156,7 @@ function renderParticipantPicker(room) {
   panel.hidden = !hostView;
   if (!hostView) return;
   const game = gameRegistry.find(entry => entry.id === (room.selectedGameId || selectedGameId) && entry.status === 'ready');
-  if (!game?.players) { list.replaceChildren(); return; }
+  if (!game?.players) { panel.hidden = true; list.replaceChildren(); $('start-game').disabled = true; return; }
   const max = Math.min(game.players.max, room.playerCap || 8);
   const min = game.players.min;
   const eligible = room.players.filter(player => player.connected && player.role !== 'spectator' && player.role !== 'waiting');
