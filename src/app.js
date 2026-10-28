@@ -34,7 +34,7 @@ function renderGameChoices(room = latestLobbyRoom) {
     const title = document.createElement('strong'); title.textContent = game.name;
     const desc = document.createElement('small'); desc.textContent = game.description || 'A party game';
     const limits = document.createElement('small'); limits.className = 'game-choice-limits'; limits.textContent = game.players.min === game.players.max ? game.players.min + ' players' : game.players.min + '–' + game.players.max + ' players';
-    const status = document.createElement('span'); status.className = 'game-choice-status'; status.textContent = selectedGameId === game.id ? '✓ Selected by host' : 'Choose game';
+    const status = document.createElement('span'); status.className = 'game-choice-status'; status.textContent = selectedGameId === game.id ? '✓ Selected by host' : (hostView ? 'Choose game' : 'Not selected');
     card.append(emoji,title,desc,limits,status);
     card.addEventListener('click', async () => {
       if (!hostView || !activeRoomCode || !activePlayerToken) return;
