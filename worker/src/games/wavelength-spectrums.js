@@ -1576,5 +1576,801 @@ export const SPECTRUMS = [
   {
     "left": "An understandable wrong",
     "right": "An inexcusable wrong"
+  },
+  {
+    "left": "Overrated tourist attraction",
+    "right": "Worth travelling across the world for"
+  },
+  {
+    "left": "Worst superpower drawback",
+    "right": "Superpower drawback you’d happily accept"
+  },
+  {
+    "left": "A forgettable video game",
+    "right": "A game that changes the industry"
+  },
+  {
+    "left": "A boring museum exhibit",
+    "right": "An exhibit you could stare at for hours"
+  },
+  {
+    "left": "A terrible board-game rule",
+    "right": "A rule that makes the game brilliant"
+  },
+  {
+    "left": "A useless school lesson",
+    "right": "The most useful thing school could teach"
+  },
+  {
+    "left": "A bad excuse for being late",
+    "right": "An excuse nobody could argue with"
+  },
+  {
+    "left": "A terrible theme-park ride",
+    "right": "A ride worth waiting three hours for"
+  },
+  {
+    "left": "A pointless invention",
+    "right": "An invention that changes humanity"
+  },
+  {
+    "left": "A weak magic trick",
+    "right": "A trick that breaks your brain"
+  },
+  {
+    "left": "A boring science fact",
+    "right": "A fact that blows your mind"
+  },
+  {
+    "left": "A terrible world record",
+    "right": "A world record worth celebrating"
+  },
+  {
+    "left": "A useless survival skill",
+    "right": "The ultimate survival skill"
+  },
+  {
+    "left": "A bad name for a city",
+    "right": "A perfect name for a city"
+  },
+  {
+    "left": "A forgettable landmark",
+    "right": "A landmark that takes your breath away"
+  },
+  {
+    "left": "A boring documentary",
+    "right": "A documentary you recommend to everyone"
+  },
+  {
+    "left": "A terrible game-show prize",
+    "right": "A prize worth winning the show for"
+  },
+  {
+    "left": "A pointless world holiday",
+    "right": "A holiday everyone should celebrate"
+  },
+  {
+    "left": "A bad mascot",
+    "right": "A mascot everyone loves"
+  },
+  {
+    "left": "A forgettable slogan",
+    "right": "A slogan that becomes legendary"
+  },
+  {
+    "left": "A mildly inconvenient invention",
+    "right": "An invention that makes life effortless"
+  },
+  {
+    "left": "A boring supervillain",
+    "right": "A supervillain who terrifies the world"
+  },
+  {
+    "left": "A terrible superhero costume",
+    "right": "An instantly iconic superhero costume"
+  },
+  {
+    "left": "A useless robot",
+    "right": "A robot that runs civilisation"
+  },
+  {
+    "left": "A silly conspiracy theory",
+    "right": "A conspiracy theory that sounds almost believable"
+  },
+  {
+    "left": "A boring alternate universe",
+    "right": "An alternate universe worth visiting"
+  },
+  {
+    "left": "A weak final boss",
+    "right": "A final boss nobody can defeat"
+  },
+  {
+    "left": "A boring side quest",
+    "right": "A side quest better than the main story"
+  },
+  {
+    "left": "A harmless curse",
+    "right": "A curse that ruins civilisation"
+  },
+  {
+    "left": "A bad wish from a genie",
+    "right": "A wish that solves every problem"
+  },
+  {
+    "left": "A disappointing dinosaur",
+    "right": "A dinosaur that would terrify you"
+  },
+  {
+    "left": "A useless mythical creature",
+    "right": "A mythical creature worth protecting"
+  },
+  {
+    "left": "A terrible alien greeting",
+    "right": "The perfect first contact with aliens"
+  },
+  {
+    "left": "A boring magical object",
+    "right": "An object with unimaginable power"
+  },
+  {
+    "left": "A minor time-loop problem",
+    "right": "A time-loop catastrophe"
+  },
+  {
+    "left": "A mildly haunted forest",
+    "right": "A forest nobody returns from"
+  },
+  {
+    "left": "A weak dragon",
+    "right": "A dragon that destroys kingdoms"
+  },
+  {
+    "left": "A terrible secret identity",
+    "right": "A perfect secret identity"
+  },
+  {
+    "left": "A bad spaceship design",
+    "right": "A spaceship that redefines travel"
+  },
+  {
+    "left": "A low-stakes apocalypse",
+    "right": "An extinction-level apocalypse"
+  },
+  {
+    "left": "A boring planet to explore",
+    "right": "A planet full of wonders"
+  },
+  {
+    "left": "A useless gadget in a zombie apocalypse",
+    "right": "The one gadget that saves humanity"
+  },
+  {
+    "left": "A silly robot uprising",
+    "right": "A robot uprising nobody can stop"
+  },
+  {
+    "left": "A harmless magical accident",
+    "right": "A magical accident that rewrites reality"
+  },
+  {
+    "left": "A bad supervillain hideout",
+    "right": "An unforgettable supervillain lair"
+  },
+  {
+    "left": "A disappointing treasure chest",
+    "right": "Treasure beyond imagination"
+  },
+  {
+    "left": "A weak spell",
+    "right": "A spell that changes history"
+  },
+  {
+    "left": "A boring fantasy kingdom",
+    "right": "A kingdom full of impossible wonders"
+  },
+  {
+    "left": "A terrible superhero sidekick",
+    "right": "A sidekick who saves the world"
+  },
+  {
+    "left": "A small mystery",
+    "right": "A mystery that changes everything"
+  },
+  {
+    "left": "A mildly annoying household chore",
+    "right": "The worst chore imaginable"
+  },
+  {
+    "left": "A tiny mess",
+    "right": "A room that looks like a disaster zone"
+  },
+  {
+    "left": "A boring houseplant",
+    "right": "A plant you’d proudly show everyone"
+  },
+  {
+    "left": "A mildly irritating sound",
+    "right": "A sound that drives you insane"
+  },
+  {
+    "left": "A slightly uncomfortable chair",
+    "right": "A chair you never want to leave"
+  },
+  {
+    "left": "A small home improvement",
+    "right": "A renovation that transforms everything"
+  },
+  {
+    "left": "A useless kitchen gadget",
+    "right": "A gadget every kitchen needs"
+  },
+  {
+    "left": "A boring garden",
+    "right": "A garden that feels magical"
+  },
+  {
+    "left": "A harmless household bug",
+    "right": "A bug that makes you abandon the room"
+  },
+  {
+    "left": "A normal pet trick",
+    "right": "A trick that makes the pet famous"
+  },
+  {
+    "left": "A mildly annoying pet habit",
+    "right": "A pet habit that makes it legendary"
+  },
+  {
+    "left": "A small balcony",
+    "right": "A private outdoor paradise"
+  },
+  {
+    "left": "A boring view from the window",
+    "right": "A view that stops you talking"
+  },
+  {
+    "left": "A slightly messy kitchen",
+    "right": "A kitchen disaster"
+  },
+  {
+    "left": "A mediocre night’s sleep",
+    "right": "The best sleep of your life"
+  },
+  {
+    "left": "A bad thing to forget on a trip",
+    "right": "A small thing that saves the trip"
+  },
+  {
+    "left": "A disappointing hotel room",
+    "right": "A hotel room fit for royalty"
+  },
+  {
+    "left": "A stressful airport",
+    "right": "An airport that feels effortless"
+  },
+  {
+    "left": "A terrible road-trip companion",
+    "right": "A perfect road-trip companion"
+  },
+  {
+    "left": "A boring train journey",
+    "right": "A journey you remember forever"
+  },
+  {
+    "left": "A short layover",
+    "right": "Being trapped at the airport forever"
+  },
+  {
+    "left": "A bad travel souvenir",
+    "right": "A souvenir with an amazing story"
+  },
+  {
+    "left": "A disappointing beach",
+    "right": "A beach that feels like paradise"
+  },
+  {
+    "left": "A tourist trap",
+    "right": "A genuinely hidden gem"
+  },
+  {
+    "left": "A city with nothing to do",
+    "right": "A city with endless possibilities"
+  },
+  {
+    "left": "A forgettable mountain",
+    "right": "A mountain worth climbing"
+  },
+  {
+    "left": "A bad camping trip",
+    "right": "A perfect night under the stars"
+  },
+  {
+    "left": "A boring guided tour",
+    "right": "A tour with an incredible guide"
+  },
+  {
+    "left": "A terrible travel itinerary",
+    "right": "A perfectly planned adventure"
+  },
+  {
+    "left": "A vacation ruined by weather",
+    "right": "Weather that makes the vacation unforgettable"
+  },
+  {
+    "left": "A minor financial mistake",
+    "right": "A financial disaster"
+  },
+  {
+    "left": "A cheap imitation",
+    "right": "A convincing alternative to the original"
+  },
+  {
+    "left": "A luxury nobody needs",
+    "right": "A luxury everyone should experience"
+  },
+  {
+    "left": "A bargain that isn’t worth it",
+    "right": "A purchase worth every penny"
+  },
+  {
+    "left": "A pointless subscription",
+    "right": "A subscription you couldn’t live without"
+  },
+  {
+    "left": "A tiny tip",
+    "right": "A tip that makes someone’s day"
+  },
+  {
+    "left": "A boring collection",
+    "right": "A collection worth a fortune"
+  },
+  {
+    "left": "A status symbol nobody cares about",
+    "right": "A possession everyone admires"
+  },
+  {
+    "left": "A sensible purchase",
+    "right": "An impulse buy you’ll regret forever"
+  },
+  {
+    "left": "A modest prize",
+    "right": "A prize worth fighting for"
+  },
+  {
+    "left": "A boring job perk",
+    "right": "A job perk worth changing careers for"
+  },
+  {
+    "left": "A useless professional skill",
+    "right": "A skill that makes you indispensable"
+  },
+  {
+    "left": "A pointless meeting",
+    "right": "A meeting that solves everything"
+  },
+  {
+    "left": "A tolerable boss",
+    "right": "A boss who makes work miserable"
+  },
+  {
+    "left": "A reasonable deadline",
+    "right": "An impossible deadline"
+  },
+  {
+    "left": "A harmless workplace mistake",
+    "right": "A mistake that becomes company history"
+  },
+  {
+    "left": "A useful degree",
+    "right": "A degree that feels completely pointless"
+  },
+  {
+    "left": "A mediocre teacher",
+    "right": "A teacher who changes your life"
+  },
+  {
+    "left": "A normal school trip",
+    "right": "A school trip that becomes legendary"
+  },
+  {
+    "left": "Always early",
+    "right": "Always late"
+  },
+  {
+    "left": "Extremely organised",
+    "right": "Completely chaotic"
+  },
+  {
+    "left": "Plans everything",
+    "right": "Wings everything"
+  },
+  {
+    "left": "Stays home every weekend",
+    "right": "Goes out every weekend"
+  },
+  {
+    "left": "Saves every penny",
+    "right": "Spends money freely"
+  },
+  {
+    "left": "Replies instantly",
+    "right": "Replies three business days later"
+  },
+  {
+    "left": "Leaves messages unread",
+    "right": "Replies to every message"
+  },
+  {
+    "left": "Barely talks in a group",
+    "right": "Does all the talking"
+  },
+  {
+    "left": "Always listens",
+    "right": "Always has something to say"
+  },
+  {
+    "left": "Avoids attention",
+    "right": "Loves being the centre of attention"
+  },
+  {
+    "left": "Takes everything seriously",
+    "right": "Makes everything a joke"
+  },
+  {
+    "left": "Always follows the rules",
+    "right": "Always bends the rules"
+  },
+  {
+    "left": "Plays it safe",
+    "right": "Takes every opportunity"
+  },
+  {
+    "left": "Thinks before speaking",
+    "right": "Speaks before thinking"
+  },
+  {
+    "left": "Forgives easily",
+    "right": "Holds grudges forever"
+  },
+  {
+    "left": "Trusts everyone",
+    "right": "Trusts almost nobody"
+  },
+  {
+    "left": "Shares everything",
+    "right": "Keeps everything private"
+  },
+  {
+    "left": "Asks for help immediately",
+    "right": "Tries everything alone first"
+  },
+  {
+    "left": "Makes decisions quickly",
+    "right": "Overthinks every decision"
+  },
+  {
+    "left": "Easily embarrassed",
+    "right": "Completely shameless"
+  },
+  {
+    "left": "Low-maintenance friend",
+    "right": "High-maintenance friend"
+  },
+  {
+    "left": "Friend who gives advice",
+    "right": "Friend who just listens"
+  },
+  {
+    "left": "Friend who always initiates plans",
+    "right": "Friend who always waits to be invited"
+  },
+  {
+    "left": "Friend who remembers every detail",
+    "right": "Friend who forgets everything"
+  },
+  {
+    "left": "Friend who brings everyone together",
+    "right": "Friend who disappears from the group"
+  },
+  {
+    "left": "Friend who keeps the peace",
+    "right": "Friend who calls everyone out"
+  },
+  {
+    "left": "Friend who shares their food",
+    "right": "Friend who guards their food"
+  },
+  {
+    "left": "Friend who takes all the photos",
+    "right": "Friend who avoids every photo"
+  },
+  {
+    "left": "Friend who arrives with snacks",
+    "right": "Friend who arrives empty-handed"
+  },
+  {
+    "left": "Friend who always has gossip",
+    "right": "Friend who knows nothing about anyone"
+  },
+  {
+    "left": "A group chat that is always active",
+    "right": "A group chat that is basically dead"
+  },
+  {
+    "left": "A group chat full of useful information",
+    "right": "A group chat full of nonsense"
+  },
+  {
+    "left": "A friend group with no drama",
+    "right": "A friend group that thrives on drama"
+  },
+  {
+    "left": "Everyone in the group is similar",
+    "right": "Everyone in the group is completely different"
+  },
+  {
+    "left": "A group that makes decisions together",
+    "right": "One person makes every decision"
+  },
+  {
+    "left": "A group that always sticks together",
+    "right": "Everyone does their own thing"
+  },
+  {
+    "left": "A friend who always cancels",
+    "right": "A friend who never says no"
+  },
+  {
+    "left": "A friend who is brutally honest",
+    "right": "A friend who sugarcoats everything"
+  },
+  {
+    "left": "A friend who roasts everyone",
+    "right": "A friend who compliments everyone"
+  },
+  {
+    "left": "A friend who remembers birthdays",
+    "right": "A friend who forgets their own birthday"
+  },
+  {
+    "left": "A casual hangout",
+    "right": "An elaborate outing"
+  },
+  {
+    "left": "A spontaneous plan",
+    "right": "A plan made weeks in advance"
+  },
+  {
+    "left": "A quiet evening with friends",
+    "right": "A loud night out with friends"
+  },
+  {
+    "left": "A cheap day out",
+    "right": "A luxury day out"
+  },
+  {
+    "left": "A plan that ends early",
+    "right": "A plan that lasts until sunrise"
+  },
+  {
+    "left": "A relaxing weekend",
+    "right": "A packed weekend"
+  },
+  {
+    "left": "A small gathering",
+    "right": "A massive party"
+  },
+  {
+    "left": "A perfectly planned trip",
+    "right": "A completely unplanned trip"
+  },
+  {
+    "left": "A day with no responsibilities",
+    "right": "A day where everything gets done"
+  },
+  {
+    "left": "A productive Sunday",
+    "right": "A Sunday spent doing absolutely nothing"
+  },
+  {
+    "left": "A college day worth attending",
+    "right": "A college day better spent at home"
+  },
+  {
+    "left": "Sitting at the front of class",
+    "right": "Sitting at the back of class"
+  },
+  {
+    "left": "Taking detailed notes",
+    "right": "Relying entirely on memory"
+  },
+  {
+    "left": "Studying a little every day",
+    "right": "Studying everything at the last minute"
+  },
+  {
+    "left": "Group study that actually works",
+    "right": "Group study that becomes a hangout"
+  },
+  {
+    "left": "Finishing assignments early",
+    "right": "Submitting assignments at the last second"
+  },
+  {
+    "left": "Asking questions in class",
+    "right": "Hoping nobody notices your confusion"
+  },
+  {
+    "left": "Attending every class",
+    "right": "Attending only when necessary"
+  },
+  {
+    "left": "A timetable that never changes",
+    "right": "A schedule that changes every day"
+  },
+  {
+    "left": "A perfectly quiet library",
+    "right": "A lively study spot"
+  },
+  {
+    "left": "A class that flies by",
+    "right": "A class that never seems to end"
+  },
+  {
+    "left": "An easy assignment",
+    "right": "An assignment that consumes your life"
+  },
+  {
+    "left": "A group project where everyone contributes",
+    "right": "A group project carried by one person"
+  },
+  {
+    "left": "A presentation that goes perfectly",
+    "right": "A presentation full of unexpected disasters"
+  },
+  {
+    "left": "Knowing the answer but staying quiet",
+    "right": "Guessing confidently without knowing"
+  },
+  {
+    "left": "Studying with complete silence",
+    "right": "Studying with music and background noise"
+  },
+  {
+    "left": "A helpful classmate",
+    "right": "A classmate who makes everything harder"
+  },
+  {
+    "left": "Borrowing notes and returning them",
+    "right": "Borrowing notes and forgetting about them"
+  },
+  {
+    "left": "A relaxed exam hall",
+    "right": "An exam hall full of panic"
+  },
+  {
+    "left": "Feeling prepared for an exam",
+    "right": "Realising you studied the wrong things"
+  },
+  {
+    "left": "A campus with lots of places to relax",
+    "right": "A campus where there is always something happening"
+  },
+  {
+    "left": "Sitting with the same people every day",
+    "right": "Meeting different people every day"
+  },
+  {
+    "left": "A free period spent productively",
+    "right": "A free period spent doing nothing"
+  },
+  {
+    "left": "College canteen food that disappoints",
+    "right": "College canteen food worth queuing for"
+  },
+  {
+    "left": "A college event nobody attends",
+    "right": "A college event everyone talks about"
+  },
+  {
+    "left": "A college fest that feels disorganised",
+    "right": "A college fest that runs perfectly"
+  },
+  {
+    "left": "Joining every campus activity",
+    "right": "Avoiding every campus activity"
+  },
+  {
+    "left": "Being known by everyone",
+    "right": "Being known by a small circle"
+  },
+  {
+    "left": "A college memory you laugh about",
+    "right": "A college memory you wish to forget"
+  },
+  {
+    "left": "Leaving college with no regrets",
+    "right": "Wishing you had done much more"
+  },
+  {
+    "left": "A tiny inconvenience that ruins your mood",
+    "right": "A terrible day that cannot ruin your mood"
+  },
+  {
+    "left": "A morning person",
+    "right": "A night owl"
+  },
+  {
+    "left": "Getting ready in five minutes",
+    "right": "Taking an hour to get ready"
+  },
+  {
+    "left": "A spotless bedroom",
+    "right": "A bedroom that looks lived in"
+  },
+  {
+    "left": "Eating the same favourite meal",
+    "right": "Trying something different every time"
+  },
+  {
+    "left": "A quick shower",
+    "right": "A shower that becomes a whole event"
+  },
+  {
+    "left": "A phone battery always above 50%",
+    "right": "A phone battery always near 1%"
+  },
+  {
+    "left": "Keeping every old photo",
+    "right": "Deleting almost every photo"
+  },
+  {
+    "left": "A short to-do list",
+    "right": "A to-do list that never ends"
+  },
+  {
+    "left": "Doing chores immediately",
+    "right": "Putting chores off forever"
+  },
+  {
+    "left": "A day with no notifications",
+    "right": "A day with nonstop notifications"
+  },
+  {
+    "left": "A quiet commute",
+    "right": "A commute full of unexpected interactions"
+  },
+  {
+    "left": "Always carrying everything you need",
+    "right": "Always forgetting something important"
+  },
+  {
+    "left": "A quick trip to the shop",
+    "right": "Turning every errand into an adventure"
+  },
+  {
+    "left": "A simple daily routine",
+    "right": "Every day being different"
+  },
+  {
+    "left": "A weekend with no plans",
+    "right": "A weekend booked from morning to night"
+  },
+  {
+    "left": "A small personal victory",
+    "right": "A major life achievement"
+  },
+  {
+    "left": "Laughing at yourself",
+    "right": "Taking yourself very seriously"
+  },
+  {
+    "left": "A life with a predictable routine",
+    "right": "A life full of surprises"
+  },
+  {
+    "left": "Having everything under control",
+    "right": "Figuring everything out as you go"
   }
 ];
