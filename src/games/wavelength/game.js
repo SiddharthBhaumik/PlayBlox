@@ -33,8 +33,8 @@ function render(){
  const submittedCount=(gameState.submittedPlayerIds||[]).length;
  const shouldWait=!finished&&((isClue&&!isGiver)||(!isClue&&(isGiver||submitted)));
  $("waiting-panel").hidden=!shouldWait;
- $("waiting-title").textContent=isClue?"Waiting for the clue-giver…":isGiver?"Your clue is out there!":submitted?"Guess locked — nice teamwork!":"The group is guessing…";
- $("waiting-copy").textContent=isClue?"The next clue-giver is getting the spectrum ready.":isGiver?"Let the group discuss. You'll see how close they got when everyone locks in.":submitted?"Your guess is locked. Chat with your friends while the others decide.":"Discuss the clue together, then lock in your guess.";
+ $("waiting-title").textContent=isClue?"Waiting for the clue-giver…":isGiver?"Your clue is out there!":submitted?"Guess locked":"The group is guessing…";
+ $("waiting-copy").textContent=isClue?"The next clue-giver is getting the spectrum ready.":isGiver?"Let the group discuss. You'll see how close they got when everyone locks in.":submitted?"":"Discuss the clue together, then lock in your guess.";
  $("submitted-count").textContent=submittedCount+" / "+(gameState.phase==="guess"?guesserIds.length:0)+" guesses locked";
  $("submitted-bar").style.width=(gameState.phase==="guess"&&guesserIds.length?submittedCount/guesserIds.length*100:0)+"%";
  $("reveal-panel").hidden=!finished&&!gameState.lastRound;
