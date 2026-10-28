@@ -117,7 +117,7 @@ function renderLobbyHistory(room) {
 }
 function renderPlayers(room) {
   latestLobbyRoom = room;
-  if (room.selectedGameId) selectedGameId = room.selectedGameId;
+  selectedGameId = room.selectedGameId || null;
   renderLobbyHistory(room);
   const me = room.players.find(player => player.id === activePlayerId);
   $('start-game').hidden = Boolean(me && !me.isHost);
