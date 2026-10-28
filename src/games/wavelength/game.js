@@ -52,12 +52,12 @@ function render(){
  $("leave-game").hidden=false;$("leave-game").disabled=leaving;
  $("replay-status").hidden=!finished;
  if(finished){const votes=Object.values(room.rematchVotes||{}).filter(Boolean).length;$("replay-status").textContent=votes+" of "+gameState.playerOrder.length+" players voted to play again. Everyone must agree."}
- $("set-clue").disabled=submitting;$("lock-guess").disabled=submitting;
+ const rerollsLeft=Math.max(0,2-(gameState.rerollsUsed||0));$("reroll-spectrum").disabled=submitting||!isClue||!isGiver||rerollsLeft===0;$("reroll-spectrum").textContent=rerollsLeft?"↻ Change pair and target ("+rerollsLeft+" left)":"No changes left this turn";$("set-clue").disabled=submitting;$("lock-guess").disabled=submitting;
  $("target-slider").value=String(privateState?.target ?? 50);$("target-slider").disabled=true;$("target-value").textContent=String(privateState?.target ?? "—");$("guess-value").textContent=$("guess-slider").value;
 }
 
 $("guess-slider").addEventListener("input",()=> $("guess-value").textContent=$("guess-slider").value);
-$("set-clue").addEventListener("click",async()=>{
+\n$("reroll-spectrum").addEventListener("click",async()=>{\n submitting=true;render();\n try{await sendAction({type:"reroll-spectrum"});await syncRoom();help("New spectrum and target selected. "+Math.max(0,2-(gameState.rerollsUsed||0))+" change(s) left this turn.");}\n catch(e){help(e.message,true);if(Number.isInteger(e.stateVersion))stateVersion=e.stateVersion;try{await syncRoom()}catch{}}\n finally{submitting=false;render()}\n});\n$("set-clue").addEventListener("click",async()=>{
  const clue=$("clue-input").value.trim();
  if(!clue){help("Write a clue before sharing it.",true);return}
  submitting=true;render();
