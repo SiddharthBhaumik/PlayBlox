@@ -13,3 +13,5 @@
 .shared-clue-panel blockquote { margin: 0.65rem 0 0; padding: 0.9rem 1rem; border-left: 4px solid #4c9b7e; border-radius: 0.5rem; background: #fff; color: #203c32; font-size: 1.12rem; font-weight: 800; }
 .scoring-panel { background: #fffaf0; }
 .display-labels strong { overflow-wrap: anywhere; }
+
+.wave-secondary{width:100%;margin:0 0 14px;padding:11px 14px;border:2px solid #a9cbbb;border-radius:12px;background:#fffdf5;color:var(--ink);font:inherit;font-weight:1000}.wave-secondary:disabled{opacity:.55;cursor:not-allowed}
