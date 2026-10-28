@@ -91,11 +91,11 @@ export const wavelength = {
     if (submittedPlayerIds.length < guesserIds.length) return { ...state, guesses, submittedPlayerIds };
 
     const average = guesserIds.reduce((sum, id) => sum + guesses[id], 0) / guesserIds.length;
-    const distance = Math.round(Math.abs(average - state.target));
+    const distance = Math.abs(average - state.target);
     const clueGiverId = state.playerOrder[state.clueGiverIndex];
     const scores = { ...state.scores };
     const guessPoints = Object.fromEntries(guesserIds.map(id => {
-      const playerDistance = Math.round(Math.abs(guesses[id] - state.target));
+      const playerDistance = Math.abs(guesses[id] - state.target);
       const points = pointsForDistance(playerDistance);
       scores[id] = (scores[id] || 0) + points;
       return [id, { distance: playerDistance, points }];
