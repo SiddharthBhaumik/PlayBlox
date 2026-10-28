@@ -94,3 +94,7 @@ footer{display:flex;justify-content:space-between;align-items:center;gap:12px;pa
 .game-choice-status{padding:6px 9px;border-radius:999px;background:rgba(255,255,255,.7);font-size:10px;font-weight:1000;text-transform:uppercase;letter-spacing:.6px}
 .lobby-game-choice.is-selected .game-choice-status{background:#dff3d3;color:#205d3e}
 .selected-game-summary{padding:12px 14px;border:2px dashed #c6c0ab;border-radius:14px;background:#fffdf5;color:#526052;font-size:13px;font-weight:900;line-height:1.5}
+
+/* Make the current player easy to spot in the lobby list. */
+.lobby-player.is-you{border-color:#70b88b;background:#f0fff4;box-shadow:0 0 0 2px #d6f3df inset}.you-badge{padding:6px 9px;border:1px solid #9ed6b0;border-radius:999px;background:#dff7e7;color:#24653d;font-size:11px;font-weight:1000;white-space:nowrap}
+@media(max-width:420px){.lobby-player{gap:8px;padding:9px}.you-badge,.host-badge{padding:5px 7px;font-size:10px}}
