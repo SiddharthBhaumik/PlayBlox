@@ -241,15 +241,16 @@ export class PartyRoom extends DurableObject {
     for (const entry of unselectedPlayers) entry.role = game.spectators?.supported ? "spectator" : "waiting";
     this.room.gameId = game.id;
     this.room.gameMetadata = { id: game.id, name: game.name, interactionModel: game.interactionModel, guide: game.guide, lateJoinPolicy: game.lateJoinPolicy, players: game.players, spectators: game.spectators ?? { supported: false } };
-    this.room.lifecycle = "starting";
+    this.room.lifecycle = "guide";
     this.room.gameState = initialState;
     this.room.stateVersion = (this.room.stateVersion || 0) + 1;
     this.room.recentActionIds = [];
     this.room.lastActivityAt = Date.now();
-    this.room.lifecycle = "playing";
-    this.recordHistory("game-started", `${game.name} started`, { gameId: game.id, playerIds: selectedPlayers.map(entry => entry.id) });
+    this.room.guidePlayerIds = selectedPlayers.map(entry => entry.id);
+    this.room.guideReadyPlayerIds = [];
+    this.recordHistory("game-guide-opened", `${game.name} guide opened`, { gameId: game.id, playerIds: selectedPlayers.map(entry => entry.id) });
     await this.persistAndSchedule();
-    this.broadcast({ type: "game-started", room: publicRoom(this.room), stateVersion: this.room.stateVersion });
+    this.broadcast({ type: "game-guide", room: publicRoom(this.room), stateVersion: this.room.stateVersion });
     return json({ room: publicRoom(this.room), stateVersion: this.room.stateVersion }, 200, request);
   }
   async guideReady(request) {
