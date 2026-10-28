@@ -1,6 +1,10 @@
 import assert from "node:assert/strict";
 import { gameRegistry } from "../src/games/registry.js";
 import { listServerGames, getServerGame } from "../worker/src/games/registry.js";
+import { SPECTRUMS } from "../worker/src/games/wavelength-spectrums.js";
+
+assert.equal(SPECTRUMS.length, 500, "Wavelength must provide 500 spectrum pairs");
+assert.equal(new Set(SPECTRUMS.map(pair => `${pair.left}|${pair.right}`)).size, 500, "Wavelength spectrum pairs must be unique");
 
 const serverGames = listServerGames();
 const player = (id) => ({ id, nickname: `Player ${id}`, isHost: id === "p1", connected: true, role: "player" });
