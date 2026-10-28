@@ -462,7 +462,9 @@ export class PartyRoom extends DurableObject {
     // Reconnects are reflected in live presence; avoid cluttering lobby history for transient socket swaps.
     this.room.emptySinceAt = null; this.room.lastActivityAt = Date.now();
     await this.persistAndSchedule();
-    server.send(JSON.stringify({ type: "room-snapshot", room: publicRoom(this.room), playerId: player.id, stateVersion: this.room.stateVersion || 0 }));
+    const activeGame = getServerGame(this.room.gameId);
+    const privateState = activeGame?.getPrivateState ? await activeGame.getPrivateState(this.room.gameState, player.id) : null;
+    server.send(JSON.stringify({ type: "room-snapshot", room: publicRoom(this.room), playerId: player.id, privateState, stateVersion: this.room.stateVersion || 0 }));
     this.broadcast({ type: "room-updated", room: publicRoom(this.room) });
     return new Response(null, { status: 101, webSocket: client });
   }
