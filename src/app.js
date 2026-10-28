@@ -23,18 +23,25 @@ function renderGameChoices(room = latestLobbyRoom) {
   const playable = gameRegistry.filter(game => game.status === 'ready' && game.players && game.guide);
   const me = room?.players?.find(player => player.id === activePlayerId);
   const hostView = Boolean(me?.isHost) && room?.lifecycle === 'lobby';
+  const connectedPlayers = (room?.players || []).filter(player =>
+    player.connected && player.role !== 'spectator' && player.role !== 'waiting'
+  ).length;
   container.replaceChildren(...playable.map(game => {
     const card = document.createElement('button');
     card.type = 'button';
-    card.className = 'lobby-game-choice' + (selectedGameId === game.id ? ' is-selected' : '');
-    card.disabled = !hostView;
+    const needsMorePlayers = connectedPlayers < game.players.min;
+    card.className = 'lobby-game-choice' + (selectedGameId === game.id ? ' is-selected' : '') + (needsMorePlayers ? ' needs-more-players' : '');
+    card.disabled = !hostView || needsMorePlayers;
     card.setAttribute('aria-pressed', String(selectedGameId === game.id));
     card.style.setProperty('--game-color', game.color || '#e8e0ff');
     const emoji = document.createElement('span'); emoji.className = 'lobby-game-choice-emoji'; emoji.textContent = game.emoji || '🎮';
     const title = document.createElement('strong'); title.textContent = game.name;
     const desc = document.createElement('small'); desc.textContent = game.description || 'A party game';
     const limits = document.createElement('small'); limits.className = 'game-choice-limits'; limits.textContent = game.players.min === game.players.max ? game.players.min + ' players' : game.players.min + '–' + game.players.max + ' players';
-    const status = document.createElement('span'); status.className = 'game-choice-status'; status.textContent = selectedGameId === game.id ? '✓ Selected by host' : (hostView ? 'Choose game' : 'Not selected');
+    const status = document.createElement('span'); status.className = 'game-choice-status';
+    status.textContent = needsMorePlayers
+      ? 'Need ' + (game.players.min - connectedPlayers) + ' more connected player' + (game.players.min - connectedPlayers === 1 ? '' : 's')
+      : selectedGameId === game.id ? '✓ Selected by host' : (hostView ? 'Choose game' : 'Not selected');
     card.append(emoji,title,desc,limits,status);
     card.addEventListener('click', async () => {
       if (!hostView || !activeRoomCode || !activePlayerToken) return;
@@ -78,7 +85,12 @@ async function api(path, options = {}) {
     throw new Error('Could not reach the party service. Please try again.');
   }
   const data = await response.json().catch(() => ({}));
-  if (!response.ok) { const error = new Error(data.error || 'Something went wrong. Please try again.'); error.status = response.status; throw error; }
+  if (!response.ok) {
+    const message = response.status === 405 && /\/game\/select$/.test(path)
+      ? 'The multiplayer service rejected game selection (405). Deploy the latest worker version, then refresh the lobby.'
+      : (data.error || 'Something went wrong. Please try again.');
+    const error = new Error(message); error.status = response.status; throw error;
+  }
   return data;
 }
 
