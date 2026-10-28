@@ -3,7 +3,7 @@ const API_BASE_URL = window.PLAYBLOX_API_BASE_URL || (["localhost","127.0.0.1"].
 const params = new URLSearchParams(location.search), code = (params.get("party") || "").toUpperCase();
 const token = code ? sessionStorage.getItem("playblox:" + code + ":token") : null;
 const $ = id => document.getElementById(id);
-let socket=null, room=null, gameState=null, stateVersion=0, myPlayerId=null, reconnectTimer=null, heartbeatTimer=null, reconnectDelay=1000, generation=0, leaving=false, submitting=false;
+let socket=null, room=null, gameState=null, privateState=null, stateVersion=0, myPlayerId=null, reconnectTimer=null, heartbeatTimer=null, reconnectDelay=1000, generation=0, leaving=false, submitting=false;
 $("back-to-lobby").href="../../../"+(code?"?party="+encodeURIComponent(code)+"&lobby=1":"");
 const player=id=>room?.players.find(p=>p.id===id);
 const clueGiverId=()=>gameState?.playerOrder?.[gameState.clueGiverIndex];
@@ -53,7 +53,7 @@ function render(){
  $("replay-status").hidden=!finished;
  if(finished){const votes=Object.values(room.rematchVotes||{}).filter(Boolean).length;$("replay-status").textContent=votes+" of "+gameState.playerOrder.length+" players voted to play again. Everyone must agree."}
  $("set-clue").disabled=submitting;$("lock-guess").disabled=submitting;
- $("target-value").textContent=$("target-slider").value;$("guess-value").textContent=$("guess-slider").value;
+ $("target-slider").value=String(privateState?.target ?? 50);$("target-slider").disabled=true;$("target-value").textContent=String(privateState?.target ?? "—");$("guess-value").textContent=$("guess-slider").value;
 }
 $("target-slider").addEventListener("input",()=> $("target-value").textContent=$("target-slider").value);
 $("guess-slider").addEventListener("input",()=> $("guess-value").textContent=$("guess-slider").value);
@@ -81,8 +81,8 @@ function connect(){
  setConnection("Connecting…");socket=new WebSocket(API_BASE_URL.replace(/^http/,"ws")+"/api/rooms/"+encodeURIComponent(code)+"/ws?token="+encodeURIComponent(token));const current=socket;
  current.addEventListener("open",()=>{if(gen!==generation||current!==socket)return;reconnectDelay=1000;setConnection("Server connected");if(heartbeatTimer)clearInterval(heartbeatTimer);heartbeatTimer=setInterval(()=>{if(current.readyState===WebSocket.OPEN)current.send(JSON.stringify({type:"ping"}))},15000)});
  current.addEventListener("message",event=>{if(gen!==generation||current!==socket)return;let m;try{m=JSON.parse(event.data)}catch{return}
-  if(m.room&&["room-snapshot","room-updated","game-started","game-guide","guide-progress"].includes(m.type)){room=m.room;myPlayerId=m.playerId||myPlayerId;gameState=room.gameState||gameState;stateVersion=room.stateVersion??stateVersion;if(room.lifecycle==="lobby"){location.href=$("back-to-lobby").href;return}render()}
-  if(m.type==="game-state"){gameState=m.gameState;stateVersion=m.stateVersion;if(room){room.lifecycle=m.lifecycle;room.gameState=gameState;room.stateVersion=stateVersion}render()}
+  if(m.room&&["room-snapshot","room-updated","game-started","game-guide","guide-progress"].includes(m.type)){room=m.room;myPlayerId=m.playerId||myPlayerId;gameState=room.gameState||gameState;privateState=m.privateState??privateState;stateVersion=room.stateVersion??stateVersion;if(room.lifecycle==="lobby"){location.href=$("back-to-lobby").href;return}render()}
+  if(m.type==="game-state"){gameState=m.gameState;privateState=m.privateState??null;stateVersion=m.stateVersion;if(room){room.lifecycle=m.lifecycle;room.gameState=gameState;room.stateVersion=stateVersion}render()}
   if(m.type==="rematch-vote"&&room){room.rematchVotes=m.votes||{};render()}
   if(m.type==="error")help(m.message||"A connection error occurred.",true);
  });
