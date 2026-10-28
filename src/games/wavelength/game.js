@@ -40,7 +40,7 @@ function render(){
   const r=gameState.lastRound;$("reveal-panel").hidden=false;$("reveal-left").textContent=r.leftLabel;$("reveal-right").textContent=r.rightLabel;
   $("target-marker").style.left=r.target+"%";$("average-marker").style.left=r.average+"%";
   $("reveal-summary").textContent="Target "+r.target+" · group average "+r.average+" · "+r.distance+" points away";
-  $("round-points").textContent="+"+r.points+" points this round";
+  const earned=r.clueGiverId===myPlayerId?r.clueGiverPoints:(r.guessPoints?.[myPlayerId]?.points??0);$("round-points").textContent="You earned +"+earned+" points this turn";
   $("reveal-title").textContent=finished?"Final round revealed!":"Round "+r.round+" revealed";
   renderHistory();
   if(!finished){$("reveal-panel").classList.add("previous-reveal");}else $("reveal-panel").classList.remove("previous-reveal");
