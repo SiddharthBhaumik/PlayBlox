@@ -52,7 +52,7 @@ function renderGameChoices(room = latestLobbyRoom) {
     });
     return card;
   }));
-  const chosen = gameRegistry.find(game => game.id === (room?.selectedGameId || selectedGameId));
+  const chosen = gameRegistry.find(game => game.id === (selectedGameId || room?.selectedGameId));
   $('selected-game-summary').textContent = chosen ? '🎯 Host selected: ' + chosen.name + ' — ' + chosen.description : 'The host has not selected a game yet.';
   $('start-game').hidden = Boolean(me && !me.isHost);
   $('start-game').disabled = !hostView || !selectedGame();
