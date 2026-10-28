@@ -63,7 +63,7 @@ export const battleship = {
   },
   validateAction(context, state, action) {
     if (!state || !Array.isArray(state.playerOrder) || state.playerOrder.length !== 2) return { ok: false, reason: "The game state is invalid." };
-    if (!state.playerOrder.includes(context.player.id) || context.player.role !== "player") return { ok: false, reason: "Only the two players can play." };
+    if (!state.playerOrder.includes(context.player.id) || context.players?.find(player => player.id === context.player.id)?.role !== "player") return { ok: false, reason: "Only the two players can play." };
     if (!action || typeof action.type !== "string") return { ok: false, reason: "Choose a valid action." };
     if (state.winnerId) return { ok: false, reason: "The match has finished." };
     if (action.type === "submit-fleet") {
