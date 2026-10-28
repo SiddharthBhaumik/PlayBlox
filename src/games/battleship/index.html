@@ -21,7 +21,7 @@
           <section id="placement-panel" class="fleet-panel" hidden>
             <p class="panel-kicker">FLEET DEPLOYMENT</p><h2>Place your ships</h2><p class="panel-copy">Select a ship, choose its orientation, then click the starting square on your ocean grid. Ships cannot overlap or run off the board.</p>
             <div class="placement-controls"><label for="ship-select">Ship <select id="ship-select"><option value="carrier">Carrier · 5</option><option value="battleship">Battleship · 4</option><option value="cruiser">Cruiser · 3</option><option value="submarine">Submarine · 3</option><option value="destroyer">Destroyer · 2</option></select></label><button id="rotate-ship" class="navy-button secondary" type="button">↻ Rotate · Horizontal</button></div>
-            <p id="placement-note" class="placement-note" aria-live="polite">Place your Carrier first.</p><div class="board-wrap"><div class="axis-row"></div><div id="own-board" class="ocean-board" role="grid" aria-label="Your ocean grid"></div></div>
+            <p id="placement-note" class="placement-note" aria-live="polite">Place your Carrier first.</p><div id="ship-progress" class="ship-progress" aria-label="Fleet placement progress"></div><div class="board-wrap"><div class="axis-row"></div><div id="own-board" class="ocean-board" role="grid" aria-label="Your ocean grid"></div></div>
             <div class="placement-bottom"><span id="fleet-count">0 / 5 ships placed</span><button id="deploy-fleet" class="navy-button" type="button" disabled>Deploy fleet</button></div>
           </section>
           <section id="battle-panel" class="fleet-panel" hidden>
