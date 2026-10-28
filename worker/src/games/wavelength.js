@@ -12,7 +12,7 @@ export const wavelength = {
   id: "wavelength",
   name: "Wavelength",
   description: "Give clues, read the room, and compete for the best individual score.",
-  guide: "GOAL: Earn the most individual points over 5 rounds. Each player gives one clue per full rotation.\n\nCLUE-GIVER: The game randomly selects two ends from a bank of 500 spectrum pairs. Choose a secret target from 0–100 and write a clue that helps the group find it. The target stays hidden from guessers until all guesses are locked.\n\nGUESSERS: The spectrum and clue are shown to everyone. Discuss them together, then place your own guess. Your guess locks when submitted.\n\nSCORING: Guessers earn 4 points for distance 0–5, 3 for 6–12, 2 for 13–20, 1 for 21–30, and 0 for 31+. The clue-giver earns points using the distance between the target and the average of all guesses. Scores are individual.\n\nROUNDS: One round is a full rotation where everyone gives one clue. After 5 rotations, the leaderboard shows the winner. Rematches reset scores and skip the guide.",
+  guide: "GOAL: Earn the most individual points over 5 rounds. Each player gives one clue per full rotation.\n\nCLUE-GIVER: The game randomly selects two ends from a bank of 500 spectrum pairs and secretly randomizes a target from 0–100. You can see the target marker; the other players cannot. Write a clue that helps the group find the target. The target stays hidden from guessers until all guesses are locked.\n\nGUESSERS: The spectrum and clue are shown to everyone. Discuss them together, then place your own guess. Your guess locks when submitted.\n\nSCORING: Guessers earn 4 points for distance 0–5, 3 for 6–12, 2 for 13–20, 1 for 21–30, and 0 for 31+. The clue-giver earns points using the distance between the target and the average of all guesses. Scores are individual.\n\nROUNDS: One round is a full rotation where everyone gives one clue. After 5 rotations, the leaderboard shows the winner. Rematches reset scores and skip the guide.",
   emoji: "🎯",
   color: "#d9f0e7",
   entry: "./src/games/wavelength/index.html",
@@ -33,7 +33,7 @@ export const wavelength = {
     return {
       playerOrder, round: 1, totalRounds: ROUNDS_TO_WIN, turnNumber: 1,
       score: 0, scores: Object.fromEntries(playerOrder.map(id => [id, 0])),
-      clueGiverIndex: 0, phase: "clue", target: null, ...randomSpectrum(),
+      clueGiverIndex: 0, phase: "clue", target: Math.floor(Math.random() * 101), ...randomSpectrum(),
       clue: "", guesses: {}, submittedPlayerIds: [], history: [], lastRound: null,
     };
   },
@@ -69,7 +69,7 @@ export const wavelength = {
 
   reduceAction(context, state, action) {
     if (action.type === "set-clue") {
-      return { ...state, phase: "guess", target: action.target, clue: action.clue.trim(), guesses: {}, submittedPlayerIds: [] };
+      return { ...state, phase: "guess", clue: action.clue.trim(), guesses: {}, submittedPlayerIds: [] };
     }
     const guesses = { ...state.guesses, [context.player.id]: action.value };
     const guesserIds = state.playerOrder.filter(id => id !== state.playerOrder[state.clueGiverIndex]);
@@ -98,11 +98,11 @@ export const wavelength = {
     return { ...state, phase: finished ? "finished" : "clue",
       round: lastTurnInRound ? (finished ? state.round : state.round + 1) : state.round,
       turnNumber: state.turnNumber + 1, scores, clueGiverIndex: nextClueGiverIndex,
-      target: null, ...randomSpectrum(), clue: "", guesses: {}, submittedPlayerIds: [],
+      target: Math.floor(Math.random() * 101), ...randomSpectrum(), clue: "", guesses: {}, submittedPlayerIds: [],
       lastRound: roundResult, history: [...state.history, roundResult] };
   },
 
-  getPublicState(state) {
+  getPrivateState(state, playerId) {\n    if (!state || !Array.isArray(state.playerOrder)) return null;\n    const clueGiverId = state.playerOrder[state.clueGiverIndex];\n    return playerId === clueGiverId && state.phase === "clue" ? { target: state.target } : null;\n  },\n\n  getPublicState(state) {
     if (!state) return state;
     return {
       playerOrder: state.playerOrder, round: state.round, totalRounds: state.totalRounds,
