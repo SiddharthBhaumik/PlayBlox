@@ -1,17 +1,15 @@
 /**
- * Wavelength (cooperative party variant).
- * The clue-giver privately chooses a target and writes a clue. Everyone else
- * places a guess on the spectrum; the shared score is awarded by group accuracy.
- * The target and pending guesses are withheld from public state until reveal.
+ * Wavelength: individual leaderboard, with every player giving one clue per round.
+ * One round is a complete rotation through the player order. Five rotations are played.
  */
 const ROUNDS_TO_WIN = 5;
-const clamp = (n, min, max) => Math.max(min, Math.min(max, n));
+const pointsForDistance = distance => distance <= 5 ? 4 : distance <= 12 ? 3 : distance <= 20 ? 2 : distance <= 30 ? 1 : 0;
 
 export const wavelength = {
   id: "wavelength",
   name: "Wavelength",
-  description: "Give a clue, read the room, and work together to land on a hidden point of the spectrum.",
-  guide: "GOAL: Build a shared score together over 5 rounds. One clue-giver chooses a secret point on a spectrum and gives a clue. Everyone else discusses the clue and places one guess.\n\nCLUE-GIVER: Choose a target from 0–100, set the two ends of the spectrum (for example, Cold ↔ Hot), and write a clue that helps the group find your target. Your target stays hidden until guesses lock.\n\nGUESSERS: Read the clue and use the spectrum slider to place your guess. Talk it out before locking in. You cannot change a guess after submitting.\n\nSCORING: Once all guessers lock in, the target is revealed. The server compares the group's average guess with the target and awards 4 points for a distance of 0–5, 3 for 6–12, 2 for 13–20, 1 for 21–30, and 0 for a larger miss. The score is shared by everyone.\n\nROTATION: The clue-giver changes each round. After 5 rounds, see your team score. Rematches keep the same players but start a fresh score and skip the guide.",
+  description: "Give clues, read the room, and compete for the best individual score.",
+  guide: "GOAL: Earn the most individual points over 5 rounds. In every round, EACH player gets one turn as clue-giver, so everyone gets a chance to set a spectrum and clue.\n\nCLUE-GIVER: Choose a secret target from 0–100, set the two ends of the spectrum (for example, Cold ↔ Hot), and write a clue. Your target stays hidden until all guesses are locked.\n\nGUESSERS: Discuss the clue and place your own guess. You cannot change it after submitting. Each guesser earns points based on how close their own guess is to the target.\n\nSCORING: Each guesser can earn 0–4 points for their guess. The clue-giver also earns 0–4 points based on how close the average of the group's guesses is to the target. Scores are individual; the player with the most points at the end wins.\n\nROUNDS: One round means every player has been the clue-giver once. After 5 full rotations, the leaderboard shows the winner. Rematches reset scores and skip the guide.",
   emoji: "🎯",
   color: "#d9f0e7",
   entry: "./src/games/wavelength/index.html",
@@ -30,7 +28,8 @@ export const wavelength = {
   createInitialState(context) {
     const playerOrder = context.players.filter(player => player.role === "player" && player.connected).map(player => player.id);
     return {
-      playerOrder, round: 1, totalRounds: ROUNDS_TO_WIN, score: 0,
+      playerOrder, round: 1, totalRounds: ROUNDS_TO_WIN, turnNumber: 1,
+      score: 0, scores: Object.fromEntries(playerOrder.map(id => [id, 0])),
       clueGiverIndex: 0, phase: "clue", target: null, leftLabel: "", rightLabel: "",
       clue: "", guesses: {}, submittedPlayerIds: [], history: [], lastRound: null,
     };
@@ -40,7 +39,10 @@ export const wavelength = {
     if (!state || !Array.isArray(state.playerOrder)) return { ok: false, reason: "The game state is invalid." };
     if (state.phase === "finished") return { ok: false, reason: "The game has finished." };
     const id = context.player.id;
-    if (!Number.isInteger(action?.round) || action.round !== state.round) return { ok: false, reason: "That action belongs to an earlier round. Sync and try again." };
+    if (!Number.isInteger(action?.round) || action.round !== state.round
+      || !Number.isInteger(action?.turnNumber) || action.turnNumber !== state.turnNumber) {
+      return { ok: false, reason: "That action belongs to an earlier turn. Sync and try again." };
+    }
     if (!state.playerOrder.includes(id)) return { ok: false, reason: "Only selected players can play." };
     const clueGiverId = state.playerOrder[state.clueGiverIndex];
     if (state.phase === "clue") {
@@ -55,7 +57,7 @@ export const wavelength = {
       return { ok: true };
     }
     if (state.phase === "guess") {
-      if (id === clueGiverId) return { ok: false, reason: "The clue-giver cannot guess this round." };
+      if (id === clueGiverId) return { ok: false, reason: "The clue-giver cannot guess this turn." };
       if (state.guesses?.[id] !== undefined) return { ok: false, reason: "Your guess is already locked." };
       if (action?.type !== "guess" || !Number.isInteger(action.value) || action.value < 0 || action.value > 100) {
         return { ok: false, reason: "Place your guess between 0 and 100." };
@@ -75,17 +77,28 @@ export const wavelength = {
     const submittedPlayerIds = guesserIds.filter(id => guesses[id] !== undefined);
     if (submittedPlayerIds.length < guesserIds.length) return { ...state, guesses, submittedPlayerIds };
 
-    const values = guesserIds.map(id => guesses[id]);
-    const average = values.reduce((sum, value) => sum + value, 0) / values.length;
+    const average = guesserIds.reduce((sum, id) => sum + guesses[id], 0) / guesserIds.length;
     const distance = Math.round(Math.abs(average - state.target));
-    const points = distance <= 5 ? 4 : distance <= 12 ? 3 : distance <= 20 ? 2 : distance <= 30 ? 1 : 0;
-    const roundResult = { round: state.round, clueGiverId: state.playerOrder[state.clueGiverIndex],
+    const clueGiverId = state.playerOrder[state.clueGiverIndex];
+    const scores = { ...state.scores };
+    const guessPoints = Object.fromEntries(guesserIds.map(id => {
+      const playerDistance = Math.round(Math.abs(guesses[id] - state.target));
+      const points = pointsForDistance(playerDistance);
+      scores[id] = (scores[id] || 0) + points;
+      return [id, { distance: playerDistance, points }];
+    }));
+    const clueGiverPoints = pointsForDistance(distance);
+    scores[clueGiverId] = (scores[clueGiverId] || 0) + clueGiverPoints;
+    const roundResult = { round: state.round, turnNumber: state.turnNumber, clueGiverId,
       clue: state.clue, leftLabel: state.leftLabel, rightLabel: state.rightLabel,
-      target: state.target, guesses, average: Math.round(average), distance, points };
-    const score = state.score + points;
-    const finished = state.round >= state.totalRounds;
-    return { ...state, phase: finished ? "finished" : "clue", round: finished ? state.round : state.round + 1,
-      score, clueGiverIndex: (state.clueGiverIndex + 1) % state.playerOrder.length,
+      target: state.target, guesses, average: Math.round(average), distance,
+      clueGiverPoints, guessPoints, scores: { ...scores } };
+    const lastTurnInRound = state.clueGiverIndex === state.playerOrder.length - 1;
+    const finished = lastTurnInRound && state.round >= state.totalRounds;
+    const nextClueGiverIndex = (state.clueGiverIndex + 1) % state.playerOrder.length;
+    return { ...state, phase: finished ? "finished" : "clue",
+      round: lastTurnInRound ? (finished ? state.round : state.round + 1) : state.round,
+      turnNumber: state.turnNumber + 1, scores, clueGiverIndex: nextClueGiverIndex,
       target: null, leftLabel: "", rightLabel: "", clue: "", guesses: {}, submittedPlayerIds: [],
       lastRound: roundResult, history: [...state.history, roundResult] };
   },
@@ -94,16 +107,16 @@ export const wavelength = {
     if (!state) return state;
     return {
       playerOrder: state.playerOrder, round: state.round, totalRounds: state.totalRounds,
-      score: state.score, clueGiverIndex: state.clueGiverIndex, phase: state.phase,
+      turnNumber: state.turnNumber, score: 0, scores: state.scores,
+      clueGiverIndex: state.clueGiverIndex, phase: state.phase,
       leftLabel: state.leftLabel, rightLabel: state.rightLabel, clue: state.clue,
-      submittedPlayerIds: state.submittedPlayerIds,
-      lastRound: state.lastRound, history: state.history,
+      submittedPlayerIds: state.submittedPlayerIds, lastRound: state.lastRound, history: state.history,
     };
   },
 
   getStatus(context, state) { return state.phase === "finished" ? "finished" : "active"; },
   getResults(context, state) {
-    return { outcome: "complete", score: state.score, totalRounds: state.totalRounds,
-      maxScore: state.totalRounds * 4, history: state.history };
+    return { outcome: "complete", scores: state.scores, totalRounds: state.totalRounds,
+      playerOrder: state.playerOrder, history: state.history };
   },
 };
