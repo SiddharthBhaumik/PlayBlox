@@ -1,4 +1,4 @@
-// Curated spectrum bank: 50 contrasts × 10 contexts = 500 distinct pairs.
+// Curated spectrum bank: 500 distinct spectrum pairs.
 export const SPECTRUMS = [
   {
     "left": "Ice cold for a movie",
@@ -1481,46 +1481,6 @@ export const SPECTRUMS = [
     "right": "Impractical as a way to travel"
   },
   {
-    "left": "Overrated for a movie",
-    "right": "Underrated for a movie"
-  },
-  {
-    "left": "Overrated as a superpower",
-    "right": "Underrated as a superpower"
-  },
-  {
-    "left": "Overrated as a gift",
-    "right": "Underrated as a gift"
-  },
-  {
-    "left": "Overrated for a first date",
-    "right": "Underrated for a first date"
-  },
-  {
-    "left": "Overrated as a pet",
-    "right": "Underrated as a pet"
-  },
-  {
-    "left": "Overrated for a holiday",
-    "right": "Underrated for a holiday"
-  },
-  {
-    "left": "Overrated as a job",
-    "right": "Underrated as a job"
-  },
-  {
-    "left": "Overrated for a meal",
-    "right": "Underrated for a meal"
-  },
-  {
-    "left": "Overrated for a school subject",
-    "right": "Underrated for a school subject"
-  },
-  {
-    "left": "Overrated as a way to travel",
-    "right": "Underrated as a way to travel"
-  },
-  {
     "left": "Awkward for a movie",
     "right": "Smooth for a movie"
   },
@@ -1999,5 +1959,45 @@ export const SPECTRUMS = [
   {
     "left": "Conservative as a way to travel",
     "right": "Risky as a way to travel"
+  },
+  {
+    "left": "Barely magical",
+    "right": "Mind-blowingly magical"
+  },
+  {
+    "left": "Totally forgettable",
+    "right": "Impossible to forget"
+  },
+  {
+    "left": "A terrible idea",
+    "right": "A genius idea"
+  },
+  {
+    "left": "Not worth the effort",
+    "right": "Worth every second"
+  },
+  {
+    "left": "Hard to recommend",
+    "right": "An instant recommendation"
+  },
+  {
+    "left": "A mild inconvenience",
+    "right": "A complete disaster"
+  },
+  {
+    "left": "A weak opening",
+    "right": "An unforgettable opening"
+  },
+  {
+    "left": "A terrible party guest",
+    "right": "The life of the party"
+  },
+  {
+    "left": "Not worth keeping",
+    "right": "Absolutely priceless"
+  },
+  {
+    "left": "A small flex",
+    "right": "An outrageous flex"
   }
 ];
