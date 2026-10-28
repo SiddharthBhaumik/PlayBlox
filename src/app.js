@@ -276,13 +276,23 @@ function openParty({room,token}){
   activeRoomCode=room.code;activePlayerToken=token;activePlayerId=null;lastRoomPlayers=null;
   $('lobby-title').textContent=room.name||'Party lobby';$('lobby-code').textContent=room.code;
   $('lobby-invite').dataset.inviteUrl=new URL('./?party='+encodeURIComponent(room.code),location.href).href;
-  $('lobby-activity').replaceChildren();addLobbyActivity('🎉 Lobby opened — invite your friends to join!');
-  renderPlayers(room);
+  // Switch views immediately so a lobby-rendering hiccup cannot leave the user on the homepage.
+  document.querySelectorAll('[data-home-section]').forEach(s=>s.hidden=true);
+  $('lobby-screen').hidden=false;
+  window.scrollTo({top:0,behavior:'smooth'});
+  $('lobby-activity').replaceChildren();
+  addLobbyActivity('🎉 Lobby opened — invite your friends to join!');
   const noticeKey='playblox:'+room.code+':notice';
   const notice=sessionStorage.getItem(noticeKey);
   if(notice){addLobbyActivity('📣 '+notice);sessionStorage.removeItem(noticeKey);}
-  document.querySelectorAll('[data-home-section]').forEach(s=>s.hidden=true);
-  $('lobby-screen').hidden=false;window.scrollTo({top:0,behavior:'smooth'});connectRoom(room.code,token);
+  try {
+    renderPlayers(room);
+    connectRoom(room.code,token);
+  } catch (error) {
+    console.error('PlayBlox lobby failed to render:', error);
+    $('lobby-connection').textContent='Party created, but the lobby did not finish loading. Refresh this page to reconnect.';
+    $('lobby-connection').classList.add('offline');
+  }
 }
 
 $('create-party-form').addEventListener('submit', async event => {
