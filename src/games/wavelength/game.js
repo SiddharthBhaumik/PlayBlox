@@ -58,11 +58,15 @@ function render(){
  $("replay-status").hidden=!finished;
  if(finished){
   const votes=room.rematchVotes||{};
-  const names=gameState.playerOrder.map(id=>{
+  const participantIds=gameState.playerOrder||[];
+  const decided=participantIds.filter(id=>votes[id]==="continue"||votes[id]==="restart").length;
+  const continueVotes=participantIds.filter(id=>votes[id]==="continue").length;
+  const restartVotes=participantIds.filter(id=>votes[id]==="restart").length;
+  const names=participantIds.map(id=>{
    const choice=votes[id];
-   return (player(id)?.nickname||"Player")+(choice?" chose "+(choice==="continue"?"Continue":"Restart"):" has not chosen");
+   return (player(id)?.nickname||"Player")+(choice?" · "+(choice==="continue"?"Continue":"Restart"):" · deciding…");
   });
-  $("replay-status").textContent="Everyone must choose the same option. "+names.join(" · ");
+  $("replay-status").textContent=decided+"/"+participantIds.length+" players decided · Continue: "+continueVotes+" · Restart: "+restartVotes+". Everyone must choose the same option. "+names.join(" | ");
  }
  const rerollsLeft=Math.max(0,2-(gameState.rerollsUsed||0));$("reroll-spectrum").disabled=submitting||!isClue||!isGiver||rerollsLeft===0;$("reroll-spectrum").textContent=rerollsLeft?"↻ Change pair and target ("+rerollsLeft+" left)":"No changes left this turn";$("set-clue").disabled=submitting;$("lock-guess").disabled=submitting;
  $("target-slider").value=String(privateState?.target ?? 50);$("target-slider").disabled=true;$("target-value").textContent=String(privateState?.target ?? "—");$("guess-value").textContent=$("guess-slider").value;
@@ -94,7 +98,7 @@ async function chooseNext(choice){
  buttons.forEach(button=>button.disabled=true);
  try{
   const r=await api("/api/rooms/"+encodeURIComponent(code)+"/game/rematch",{method:"POST",body:JSON.stringify({choice})});
-  if(r.status==="waiting")$("replay-status").textContent="Your choice is saved. Everyone must choose the same option; you can change your choice.";
+  if(r.status==="waiting"){room.rematchVotes={...(room.rematchVotes||{}),[myPlayerId]:choice};render();$("replay-status").textContent="Your choice is saved. "+Object.keys(room.rematchVotes).length+"/"+(gameState.playerOrder||[]).length+" players decided. Everyone must choose the same option; you can change your choice."; }
   else if(r.status==="playing")$("replay-status").textContent=choice==="continue"?"Everyone agreed — next round!":"Everyone agreed — restarting with zero scores!";
  }catch(e){help(e.message,true);buttons.forEach(button=>button.disabled=false)}
 }
