@@ -41,7 +41,7 @@ function render(){
  if(gameState.lastRound){
   const r=gameState.lastRound;$("reveal-panel").hidden=false;$("reveal-left").textContent=r.leftLabel;$("reveal-right").textContent=r.rightLabel;
   $("target-marker").style.left=r.target+"%";$("average-marker").style.left=r.average+"%";
-  $("reveal-summary").textContent="Target "+r.target+" · group average "+r.average+" · "+r.distance+" points away";
+  const yourGuess=r.guesses?.[myPlayerId];\n  const yourDistance=Number.isInteger(yourGuess)?Math.abs(yourGuess-r.target):null;\n  $("reveal-summary").textContent="Target "+r.target+" · your prediction "+(yourGuess??"—")+(yourDistance===null?"":" ("+yourDistance+" away)")+" · group average "+r.average+" ("+Math.abs(r.average-r.target)+" away)";
   const earned=r.clueGiverId===myPlayerId?r.clueGiverPoints:(r.guessPoints?.[myPlayerId]?.points??0);$("round-points").textContent="You earned +"+earned+" points this turn";
   $("reveal-title").textContent=finished?"Final round revealed!":"Round "+r.round+" revealed";
   renderHistory();
