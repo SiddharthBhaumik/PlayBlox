@@ -351,13 +351,14 @@ export class PartyRoom extends DurableObject {
       try { this.room.gameState = await game.createInitialState(context, this.room.gameState); }
       catch { return json({ error: "The next round could not be initialized." }, 500, request); }
       if (!this.room.gameState) return json({ error: "The game returned no initial state." }, 500, request);
-      this.room.lifecycle = "playing"; this.room.results = null; this.room.rematchVotes = {};
-      this.recordHistory("rematch-started", `${game.name} replay started`, { gameId: game.id });
+      this.room.lifecycle = "guide"; this.room.results = null; this.room.rematchVotes = {};
+      this.room.guidePlayerIds = participants.slice(); this.room.guideReadyPlayerIds = [];
+      this.recordHistory("rematch-guide", `${game.name} replay guide opened`, { gameId: game.id });
       this.room.stateVersion = (this.room.stateVersion || 0) + 1; this.room.recentActionIds = [];
       this.room.lastActivityAt = Date.now();
       await this.persistAndSchedule();
-      this.broadcast({ type: "game-started", room: publicRoom(this.room), stateVersion: this.room.stateVersion, rematch: true });
-      return json({ ok: true, status: "started", room: publicRoom(this.room) }, 200, request);
+      this.broadcast({ type: "game-guide", room: publicRoom(this.room), stateVersion: this.room.stateVersion, rematch: true });
+      return json({ ok: true, status: "guide", room: publicRoom(this.room) }, 200, request);
     }
     this.room.lastActivityAt = Date.now();
     await this.persistAndSchedule();
