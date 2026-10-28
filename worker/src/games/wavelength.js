@@ -1,10 +1,10 @@
 /**
- * Wavelength: individual leaderboard, with every player giving one clue per round.
- * One round is a complete rotation through the player order. Five rotations are played.
+ * Wavelength: one clue-giver turn per round. After each reveal, the group can
+ * continue to the next round with scores preserved or restart with zero scores.
  */
 import { SPECTRUMS } from "./wavelength-spectrums.js";
 
-const ROUNDS_TO_WIN = 5;
+const ROUNDS_TO_WIN = 1;
 const randomSpectrum = (current = null) => {
   let pair = SPECTRUMS[Math.floor(Math.random() * SPECTRUMS.length)];
   if (current && SPECTRUMS.length > 1) {
@@ -20,7 +20,7 @@ export const wavelength = {
   id: "wavelength",
   name: "Wavelength",
   description: "Give clues, read the room, and compete for the best individual score.",
-  guide: "GOAL: Earn the most individual points over 5 rounds. Each player gives one clue per full rotation.\n\nCLUE-GIVER: The game randomly selects two ends from a bank of 500 spectrum pairs and secretly randomizes a target from 0–100. You can see the target marker; the other players cannot. Write a clue that helps the group find the target. The target stays hidden from guessers until all guesses are locked.\n\nGUESSERS: The spectrum and clue are shown to everyone. Discuss them together, then place your own guess. Your guess locks when submitted.\n\nSCORING: Guessers earn 4 points for distance 0–5, 3 for 6–12, 2 for 13–20, 1 for 21–30, and 0 for 31+. The clue-giver earns points using the distance between the target and the average of all guesses. Scores are individual.\n\nROUNDS: One round is a full rotation where everyone gives one clue. After 5 rotations, the leaderboard shows the winner. Rematches reset scores and skip the guide.",
+  guide: "GOAL: Earn the highest individual score, one clue at a time. Each round is one clue-giver turn.\\n\\nCLUE-GIVER: The game randomly selects two ends from a bank of 500 spectrum pairs and secretly randomizes a target from 0–100. You can see the target marker; the other players cannot. Write a clue that helps the group find the target. The target stays hidden from guessers until all guesses are locked.\\n\\nGUESSERS: The spectrum and clue are shown to everyone. Discuss them together, then place your own guess. Your guess locks when submitted.\\n\\nSCORING: Guessers earn 4 points for distance 0–5, 3 for 6–12, 2 for 13–20, 1 for 21–30, and 0 for 31+. The clue-giver earns points using the distance between the target and the average of all guesses. Scores are individual.\\n\\nAFTER EACH ROUND: Everyone chooses the same option: Continue to the next round (keep scores) or Restart (reset scores and begin with the first clue-giver).",
   emoji: "🎯",
   color: "#d9f0e7",
   entry: "./src/games/wavelength/index.html",
@@ -106,14 +106,26 @@ export const wavelength = {
       clue: state.clue, leftLabel: state.leftLabel, rightLabel: state.rightLabel,
       target: state.target, guesses, average: Math.round(average), distance,
       clueGiverPoints, guessPoints, scores: { ...scores } };
-    const lastTurnInRound = state.clueGiverIndex === state.playerOrder.length - 1;
-    const finished = lastTurnInRound && state.round >= state.totalRounds;
     const nextClueGiverIndex = (state.clueGiverIndex + 1) % state.playerOrder.length;
-    return { ...state, phase: finished ? "finished" : "clue",
-      round: lastTurnInRound ? (finished ? state.round : state.round + 1) : state.round,
+    // Each clue-and-guess sequence is one round. The group decides what happens next.
+    return { ...state, phase: "finished", round: state.round,
       turnNumber: state.turnNumber + 1, scores, clueGiverIndex: nextClueGiverIndex,
-      target: randomTarget(state.target), ...randomSpectrum(state), rerollsUsed: 0, clue: "", guesses: {}, submittedPlayerIds: [],
       lastRound: roundResult, history: [...state.history, roundResult] };
+  },
+
+  startNextRound(context, state, choice) {
+    if (choice === "restart") return this.createInitialState(context);
+    return {
+      ...state,
+      round: state.round + 1,
+      phase: "clue",
+      target: randomTarget(state.target),
+      ...randomSpectrum(state),
+      rerollsUsed: 0,
+      clue: "",
+      guesses: {},
+      submittedPlayerIds: [],
+    };
   },
 
   getPrivateState(state, playerId) {
