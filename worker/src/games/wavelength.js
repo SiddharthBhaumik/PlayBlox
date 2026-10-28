@@ -5,7 +5,7 @@
 import { SPECTRUMS } from "./wavelength-spectrums.js";
 
 const ROUNDS_TO_WIN = 5;
-const randomSpectrum = () => SPECTRUMS[Math.floor(Math.random() * SPECTRUMS.length)];
+const randomSpectrum = () => { const pair = SPECTRUMS[Math.floor(Math.random() * SPECTRUMS.length)]; return { leftLabel: pair.left, rightLabel: pair.right }; };
 const pointsForDistance = distance => distance <= 5 ? 4 : distance <= 12 ? 3 : distance <= 20 ? 2 : distance <= 30 ? 1 : 0;
 
 export const wavelength = {
