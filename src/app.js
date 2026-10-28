@@ -406,6 +406,13 @@ if (incomingCode) {
   const savedToken = sessionStorage.getItem('playblox:' + code + ':token');
   const savedNickname = sessionStorage.getItem('playblox:' + code + ':nickname');
   if (/^[A-Z0-9]{6}$/.test(code) && savedToken && savedNickname) {
+    // Returning from a game reloads the lobby page. Show the lobby shell immediately
+    // instead of flashing the homepage while the saved party session is restored.
+    document.querySelectorAll('[data-home-section]').forEach(section => { section.hidden = true; });
+    $('lobby-screen').hidden = false;
+    $('lobby-title').textContent = 'Returning to your party…';
+    $('lobby-code').textContent = code;
+    $('lobby-connection').textContent = 'Reconnecting to the party lobby…';
     api('/api/rooms/' + encodeURIComponent(code) + '/join', {
       method: 'POST',
       body: JSON.stringify({ nickname: savedNickname, playerToken: savedToken }),
@@ -428,6 +435,9 @@ if (incomingCode) {
       openParty({ room: result.room, token: result.playerToken });
     })
       .catch(() => {
+        // If the saved session is no longer valid, restore the normal home/join view.
+        $('lobby-screen').hidden = true;
+        document.querySelectorAll('[data-home-section]').forEach(section => { section.hidden = false; });
         $('invite-code').value = incomingCode;
         $('join-party-form').scrollIntoView({ block: 'center', behavior: 'smooth' });
       });
