@@ -58,7 +58,6 @@ function renderGameChoices(room = latestLobbyRoom) {
   $('start-game').disabled = !hostView || !selectedGame();
   if (!playable.length) gameFeedback('No playable games with guides are registered yet.');
 }
-renderGameChoices();
 
 function feedback(id, message, success = false) {
   const node = $(id);
