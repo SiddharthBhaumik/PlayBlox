@@ -31,6 +31,6 @@ registerServerGame(wavelength);
 
 export function getServerGame(id) { return serverGames.get(id) || null; }
 export function listServerGames() {
-  return [...serverGames.values()].map(({ id, name, description, players, interactionModel, lateJoinPolicy, spectators }) =>
-    ({ id, name, description, players, interactionModel, lateJoinPolicy, spectators }));
+  return [...serverGames.values()].map(({ id, name, description, guide, players, interactionModel, lateJoinPolicy, spectators }) =>
+    ({ id, name, description, guide, players, interactionModel, lateJoinPolicy, spectators }));
 }
