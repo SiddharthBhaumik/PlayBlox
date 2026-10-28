@@ -6,3 +6,10 @@
 .leaderboard-row { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: .65rem .8rem; border-radius: .8rem; background: rgba(255,255,255,.72); }
 .leaderboard-row span { overflow-wrap: anywhere; }
 .leaderboard-row strong { white-space: nowrap; }
+
+
+/* The shared clue stays prominent on every player's screen during the guess phase. */
+.shared-clue-panel { border: 2px solid var(--wave-accent, #73bba0); background: #f1fbf6; }
+.shared-clue-panel blockquote { margin: 0.65rem 0 0; padding: 0.9rem 1rem; border-left: 4px solid #4c9b7e; border-radius: 0.5rem; background: #fff; color: #203c32; font-size: 1.12rem; font-weight: 800; }
+.scoring-panel { background: #fffaf0; }
+.display-labels strong { overflow-wrap: anywhere; }
