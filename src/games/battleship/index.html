@@ -9,7 +9,7 @@
 </head>
 <body>
   <div class="page-shell game-shell fleet-shell">
-    <header class="topbar"><a class="brand" href="../../../" aria-label="PlayBlox home"><span class="brand-mark" aria-hidden="true">🧸</span><span class="brand-name">Play<span>Blox</span></span></a><a class="back-link" id="back-to-lobby" href="../../../" hidden>Back to party</a></header>
+    <header class="topbar"><a class="brand" href="../../../" aria-label="PlayBlox home"><span class="brand-mark" aria-hidden="true">🧸</span><span class="brand-name">Play<span>Blox</span></span></a><a class="back-link" id="back-to-lobby" href="../../../?party=PLACEHOLDER" hidden>Back to party</a></header>
     <div class="game-layout fleet-layout">
       <aside class="game-roster" aria-label="Players in this game"><h2>Fleet command</h2><ul id="game-players"><li>Connecting to party…</li></ul></aside>
       <main class="fleet-game">
@@ -32,7 +32,7 @@
             <div id="fleet-status" class="fleet-status"></div>
           </section>
           <section id="result-panel" class="fleet-panel result-panel" hidden><p class="panel-kicker">BATTLE REPORT</p><h2 id="result-title">Victory!</h2><p id="result-copy"></p><div class="rematch-prompt"><h2>Another battle?</h2><p id="rematch-status">Choose what happens next. Both captains’ choices will be shown here.</p><div id="round-votes" class="round-votes" aria-live="polite"></div><button class="host-end-button" id="host-end-round" type="button" hidden>End game and return everyone to lobby</button><div class="rematch-actions"><button class="primary-button" id="play-again" type="button">Replay</button><button class="secondary-button" id="no-rematch" type="button">Return to lobby</button></div></div></section>
-          <div class="game-exit-actions"><button class="primary-button" id="return-lobby" type="button" hidden>↩ End game and return everyone to lobby</button><button class="secondary-button" id="leave-game" type="button" hidden>Leave game</button></div>
+          <div class="game-exit-actions"><button class="primary-button" id="return-lobby" type="button" hidden>Return to lobby</button><button class="secondary-button" id="leave-game" type="button" hidden>Leave game</button></div>
         </section>
         <p id="game-help" class="game-help" role="status">The server validates every placement and shot. Fleet positions stay private to their owner.</p>
       </main>
