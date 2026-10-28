@@ -6,6 +6,7 @@ import { ticTacToe } from "./tic-tac-toe.js";
 import { bulletMatrix } from "./bullet-matrix.js";
 import { questionableAnswers } from "./questionable-answers.js";
 import { wavelength } from "./wavelength.js";
+import { battleship } from "./battleship.js";
 
 const serverGames = new Map();
 
@@ -28,6 +29,7 @@ registerServerGame(ticTacToe);
 registerServerGame(bulletMatrix);
 registerServerGame(questionableAnswers);
 registerServerGame(wavelength);
+registerServerGame(battleship);
 
 export function getServerGame(id) { return serverGames.get(id) || null; }
 export function listServerGames() {
