@@ -25,8 +25,8 @@ function render(){
  const board=$("leaderboard");board.replaceChildren();(gameState.playerOrder||[]).map(id=>({id,name:player(id)?.nickname||"Player",score:gameState.scores?.[id]||0})).sort((a,b)=>b.score-a.score).forEach((item,index)=>{const row=document.createElement("div");row.className="leaderboard-row";const name=document.createElement("span");name.textContent=(index+1)+". "+item.name+(item.id===clueGiverId()?" · clue-giver":"");const score=document.createElement("strong");score.textContent=item.score+" pts";row.append(name,score);board.append(row)});
  $("clue-panel").hidden=finished||!isClue||!isGiver;
  $("shared-clue-panel").hidden=finished||gameState.phase!=="guess";
- $("shared-left").textContent=gameState.leftLabel||"";$("shared-right").textContent=gameState.rightLabel||"";$("shared-clue").textContent=gameState.clue||"";
- $("clue-left").textContent=gameState.leftLabel||"";$("clue-right").textContent=gameState.rightLabel||"";
+ $("shared-left").textContent=gameState.leftLabel||"Not at all";$("shared-right").textContent=gameState.rightLabel||"Extremely";$("shared-clue").textContent=gameState.clue||"";
+ $("clue-left").textContent=gameState.leftLabel||"Not at all";$("clue-right").textContent=gameState.rightLabel||"Extremely";$("display-left").textContent=gameState.leftLabel||"Not at all";$("display-right").textContent=gameState.rightLabel||"Extremely";
  $("guess-panel").hidden=finished||isClue||isGiver||submitted;
  // The clue-giver waits during guesses; submitted guessers and the clue phase show progress.
  const guesserIds=gameState.playerOrder.filter(id=>id!==clueGiverId());
@@ -61,7 +61,7 @@ $("set-clue").addEventListener("click",async()=>{
  const clue=$("clue-input").value.trim();
  if(!clue){help("Write a clue before sharing it.",true);return}
  submitting=true;render();
- try{await sendAction({type:"set-clue",target:Number($("target-slider").value),clue});await syncRoom()}
+ try{await sendAction({type:"set-clue",target:Number($("target-slider").value),leftLabel:gameState.leftLabel||"Not at all",rightLabel:gameState.rightLabel||"Extremely",clue});await syncRoom()}
  catch(e){help(e.message,true);if(Number.isInteger(e.stateVersion))stateVersion=e.stateVersion;try{await syncRoom()}catch{}}
  finally{submitting=false;render()}
 });
