@@ -118,6 +118,7 @@ function renderLobbyHistory(room) {
 }
 function renderPlayers(room) {
   latestLobbyRoom = room;
+  if (room.selectedGameId) selectedGameId = room.selectedGameId;
   renderLobbyHistory(room);
   const me = room.players.find(player => player.id === activePlayerId);
   $('start-game').hidden = Boolean(me && !me.isHost);
@@ -206,7 +207,7 @@ function connectRoom(code,token){
       if(generation!==socketGeneration||socket!==roomSocket)return;
       let message;try{message=JSON.parse(event.data)}catch{return}
       if(message.type==='room-snapshot'&&message.playerId)activePlayerId=message.playerId;
-      if(['room-snapshot','room-updated','game-started'].includes(message.type)&&message.room)renderPlayers(message.room);
+      if(['room-snapshot','room-updated','game-started','game-guide','guide-progress'].includes(message.type)&&message.room)renderPlayers(message.room);
       if(message.type==='room-snapshot'&&message.room?.lifecycle==='lobby'){
         // The lobby flag prevents redirecting back into the old round only on arrival.
         // Once the reset is confirmed, the host must be able to open the next round.
@@ -216,6 +217,10 @@ function connectRoom(code,token){
         const me=message.room.players.find(p=>p.id===activePlayerId);
         if(!explicitlyReturningToLobby&&(me?.role==='player'||me?.role==='spectator')) openActiveGame(message.room.gameId);
         else $('lobby-connection').textContent='Game in progress · you are waiting for the next round';
+      }
+      if(message.type==='game-guide'){
+        const me=message.room?.players.find(p=>p.id===activePlayerId);
+        if(me?.role==='player'||me?.role==='spectator') openActiveGame(message.room?.gameId);
       }
       if(message.type==='game-started'){
         addLobbyActivity('🎮 '+(message.room?.game?.name||'A game')+' started');
