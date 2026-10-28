@@ -66,6 +66,21 @@ export const gameRegistry = [
     lateJoinPolicy: 'spectate',
     spectators: { supported: true },
   },
+  {
+    id: 'wavelength',
+    name: 'Wavelength',
+    description: 'Give a clue, read the room, and work together to land on a hidden point of the spectrum.',
+    guide: "GOAL: Build a shared score together over 5 rounds. One clue-giver chooses a secret point on a spectrum and gives a clue. Everyone else discusses the clue and places one guess.\n\nCLUE-GIVER: Choose a target from 0–100, set the two ends of the spectrum (for example, Cold ↔ Hot), and write a clue that helps the group find your target. Your target stays hidden until guesses lock.\n\nGUESSERS: Read the clue and use the spectrum slider to place your guess. Talk it out before locking in. You cannot change a guess after submitting.\n\nSCORING: Once all guessers lock in, the target is revealed. The server compares the group's average guess with the target and awards 4 points for a distance of 0–5, 3 for 6–12, 2 for 13–20, 1 for 21–30, and 0 for a larger miss. The score is shared by everyone.\n\nROTATION: The clue-giver changes each round. After 5 rounds, see your team score. Rematches keep the same players but start a fresh score and skip the guide.",
+    emoji: '🎯',
+    color: '#d9f0e7',
+    status: 'ready',
+    path: './src/games/wavelength/index.html',
+    entryMode: 'party',
+    players: { min: 2, max: 8 },
+    interactionModel: 'simultaneous',
+    lateJoinPolicy: 'spectate',
+    spectators: { supported: true },
+  },
   // Example for a future game (uncomment and edit when its page exists):
   // {
   //   id: 'memory-match',
