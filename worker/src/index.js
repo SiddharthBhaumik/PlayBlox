@@ -500,7 +500,7 @@ export class PartyRoom extends DurableObject {
     const player = this.authorizePlayer(request);
     if (!player) return json({ error: "A valid player session is required." }, 401, request);
     if (!player.isHost) return json({ error: "Only the host can return the party to the lobby." }, 403, request);
-    if (!["results", "playing"].includes(this.room.lifecycle)) return json({ error: "There is no game to reset." }, 409, request);
+    if (!["guide", "results", "playing"].includes(this.room.lifecycle)) return json({ error: "There is no game to reset." }, 409, request);
     this.recordHistory("returned-to-lobby", `${this.room.gameMetadata?.name || "Game"} ended; returned to lobby`, { gameId: this.room.gameId });
     this.room.lifecycle = "lobby";
     for (const entry of this.room.players) if (entry.role === "spectator" || entry.role === "waiting") entry.role = "player";
