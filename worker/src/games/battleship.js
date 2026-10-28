@@ -54,7 +54,7 @@ export const battleship = {
   getPublicState(state) {
     if (!state) return null;
     return { phase: state.phase, playerOrder: state.playerOrder, readyPlayerIds: state.readyPlayerIds || [],
-      shots: state.shots || {}, currentPlayerId: state.currentPlayerId, winnerId: state.winnerId,
+      shots: Object.fromEntries(Object.entries(state.shots || {}).map(([id, shots]) => [id, shots.map(({ cell, hit }) => ({ cell, hit }))])), currentPlayerId: state.currentPlayerId, winnerId: state.winnerId,
       lastShot: state.lastShot || null, moveCount: state.moveCount || 0 };
   },
   getPrivateState(state, playerId) {
@@ -98,7 +98,7 @@ export const battleship = {
     for (const ship of fleet) for (const cell of ship.cells) occupied.set(cell, ship.id);
     const hit = occupied.has(action.cell);
     const shots = { ...state.shots, [context.player.id]: [...(state.shots[context.player.id] || []), { cell: action.cell, hit, shipId: hit ? occupied.get(action.cell) : null }] };
-    const hitCells = new Set(Object.values(shots).flat().filter(shot => shot.hit && shot.shipId).map(shot => shot.cell));
+    const hitCells = new Set(shots[context.player.id].filter(shot => shot.hit && shot.shipId).map(shot => shot.cell));
     const sunkShipIds = fleet.filter(ship => ship.cells.every(cell => hitCells.has(cell))).map(ship => ship.id);
     const allSunk = fleet.every(ship => ship.cells.every(cell => hitCells.has(cell)));
     return { ...state, shots, currentPlayerId: allSunk ? null : opponentId,
