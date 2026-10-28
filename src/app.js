@@ -122,7 +122,6 @@ function renderPlayers(room) {
   renderLobbyHistory(room);
   const me = room.players.find(player => player.id === activePlayerId);
   $('start-game').hidden = Boolean(me && !me.isHost);
-  renderGameChoices(room);
   // Hosts may leave too; the server transfers ownership to a remaining member.
   $('leave-lobby').hidden = !me;
   $('lobby-player-count').textContent = `${room.playerCount}/${room.playerCap} players`;
