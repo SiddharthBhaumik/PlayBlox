@@ -210,7 +210,7 @@ export class PartyRoom extends DurableObject {
     const game = getServerGame(body.gameId);
     if (!game) return json({ error: "This game is not registered with the multiplayer engine yet." }, 404, request);
     if (!game.guide || !game.guide.trim()) return json({ error: "This game cannot start until its player guide is added." }, 409, request);
-    if (this.room.selectedGameId && this.room.selectedGameId !== game.id) return json({ error: "Start the game selected in the lobby." }, 409, request);
+    if (this.room.selectedGameId !== game.id) return json({ error: "Select this game in the lobby before starting it." }, 409, request);
     const connectedPlayers = this.room.players.filter(entry => entry.connected && entry.role !== "spectator" && entry.role !== "waiting");
     const min = game.players?.min ?? 2, max = Math.min(game.players?.max ?? ROOM_CAP, ROOM_CAP);
     let selectedIds = body.selectedPlayerIds;
