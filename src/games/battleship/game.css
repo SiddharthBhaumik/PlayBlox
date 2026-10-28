@@ -7,3 +7,5 @@
 .ship-progress span.placed{border-color:#80bda2;background:#e1f4e9;color:#205f49;}
 .ship-progress .ship-check{display:inline-grid;place-items:center;width:17px;height:17px;border-radius:50%;background:#dce8ed;color:#6c8791;font-size:11px;}
 .ship-progress .placed .ship-check{background:#287c64;color:white;}
+
+.round-votes{display:grid;gap:8px;max-width:520px;margin:14px auto;text-align:left}.round-vote-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 12px;border:1px solid #b7d2d9;border-radius:10px;background:#fff}.round-vote-row strong{color:var(--navy);font-size:13px}.round-vote-choice{padding:5px 9px;border-radius:999px;background:#e8eef0;color:#536e79;font-size:12px;font-weight:1000}.round-vote-choice.voted{background:#dff3e7;color:#205f49}@media(max-width:420px){.round-vote-row{align-items:flex-start;flex-direction:column;gap:6px}}
