@@ -6,6 +6,7 @@ export const ticTacToe = {
   id: "tic-tac-toe",
   name: "Tic-Tac-Toe",
   description: "A classic little battle of Xs and Os. First to line up three wins.",
+  guide: "Take turns placing X or O in an empty square. Line up three marks horizontally, vertically, or diagonally to win. If all nine squares fill without a line, the game is a draw.",
   emoji: "⭕",
   color: "#ffe4a8",
   entry: "./src/games/tic-tac-toe/index.html",
