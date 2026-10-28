@@ -1,0 +1,10 @@
+{
+  "name": "playblox",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "validate:games": "node scripts/validate-games.mjs",
+    "check:syntax": "node scripts/check-syntax.mjs",
+    "test": "npm run check:syntax && npm run validate:games"
+  }
+}
