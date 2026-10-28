@@ -18,6 +18,9 @@ export const bulletMatrix = {
   interactionModel: "simultaneous",
   lateJoinPolicy: "spectate",
   spectators: { supported: true },
+  // Keep an active player in the match after reconnect grace expires; their
+  // simultaneous action round waits until they return.
+  preserveDisconnectedPlayersWhileActive: true,
 
   canStart(context) {
     const players = context.players.filter(player => player.role === "player" && player.connected);
