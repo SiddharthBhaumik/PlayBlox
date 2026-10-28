@@ -63,3 +63,54 @@ export function setupHostEndRound(button, { getRoom, getPlayerId, onEnd }) {
   });
   return sync;
 }
+
+
+const guideDialogs = new Map();
+export function renderGameGuide({ room, code, token, apiBaseUrl, myPlayerId }) {
+  if (!room || room.lifecycle === "lobby" || !room.game?.guide) return;
+  const isRequired = (room.guidePlayerIds || []).includes(myPlayerId);
+  if (!isRequired) return;
+  let dialog = guideDialogs.get(code);
+  if (!dialog) {
+    dialog = document.createElement("dialog");
+    dialog.className = "playblox-guide-dialog";
+    dialog.innerHTML = '<div class="guide-dialog-emoji" aria-hidden="true">📖</div><p class="section-kicker">BEFORE YOU PLAY</p><h2 class="guide-dialog-title"></h2><p class="guide-dialog-copy"></p><p class="guide-dialog-progress" role="status"></p><button class="primary-button guide-dialog-ready" type="button">I’ve read the guide — start when everyone is ready</button>';
+    document.body.append(dialog);
+    guideDialogs.set(code, dialog);
+    dialog.querySelector(".guide-dialog-ready").addEventListener("click", async () => {
+      const button = dialog.querySelector(".guide-dialog-ready");
+      button.disabled = true;
+      dialog.querySelector(".guide-dialog-progress").textContent = "Confirming…";
+      try {
+        const response = await fetch(apiBaseUrl + "/api/rooms/" + encodeURIComponent(code) + "/game/guide-ready", {
+          method: "POST", headers: { "Content-Type": "application/json", Authorization: "Bearer " + token }, body: "{}",
+        });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(result.error || "Could not confirm the guide.");
+        dialog.querySelector(".guide-dialog-progress").textContent = result.lifecycle === "playing" ? "Everyone is ready. Starting!" : result.readyCount + " of " + result.requiredCount + " players are ready. Waiting for the others…";
+      } catch (error) {
+        dialog.querySelector(".guide-dialog-progress").textContent = error.message;
+        button.disabled = false;
+      }
+    });
+  }
+  dialog.querySelector(".guide-dialog-title").textContent = room.game.name + " — how to play";
+  dialog.querySelector(".guide-dialog-copy").textContent = room.game.guide;
+  const readyIds = room.guideReadyPlayerIds || [];
+  const readyCount = readyIds.length, requiredCount = (room.guidePlayerIds || []).length;
+  const button = dialog.querySelector(".guide-dialog-ready");
+  if (readyIds.includes(myPlayerId)) {
+    button.disabled = true;
+    button.textContent = "✓ Guide read";
+    dialog.querySelector(".guide-dialog-progress").textContent = readyCount + " of " + requiredCount + " players are ready. The round starts when everyone confirms.";
+  } else {
+    button.disabled = false;
+    button.textContent = "I’ve read the guide — start when everyone is ready";
+    dialog.querySelector(".guide-dialog-progress").textContent = readyCount + " of " + requiredCount + " players are ready.";
+  }
+  if (room.lifecycle === "guide") {
+    if (!dialog.open) dialog.showModal();
+  } else if (dialog.open) {
+    dialog.close();
+  }
+}
