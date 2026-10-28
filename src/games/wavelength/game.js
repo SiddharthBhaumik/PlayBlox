@@ -55,13 +55,13 @@ function render(){
  $("set-clue").disabled=submitting;$("lock-guess").disabled=submitting;
  $("target-slider").value=String(privateState?.target ?? 50);$("target-slider").disabled=true;$("target-value").textContent=String(privateState?.target ?? "—");$("guess-value").textContent=$("guess-slider").value;
 }
-$("target-slider").addEventListener("input",()=> $("target-value").textContent=$("target-slider").value);
+
 $("guess-slider").addEventListener("input",()=> $("guess-value").textContent=$("guess-slider").value);
 $("set-clue").addEventListener("click",async()=>{
  const clue=$("clue-input").value.trim();
  if(!clue){help("Write a clue before sharing it.",true);return}
  submitting=true;render();
- try{await sendAction({type:"set-clue",target:Number($("target-slider").value),leftLabel:gameState.leftLabel||"Not at all",rightLabel:gameState.rightLabel||"Extremely",clue});await syncRoom()}
+ try{await sendAction({type:"set-clue",clue});await syncRoom()}
  catch(e){help(e.message,true);if(Number.isInteger(e.stateVersion))stateVersion=e.stateVersion;try{await syncRoom()}catch{}}
  finally{submitting=false;render()}
 });
