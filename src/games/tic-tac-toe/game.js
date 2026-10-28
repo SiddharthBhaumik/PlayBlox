@@ -1,4 +1,4 @@
-import { renderGamePlayerPanel, setupHostEndRound } from "../shared/game-shell.js";
+import { renderGameGuide, renderGamePlayerPanel, setupHostEndRound } from "../shared/game-shell.js";
 const API_BASE_URL = window.PLAYBLOX_API_BASE_URL
   || (["localhost", "127.0.0.1"].includes(location.hostname)
     ? "http://localhost:8787"
@@ -31,6 +31,7 @@ function showError(message) {
 }
 function render() {
   if (!room || !gameState) return;
+  renderGameGuide({ room, code, token, apiBaseUrl: API_BASE_URL, myPlayerId });
   $("room-label").textContent = (room.name || "Party") + " · " + code;
   const mySymbol = gameState.symbols?.[myPlayerId];
   const currentPlayer = room.players.find(p => p.id === gameState.currentPlayerId);
@@ -136,7 +137,7 @@ function connect() {
     if (myGeneration !== generation || currentSocket !== socket) return;
     let message;
     try { message = JSON.parse(event.data); } catch { return; }
-    if (message.room && ["room-snapshot", "room-updated", "game-started"].includes(message.type)) {
+    if (message.room && ["room-snapshot", "room-updated", "game-started", "game-guide", "guide-progress"].includes(message.type)) {
       room = message.room;
       myPlayerId = message.playerId || myPlayerId;
       gameState = room.gameState || gameState;
