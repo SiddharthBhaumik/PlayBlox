@@ -548,10 +548,10 @@ export class PartyRoom extends DurableObject {
       for (const socket of this.ctx.getWebSockets()) { try { socket.close(1000, "Party expired"); } catch {} }
       this.room = null; await this.ctx.storage.deleteAll(); return;
     }
-    // Active Bullet Matrix participants are never silently removed mid-match.
-    // Once their reconnect grace period elapses, stop scheduling that expired deadline
-    // and keep the round waiting until they reconnect and submit.
-    if (this.room.lifecycle === "playing" && this.room.gameId === "bullet-matrix") {
+    // Games can opt to retain disconnected active participants until they return.
+    // The shared room lifecycle consults the game contract instead of game IDs.
+    const activeGame = this.room.lifecycle === "playing" ? getServerGame(this.room.gameId) : null;
+    if (activeGame?.preserveDisconnectedPlayersWhileActive === true) {
       for (const player of this.room.players) {
         if (!player.connected && player.role === "player" && this.room.gameState?.alivePlayerIds?.includes(player.id)
           && player.disconnectExpiresAt && now >= player.disconnectExpiresAt) {
