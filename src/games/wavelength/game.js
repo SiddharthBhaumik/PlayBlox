@@ -20,7 +20,7 @@ function render(){
  $("room-label").textContent=(room.name||"Party")+" · "+code;
  renderGamePlayerPanel({container:$("player-roster"),room,gameState:{currentPlayerId:clueGiverId()},myPlayerId});
  const finished=isFinished(), isClue=gameState.phase==="clue", isGiver=myPlayerId===clueGiverId(), submitted=(gameState.submittedPlayerIds||[]).includes(myPlayerId);
- $("round-pill").textContent=finished?"Complete":"Round "+gameState.round+" of "+gameState.totalRounds+" · Turn "+gameState.turnNumber;
+ $("round-pill").textContent=finished?"Round "+gameState.round+" complete":"Round "+gameState.round;
  $("score").textContent=String(gameState.scores?.[myPlayerId]||0);
  const board=$("leaderboard");board.replaceChildren();(gameState.playerOrder||[]).map(id=>({id,name:player(id)?.nickname||"Player",score:gameState.scores?.[id]||0})).sort((a,b)=>b.score-a.score).forEach((item,index)=>{const row=document.createElement("div");row.className="leaderboard-row";const name=document.createElement("span");name.textContent=(index+1)+". "+item.name+(item.id===clueGiverId()?" · clue-giver":"");const score=document.createElement("strong");score.textContent=item.score+" pts";row.append(name,score);board.append(row)});
  $("clue-panel").hidden=finished||!isClue||!isGiver;
@@ -50,10 +50,20 @@ function render(){
   if(!finished){$("reveal-panel").classList.add("previous-reveal");}else $("reveal-panel").classList.remove("previous-reveal");
  } else $("reveal-panel").hidden=true;
  $("return-lobby").hidden=!player(myPlayerId)?.isHost;
- $("replay-game").hidden=!finished;$("replay-game").disabled=Boolean(room.rematchVotes?.[myPlayerId]);
+ $("continue-round").hidden=!finished;
+ $("restart-game").hidden=!finished;
+ $("continue-round").disabled=false;
+ $("restart-game").disabled=false;
  $("leave-game").hidden=false;$("leave-game").disabled=leaving;
  $("replay-status").hidden=!finished;
- if(finished){const votes=Object.values(room.rematchVotes||{}).filter(Boolean).length;$("replay-status").textContent=votes+" of "+gameState.playerOrder.length+" players voted to play again. Everyone must agree."}
+ if(finished){
+  const votes=room.rematchVotes||{};
+  const names=gameState.playerOrder.map(id=>{
+   const choice=votes[id];
+   return (player(id)?.nickname||"Player")+(choice?" chose "+(choice==="continue"?"Continue":"Restart"):" has not chosen");
+  });
+  $("replay-status").textContent="Everyone must choose the same option. "+names.join(" · ");
+ }
  const rerollsLeft=Math.max(0,2-(gameState.rerollsUsed||0));$("reroll-spectrum").disabled=submitting||!isClue||!isGiver||rerollsLeft===0;$("reroll-spectrum").textContent=rerollsLeft?"↻ Change pair and target ("+rerollsLeft+" left)":"No changes left this turn";$("set-clue").disabled=submitting;$("lock-guess").disabled=submitting;
  $("target-slider").value=String(privateState?.target ?? 50);$("target-slider").disabled=true;$("target-value").textContent=String(privateState?.target ?? "—");$("guess-value").textContent=$("guess-slider").value;
 }
@@ -79,7 +89,17 @@ $("lock-guess").addEventListener("click",async()=>{
  catch(e){help(e.message,true);if(Number.isInteger(e.stateVersion))stateVersion=e.stateVersion;try{await syncRoom()}catch{}}
  finally{submitting=false;render()}
 });
-$("replay-game").addEventListener("click",async()=>{const b=$("replay-game");b.disabled=true;try{const r=await api("/api/rooms/"+encodeURIComponent(code)+"/game/rematch",{method:"POST",body:JSON.stringify({playAgain:true})});if(r.status==="waiting")$("replay-status").textContent="Your vote is in. Waiting for the others…"}catch(e){help(e.message,true);b.disabled=false}});
+async function chooseNext(choice){
+ const buttons=[$("continue-round"),$("restart-game")];
+ buttons.forEach(button=>button.disabled=true);
+ try{
+  const r=await api("/api/rooms/"+encodeURIComponent(code)+"/game/rematch",{method:"POST",body:JSON.stringify({choice})});
+  if(r.status==="waiting")$("replay-status").textContent="Your choice is saved. Everyone must choose the same option; you can change your choice.";
+  else if(r.status==="playing")$("replay-status").textContent=choice==="continue"?"Everyone agreed — next round!":"Everyone agreed — restarting with zero scores!";
+ }catch(e){help(e.message,true);buttons.forEach(button=>button.disabled=false)}
+}
+$("continue-round").addEventListener("click",()=>chooseNext("continue"));
+$("restart-game").addEventListener("click",()=>chooseNext("restart"));
 async function endRound(button){if(!player(myPlayerId)?.isHost)return;if(!confirm("End this game and return everyone to the party lobby?"))return;button.disabled=true;try{await api("/api/rooms/"+encodeURIComponent(code)+"/game/reset",{method:"POST",body:"{}"});location.href=$("back-to-lobby").href}catch(e){help(e.message,true);button.disabled=false}}
 setupHostEndRound($("return-lobby"),{getRoom:()=>room,getPlayerId:()=>myPlayerId,onEnd:endRound});
 $("leave-game").addEventListener("click",async()=>{if(leaving||!confirm("Leave this game and party?"))return;leaving=true;try{await api("/api/rooms/"+encodeURIComponent(code)+"/leave",{method:"POST",body:"{}"});location.href="../../../"}catch(e){leaving=false;help(e.message,true)}});
