@@ -139,4 +139,62 @@ export function renderGameCards(container, games) {
     card.append(icon, title, description, status);
     return card;
   }));
+}  {\n    id: 'wavelength',\n    name: 'Wavelength',\n    description: 'Give clues, read the room, and compete for the best individual score.',\n    guide: "GOAL: Earn the most individual points over 5 rounds. In every round, EACH player gets one turn as clue-giver, so everyone gets a chance to set a spectrum and clue.\n\nCLUE-GIVER: Choose a secret target from 0–100, set the two ends of the spectrum (for example, Cold ↔ Hot), and write a clue. Your target stays hidden until all guesses are locked.\n\nGUESSERS: Discuss the clue and place your own guess. You cannot change it after submitting. Each guesser earns points based on how close their own guess is to the target.\n\nSCORING: Each guesser can earn 0–4 points for their guess. The clue-giver also earns 0–4 points based on how close the average of the group's guesses is to the target. Scores are individual; the player with the most points at the end wins.\n\nROUNDS: One round means every player has been the clue-giver once. After 5 full rotations, the leaderboard shows the winner. Rematches reset scores and skip the guide.",\n    emoji: '🎯',\n    color: '#d9f0e7',\n    status: 'ready',\n    path: './src/games/wavelength/index.html',\n    entryMode: 'party',\n    players: { min: 2, max: 8 },\n    interactionModel: 'simultaneous',\n    lateJoinPolicy: 'spectate',\n    spectators: { supported: true },\n  },\n  // Example for a future game (uncomment and edit when its page exists):
+  // {
+  //   id: 'memory-match',
+  //   name: 'Memory Match',
+  //   description: 'Flip the cards and find all the matching pairs.',
+  //   emoji: '🃏',
+  //   color: '#ffe4a8',
+  //   status: 'coming-soon',
+  //   path: './src/games/memory-match/index.html',
+  // },
+];
+
+export function renderGameCards(container, games) {
+  const availableGames = games.filter((game) => game.status === 'ready' || game.status === 'coming-soon');
+  if (availableGames.length === 0) {
+    container.innerHTML = `
+      <div class="empty-toybox">
+        <span aria-hidden="true">🧩</span>
+        <strong>Room for more games!</strong>
+        <span>Our first games are coming soon. The next toy can go right here!</span>
+      </div>`;
+    return;
+  }
+
+  container.replaceChildren(...availableGames.map((game) => {
+    const partyCode = new URLSearchParams(location.search).get('party');
+    const hasSavedSession = partyCode && sessionStorage.getItem('playblox:' + partyCode.toUpperCase() + ':token');
+    const canOpen = game.status === 'ready' && game.path && hasSavedSession && game.entryMode !== 'party';
+    const card = document.createElement(canOpen ? 'a' : 'article');
+    card.className = 'game-card';
+    card.style.setProperty('--game-color', game.color || '#e8e0ff');
+    if (card.tagName === 'A') {
+      card.href = game.path;
+      card.setAttribute('aria-label', 'Play ' + game.name);
+    }
+    const icon = document.createElement('span');
+    icon.className = 'game-emoji';
+    icon.setAttribute('aria-hidden', 'true');
+    if (game.icon) {
+      const image = document.createElement('img');
+      image.src = game.icon;
+      image.alt = '';
+      image.loading = 'lazy';
+      image.onerror = () => { icon.textContent = game.emoji || '🎮'; };
+      icon.append(image);
+    } else {
+      icon.textContent = game.emoji || '🎮';
+    }
+    const title = document.createElement('h3');
+    title.textContent = game.name;
+    const description = document.createElement('p');
+    description.textContent = game.description || 'A new game for your party.';
+    const status = document.createElement('span');
+    status.className = 'game-tag';
+    status.textContent = game.status === 'ready' && game.path ? (canOpen ? '▶ Play game' : '✦ Start from a party lobby') : '✦ Coming soon';
+    card.append(icon, title, description, status);
+    return card;
+  }));
 }
