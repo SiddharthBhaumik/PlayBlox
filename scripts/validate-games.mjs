@@ -41,6 +41,9 @@ const serverIds = new Set(serverGames.map(game => game.id));
 for (const game of readyGames) {
   const server = serverById.get(game.id);
   assert.ok(server, `Ready frontend game ${game.id} is missing from the server registry`);
+  assert.equal(server.name, game.name, `Game name differs for ${game.id}`);
+  assert.equal(server.description, game.description, `Game description differs for ${game.id}`);
+  assert.equal(server.entry, game.path, `Frontend/server entry paths differ for ${game.id}`);
   assert.deepEqual(server.players, game.players, `Player limits differ for ${game.id}`);
   assert.equal(server.interactionModel, game.interactionModel, `Interaction model differs for ${game.id}`);
   assert.equal(server.lateJoinPolicy, game.lateJoinPolicy, `Late-join policy differs for ${game.id}`);
