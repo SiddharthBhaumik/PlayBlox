@@ -52,7 +52,7 @@ function publicRoom(room) {
       disconnectExpiresAt,
     })),
     playerCount: room.players.length, playerCap: ROOM_CAP, createdAt: room.createdAt,
-    gameId: room.gameId ?? null, selectedGameId: room.selectedGameId ?? null, lifecycle: room.lifecycle ?? "lobby", stateVersion: room.stateVersion ?? 0, game: room.gameMetadata ?? null, gameState: room.gameId && getServerGame(room.gameId)?.getPublicState
+    gameId: room.gameId ?? null, selectedGameId: room.selectedGameId ?? null, guidePlayerIds: room.guidePlayerIds ?? [], guideReadyPlayerIds: room.guideReadyPlayerIds ?? [], lifecycle: room.lifecycle ?? "lobby", stateVersion: room.stateVersion ?? 0, game: room.gameMetadata ?? null, gameState: room.gameId && getServerGame(room.gameId)?.getPublicState
       ? getServerGame(room.gameId).getPublicState(room.gameState)
       : (room.gameState ?? null), results: room.results ?? null, rematchVotes: room.rematchVotes ?? {}, history: room.history ?? [],
   };
@@ -92,6 +92,7 @@ export default {
     if (action === "join" && request.method === "POST") return withCors(await stub.fetch("https://party-room.internal/join", request), request);
     if (action === "leave" && request.method === "POST") return withCors(await stub.fetch("https://party-room.internal/leave", request), request);
     if (action === "game/select" && request.method === "POST") return withCors(await stub.fetch("https://party-room.internal/game/select", request), request);
+    if (action === "game/guide-ready" && request.method === "POST") return withCors(await stub.fetch("https://party-room.internal/game/guide-ready", request), request);
     if (action === "game/start" && request.method === "POST") return withCors(await stub.fetch("https://party-room.internal/game/start", request), request);
     if (action === "game/action" && request.method === "POST") return withCors(await stub.fetch("https://party-room.internal/game/action", request), request);
     if (action === "game/reset" && request.method === "POST") return withCors(await stub.fetch("https://party-room.internal/game/reset", request), request);
@@ -120,6 +121,7 @@ export class PartyRoom extends DurableObject {
     if (url.pathname === "/join" && request.method === "POST") return this.join(request);
     if (url.pathname === "/leave" && request.method === "POST") return this.leave(request);
     if (url.pathname === "/game/select" && request.method === "POST") return this.selectGame(request);
+    if (url.pathname === "/game/guide-ready" && request.method === "POST") return this.guideReady(request);
     if (url.pathname === "/game/start" && request.method === "POST") return this.startGame(request);
     if (url.pathname === "/game/action" && request.method === "POST") return this.gameAction(request);
     if (url.pathname === "/game/reset" && request.method === "POST") return this.resetGame(request);
@@ -250,10 +252,26 @@ export class PartyRoom extends DurableObject {
     this.broadcast({ type: "game-started", room: publicRoom(this.room), stateVersion: this.room.stateVersion });
     return json({ room: publicRoom(this.room), stateVersion: this.room.stateVersion }, 200, request);
   }
+  async guideReady(request) {
+    const player = this.authorizePlayer(request);
+    if (!player) return json({ error: "A valid player session is required." }, 401, request);
+    if (this.room.lifecycle !== "guide") return json({ error: "The game guide is not awaiting confirmation." }, 409, request);
+    if (!(this.room.guidePlayerIds || []).includes(player.id)) return json({ error: "Only selected players need to confirm the guide." }, 403, request);
+    this.room.guideReadyPlayerIds = [...new Set([...(this.room.guideReadyPlayerIds || []), player.id])];
+    const readyCount = this.room.guideReadyPlayerIds.length;
+    const requiredCount = (this.room.guidePlayerIds || []).length;
+    if (readyCount >= requiredCount) {
+      this.room.lifecycle = "playing";
+      this.recordHistory("game-started", `${this.room.gameMetadata?.name || "Game"} started after everyone read the guide`, { gameId: this.room.gameId });
+    }
+    await this.persistAndSchedule();
+    this.broadcast({ type: this.room.lifecycle === "playing" ? "game-started" : "guide-progress", room: publicRoom(this.room), readyCount, requiredCount, stateVersion: this.room.stateVersion });
+    return json({ ok: true, lifecycle: this.room.lifecycle, readyCount, requiredCount, room: publicRoom(this.room) }, 200, request);
+  }
   async gameAction(request) {
     const player = this.authorizePlayer(request);
     if (!player) return json({ error: "A valid player session is required." }, 401, request);
-    if (this.room.lifecycle !== "playing") return json({ error: "There is no active game." }, 409, request);
+    if (this.room.lifecycle !== "playing") return json({ error: "The round will be available once every selected player has read the guide." }, 409, request);
     let body;
     try { body = await request.json(); } catch { return json({ error: "Send a valid JSON body." }, 400, request); }
     if (typeof body.actionId !== "string" || body.actionId.length < 1 || body.actionId.length > 100) {
