@@ -240,7 +240,7 @@ export class PartyRoom extends DurableObject {
     for (const entry of selectedPlayers) entry.role = "player";
     for (const entry of unselectedPlayers) entry.role = game.spectators?.supported ? "spectator" : "waiting";
     this.room.gameId = game.id;
-    this.room.gameMetadata = { id: game.id, name: game.name, interactionModel: game.interactionModel, lateJoinPolicy: game.lateJoinPolicy, players: game.players, spectators: game.spectators ?? { supported: false } };
+    this.room.gameMetadata = { id: game.id, name: game.name, interactionModel: game.interactionModel, guide: game.guide, lateJoinPolicy: game.lateJoinPolicy, players: game.players, spectators: game.spectators ?? { supported: false } };
     this.room.lifecycle = "starting";
     this.room.gameState = initialState;
     this.room.stateVersion = (this.room.stateVersion || 0) + 1;
