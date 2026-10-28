@@ -5,7 +5,14 @@
 import { SPECTRUMS } from "./wavelength-spectrums.js";
 
 const ROUNDS_TO_WIN = 5;
-const randomSpectrum = (current = null) => {\n  let pair = SPECTRUMS[Math.floor(Math.random() * SPECTRUMS.length)];\n  if (current && SPECTRUMS.length > 1) {\n    while (pair.left === current.leftLabel && pair.right === current.rightLabel) pair = SPECTRUMS[Math.floor(Math.random() * SPECTRUMS.length)];\n  }\n  return { leftLabel: pair.left, rightLabel: pair.right };\n};\nconst REROLLS_PER_TURN = 2;
+const randomSpectrum = (current = null) => {
+  let pair = SPECTRUMS[Math.floor(Math.random() * SPECTRUMS.length)];
+  if (current && SPECTRUMS.length > 1) {
+    while (pair.left === current.leftLabel && pair.right === current.rightLabel) pair = SPECTRUMS[Math.floor(Math.random() * SPECTRUMS.length)];
+  }
+  return { leftLabel: pair.left, rightLabel: pair.right };
+};
+const REROLLS_PER_TURN = 2;
 const randomTarget = (current = null) => { let target = Math.floor(Math.random() * 101); if (current !== null && target === current) target = (target + 1 + Math.floor(Math.random() * 100)) % 101; return target; };\nconst pointsForDistance = distance => distance <= 5 ? 4 : distance <= 12 ? 3 : distance <= 20 ? 2 : distance <= 30 ? 1 : 0;
 
 export const wavelength = {
@@ -33,7 +40,7 @@ export const wavelength = {
     return {
       playerOrder, round: 1, totalRounds: ROUNDS_TO_WIN, turnNumber: 1,
       score: 0, scores: Object.fromEntries(playerOrder.map(id => [id, 0])),
-      clueGiverIndex: 0, phase: "clue", target: Math.floor(Math.random() * 101), ...randomSpectrum(),
+      clueGiverIndex: 0, phase: "clue", target: randomTarget(), ...randomSpectrum(), rerollsUsed: 0,
       clue: "", guesses: {}, submittedPlayerIds: [], history: [], lastRound: null,
     };
   },
@@ -113,7 +120,7 @@ export const wavelength = {
       playerOrder: state.playerOrder, round: state.round, totalRounds: state.totalRounds,
       turnNumber: state.turnNumber, score: 0, scores: state.scores,
       clueGiverIndex: state.clueGiverIndex, phase: state.phase,
-      leftLabel: state.leftLabel, rightLabel: state.rightLabel, clue: state.clue, rerollsUsed: state.rerollsUsed || 0,
+      leftLabel: state.leftLabel, rightLabel: state.rightLabel, clue: state.clue, rerollsUsed: state.rerollsUsed || 0, rerollsUsed: state.rerollsUsed || 0,
       submittedPlayerIds: state.submittedPlayerIds, lastRound: state.lastRound, history: state.history,
     };
   },
