@@ -316,7 +316,17 @@ export class PartyRoom extends DurableObject {
     }
     this.room.lastActivityAt = Date.now();
     await this.persistAndSchedule();
-    this.broadcast({ type: "game-state", gameId: this.room.gameId, lifecycle: this.room.lifecycle, gameState: publicRoom(this.room).gameState, results: this.room.results ?? null, stateVersion: this.room.stateVersion });
+    const publicGameState = publicRoom(this.room).gameState;
+    const activeGame = getServerGame(this.room.gameId);
+    for (const ws of this.ctx.getWebSockets()) {
+      try {
+        if (ws.readyState !== WebSocket.OPEN) continue;
+        const socketPlayerId = ws.deserializeAttachment()?.playerId;
+        const privateState = activeGame?.getPrivateState ? await activeGame.getPrivateState(this.room.gameState, socketPlayerId) : null;
+        ws.send(JSON.stringify({ type: "game-state", gameId: this.room.gameId, lifecycle: this.room.lifecycle,
+          gameState: publicGameState, privateState, results: this.room.results ?? null, stateVersion: this.room.stateVersion }));
+      } catch {}
+    }
     return json({ ok: true, stateVersion: this.room.stateVersion, lifecycle: this.room.lifecycle }, 200, request);
   }
   async rematch(request) {
