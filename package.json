@@ -5,6 +5,6 @@
   "scripts": {
     "validate:games": "node scripts/validate-games.mjs",
     "check:syntax": "node scripts/check-syntax.mjs",
-    "test": "npm run check:syntax && npm run validate:games"
+    "test": "npm run check:syntax && npm run validate:games && node scripts/test-game-contracts.mjs"
   }
 }
