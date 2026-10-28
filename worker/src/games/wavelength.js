@@ -2,14 +2,17 @@
  * Wavelength: individual leaderboard, with every player giving one clue per round.
  * One round is a complete rotation through the player order. Five rotations are played.
  */
+import { SPECTRUMS } from "./wavelength-spectrums.js";
+
 const ROUNDS_TO_WIN = 5;
+const randomSpectrum = () => SPECTRUMS[Math.floor(Math.random() * SPECTRUMS.length)];
 const pointsForDistance = distance => distance <= 5 ? 4 : distance <= 12 ? 3 : distance <= 20 ? 2 : distance <= 30 ? 1 : 0;
 
 export const wavelength = {
   id: "wavelength",
   name: "Wavelength",
   description: "Give clues, read the room, and compete for the best individual score.",
-  guide: "GOAL: Earn the most individual points over 5 rounds. In every round, EACH player gets one turn as clue-giver, so everyone gets a chance to set a spectrum and clue.\n\nCLUE-GIVER: Choose a secret target from 0–100, set the two ends of the spectrum (for example, Cold ↔ Hot), and write a clue. Your target stays hidden until all guesses are locked.\n\nGUESSERS: Discuss the clue and place your own guess. You cannot change it after submitting. Each guesser earns points based on how close their own guess is to the target.\n\nSCORING: Each guesser can earn 0–4 points for their guess. The clue-giver also earns 0–4 points based on how close the average of the group's guesses is to the target. Scores are individual; the player with the most points at the end wins.\n\nROUNDS: One round means every player has been the clue-giver once. After 5 full rotations, the leaderboard shows the winner. Rematches reset scores and skip the guide.",
+  guide: "GOAL: Earn the most individual points over 5 rounds. Each player gives one clue per full rotation.\n\nCLUE-GIVER: The game randomly selects two ends from a bank of 500 spectrum pairs. Choose a secret target from 0–100 and write a clue that helps the group find it. The target stays hidden from guessers until all guesses are locked.\n\nGUESSERS: The spectrum and clue are shown to everyone. Discuss them together, then place your own guess. Your guess locks when submitted.\n\nSCORING: Guessers earn 4 points for distance 0–5, 3 for 6–12, 2 for 13–20, 1 for 21–30, and 0 for 31+. The clue-giver earns points using the distance between the target and the average of all guesses. Scores are individual.\n\nROUNDS: One round is a full rotation where everyone gives one clue. After 5 rotations, the leaderboard shows the winner. Rematches reset scores and skip the guide.",
   emoji: "🎯",
   color: "#d9f0e7",
   entry: "./src/games/wavelength/index.html",
@@ -30,7 +33,7 @@ export const wavelength = {
     return {
       playerOrder, round: 1, totalRounds: ROUNDS_TO_WIN, turnNumber: 1,
       score: 0, scores: Object.fromEntries(playerOrder.map(id => [id, 0])),
-      clueGiverIndex: 0, phase: "clue", target: null, leftLabel: "", rightLabel: "",
+      clueGiverIndex: 0, phase: "clue", target: null, ...randomSpectrum(),
       clue: "", guesses: {}, submittedPlayerIds: [], history: [], lastRound: null,
     };
   },
@@ -48,11 +51,8 @@ export const wavelength = {
     if (state.phase === "clue") {
       if (id !== clueGiverId) return { ok: false, reason: "Wait for the clue-giver to set the spectrum and clue." };
       if (action?.type !== "set-clue" || !Number.isInteger(action.target) || action.target < 0 || action.target > 100
-        || typeof action.clue !== "string" || !action.clue.trim() || action.clue.trim().length > 180
-        || typeof action.leftLabel !== "string" || typeof action.rightLabel !== "string"
-        || !action.leftLabel.trim() || !action.rightLabel.trim()
-        || action.leftLabel.trim().length > 32 || action.rightLabel.trim().length > 32) {
-        return { ok: false, reason: "Choose a target, two short spectrum labels, and a clue." };
+        || typeof action.clue !== "string" || !action.clue.trim() || action.clue.trim().length > 180) {
+        return { ok: false, reason: "Choose a target and write a clue." };
       }
       return { ok: true };
     }
@@ -69,8 +69,7 @@ export const wavelength = {
 
   reduceAction(context, state, action) {
     if (action.type === "set-clue") {
-      return { ...state, phase: "guess", target: action.target, leftLabel: action.leftLabel.trim(),
-        rightLabel: action.rightLabel.trim(), clue: action.clue.trim(), guesses: {}, submittedPlayerIds: [] };
+      return { ...state, phase: "guess", target: action.target, clue: action.clue.trim(), guesses: {}, submittedPlayerIds: [] };
     }
     const guesses = { ...state.guesses, [context.player.id]: action.value };
     const guesserIds = state.playerOrder.filter(id => id !== state.playerOrder[state.clueGiverIndex]);
@@ -99,7 +98,7 @@ export const wavelength = {
     return { ...state, phase: finished ? "finished" : "clue",
       round: lastTurnInRound ? (finished ? state.round : state.round + 1) : state.round,
       turnNumber: state.turnNumber + 1, scores, clueGiverIndex: nextClueGiverIndex,
-      target: null, leftLabel: "", rightLabel: "", clue: "", guesses: {}, submittedPlayerIds: [],
+      target: null, ...randomSpectrum(), clue: "", guesses: {}, submittedPlayerIds: [],
       lastRound: roundResult, history: [...state.history, roundResult] };
   },
 
