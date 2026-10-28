@@ -9,3 +9,5 @@
 .ship-progress .placed .ship-check{background:#287c64;color:white;}
 
 .round-votes{display:grid;gap:8px;max-width:520px;margin:14px auto;text-align:left}.round-vote-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 12px;border:1px solid #b7d2d9;border-radius:10px;background:#fff}.round-vote-row strong{color:var(--navy);font-size:13px}.round-vote-choice{padding:5px 9px;border-radius:999px;background:#e8eef0;color:#536e79;font-size:12px;font-weight:1000}.round-vote-choice.voted{background:#dff3e7;color:#205f49}@media(max-width:420px){.round-vote-row{align-items:flex-start;flex-direction:column;gap:6px}}
+
+.host-end-button{display:block;width:100%;margin:12px 0 16px;padding:13px 16px;border:2px solid #26372f;border-radius:13px;background:#26372f;color:#fff;font:900 15px "Nunito",sans-serif;cursor:pointer}.host-end-button:hover{filter:brightness(1.08)}.host-end-button[hidden]{display:none}
