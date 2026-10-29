@@ -56,8 +56,8 @@ export const bulletMatrix = {
 
     if (action.type === "reload") return { ok: true };
     if (action.type === "shield") {
-      if (!Number.isInteger(action.strength) || action.strength < 1 || action.strength > MAX_SHIELD_STRENGTH) {
-        return { ok: false, reason: "Shield strength must be between 1 and 100." };
+      if (!Number.isInteger(action.strength) || action.strength < 0 || action.strength > MAX_SHIELD_STRENGTH) {
+        return { ok: false, reason: "Shield strength must be between 0 and 100." };
       }
       return { ok: true };
     }
