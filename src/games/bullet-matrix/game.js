@@ -67,8 +67,8 @@ function renderActionForm(){
  if(!selectedAction){$("selection-summary").textContent="Choose one action for this round.";return}
  if(selectedAction==="reload"){$("selection-summary").textContent="Reload to gain one bullet.";return}
  if(selectedAction==="shield"){
-  const label=document.createElement("label");label.className="form-row";label.textContent="Exact incoming bullets to shield against (0–100)";
-  const input=document.createElement("input");input.type="number";input.min="0";input.max="100";input.step="1";input.value=String(shieldStrength);input.addEventListener("input",()=>{shieldStrength=Number(input.value);$("selection-summary").textContent="Shield strength: "+input.value;});label.append(input);form.append(label);$("selection-summary").textContent="Predict the exact incoming total. A shield strength of 0 survives if nobody shoots at you.";return
+  const label=document.createElement("label");label.className="form-row";label.textContent="Shield strength (1–10)";
+  const input=document.createElement("input");input.type="number";input.min="1";input.max="10";input.step="1";input.value=String(shieldStrength);input.addEventListener("input",()=>{shieldStrength=Number(input.value);$("selection-summary").textContent="Shield strength: "+input.value;});label.append(input);form.append(label);$("selection-summary").textContent="If no bullets are incoming, you survive regardless of your choice. If bullets arrive, your strength must match their total.";return
  }
  const targets=(gameState.playerOrder||[]).filter(id=>id!==myPlayerId&&(gameState.alivePlayerIds||[]).includes(id));
  if(!targets.length){$("selection-summary").textContent="No valid targets.";return}
@@ -85,7 +85,7 @@ document.querySelectorAll("[data-action]").forEach(button=>button.addEventListen
 $("submit-action").addEventListener("click",async()=>{
  if(!selectedAction||submitting)return;
  let action={type:selectedAction};
- if(selectedAction==="shield"){if(!Number.isInteger(shieldStrength)||shieldStrength<0||shieldStrength>100){help("Shield strength must be a whole number from 0 to 100.",true);return}action.strength=shieldStrength}
+ if(selectedAction==="shield"){if(!Number.isInteger(shieldStrength)||shieldStrength<1||shieldStrength>10){help("Shield strength must be a whole number from 1 to 10.",true);return}action.strength=shieldStrength}
  if(selectedAction==="shoot"){action.targets=Object.entries(selectedTargets).filter(([,bullets])=>Number.isInteger(bullets)&&bullets>0).map(([targetId,bullets])=>({targetId,bullets}));const total=action.targets.reduce((s,t)=>s+t.bullets,0);if(total<1||total>(gameState.ammo?.[myPlayerId]||0)){help("Allocate a valid number of bullets.",true);return}}
  submitting=true;$("submit-action").disabled=true;
  try{await api("/api/rooms/"+encodeURIComponent(code)+"/game/action",{method:"POST",body:JSON.stringify({actionId:crypto.randomUUID(),expectedStateVersion:stateVersion,action:{...action,round:gameState.round}})});selectedAction=null;selectedTargets={};await syncRoom();help("Action submitted privately.");}
