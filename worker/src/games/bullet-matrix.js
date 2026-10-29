@@ -3,14 +3,14 @@
  * Pending actions remain in the private Durable Object state. getPublicState
  * deliberately exposes only who has submitted until the round is resolved.
  */
-const MAX_SHIELD_STRENGTH = 100;
+const MAX_SHIELD_STRENGTH = 10;
 const MAX_BULLETS_PER_TARGET = 100;
 
 export const bulletMatrix = {
   id: "bullet-matrix",
   name: "Bullet Matrix",
   description: "Reload, shoot, and shield in secret. Predict everyone else to be the last one standing.",
-  guide: "GOAL: Be the last player alive. Everyone secretly chooses one action each round. Actions resolve together only after every living player has submitted.\n\n1. RELOAD: Gain 1 bullet if no bullets hit you this round. You start with 0 bullets, so reloading is how you get ammunition. If you are hit while reloading, you are eliminated and gain no bullet.\n\n2. SHOOT: Spend bullets you already have to shoot one or more different living opponents. Choose how many bullets to send to each target; the total cannot exceed your ammunition. You cannot target yourself. Every bullet sent counts toward that target's incoming total. A target who shoots is still eliminated if any bullets hit them.\n\n3. SHIELD: Predict the exact total number of bullets that will hit you this round and enter that number as your shield strength (0–100). You survive only if the incoming total matches your choice exactly. A shield strength of 0 lets you survive an empty round; a mismatch eliminates you. Shielding does not use ammunition.\n\nROUND RESOLUTION: Actions are hidden while players choose. When all living players have submitted, all shots are counted, then eliminations and successful reloads are resolved together. Eliminated players cannot take further actions. The next round begins with the remaining players.\n\nWINNING: The last surviving player wins. If every remaining player is eliminated in the same round, the match ends in a draw. Think carefully: reload to build ammunition, shoot to eliminate opponents, or shield when you can predict the exact number of incoming bullets.",
+  guide: "GOAL: Be the last player alive. Everyone secretly chooses one action each round. Actions resolve together only after every living player has submitted.\n\n1. RELOAD: Gain 1 bullet if no bullets hit you this round. You start with 0 bullets, so reloading is how you get ammunition. If you are hit while reloading, you are eliminated and gain no bullet.\n\n2. SHOOT: Spend bullets you already have to shoot one or more different living opponents. Choose how many bullets to send to each target; the total cannot exceed your ammunition. You cannot target yourself. Every bullet sent counts toward that target's incoming total. A target who shoots is still eliminated if any bullets hit them.\n\n3. SHIELD: Predict the exact total number of bullets that will hit you this round and enter that number as your shield strength (1–10). If no bullets are incoming, you survive regardless of the chosen shield strength. If bullets are incoming, your shield strength must match the exact incoming total or you are eliminated. Shielding does not use ammunition.\n\nROUND RESOLUTION: Actions are hidden while players choose. When all living players have submitted, all shots are counted, then eliminations and successful reloads are resolved together. Eliminated players cannot take further actions. The next round begins with the remaining players.\n\nWINNING: The last surviving player wins. If every remaining player is eliminated in the same round, the match ends in a draw. Think carefully: reload to build ammunition, shoot to eliminate opponents, or shield when you can predict the exact number of incoming bullets.",
   emoji: "🔫",
   color: "#ffd9c7",
   entry: "./src/games/bullet-matrix/index.html",
@@ -56,8 +56,8 @@ export const bulletMatrix = {
 
     if (action.type === "reload") return { ok: true };
     if (action.type === "shield") {
-      if (!Number.isInteger(action.strength) || action.strength < 0 || action.strength > MAX_SHIELD_STRENGTH) {
-        return { ok: false, reason: "Shield strength must be between 0 and 100." };
+      if (!Number.isInteger(action.strength) || action.strength < 1 || action.strength > MAX_SHIELD_STRENGTH) {
+        return { ok: false, reason: "Shield strength must be between 1 and 10." };
       }
       return { ok: true };
     }
@@ -111,11 +111,11 @@ export const bulletMatrix = {
       const choice = pendingActions[id];
       const bulletsReceived = incoming[id];
       if (choice.type === "shield") {
-        if (bulletsReceived !== choice.strength) {
+        // A shield protects the player automatically when nobody shoots at them.
+        // If bullets arrive, the selected strength must match the incoming total.
+        if (bulletsReceived > 0 && bulletsReceived !== choice.strength) {
           eliminatedPlayerIds.push(id);
-          reasons[id] = bulletsReceived === 0
-            ? "Shield strength did not match the zero incoming bullets."
-            : "Shield strength did not match the incoming bullet count.";
+          reasons[id] = "Shield strength did not match the incoming bullet count.";
         }
       } else if (bulletsReceived > 0) {
         eliminatedPlayerIds.push(id);
