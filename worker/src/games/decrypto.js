@@ -52,11 +52,6 @@ export const decrypto = {
   if(state.phase==="finished")return {ok:false,reason:"The match is over."};
   if(action?.type==="choose-team"&&state.phase==="teams") {
    if(!["blue","red"].includes(action.team))return {ok:false,reason:"Choose Blue or Red."};
-   const choices={...state.teams,[id]:action.team};
-   if(state.playerOrder.every(pid=>choices[pid])) {
-    const blue=state.playerOrder.filter(pid=>choices[pid]==="blue").length,red=state.playerOrder.length-blue;
-    if(blue<2||red<2)return {ok:false,reason:"Each team needs at least two players. Change a team choice."};
-   }
    return {ok:true};
   }
   if(state.phase==="teams")return {ok:false,reason:"Choose a team before the first round."};
