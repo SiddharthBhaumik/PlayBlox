@@ -595,7 +595,7 @@ export class PartyRoom extends DurableObject {
     };
   }
   async leave(request) {
-    const token = request.headers.get("Authorization")?.replace(/^Bearer\\s+/i, "");
+    const token = request.headers.get("Authorization")?.replace(/^Bearer\s+/i, "");
     const player = this.room.players.find(entry => entry.token === token);
     if (!player) return json({ error: "Invalid player session." }, 401, request);
     const activeDeparture = this.room.lifecycle !== "lobby" && player.role === "player";
