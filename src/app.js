@@ -249,7 +249,8 @@ function connectRoom(code,token){
         return;
       }
       if(message.type==='room-snapshot'&&message.playerId)activePlayerId=message.playerId;
-      if(['room-snapshot','room-updated','game-started','game-guide','guide-progress'].includes(message.type)&&message.room)renderPlayers(message.room);
+      if(['room-snapshot','room-updated','game-started','game-guide','guide-progress','host-changed'].includes(message.type)&&message.room)renderPlayers(message.room);
+      if(message.type==='host-changed')addLobbyActivity('👑 '+(message.message||'Party host changed'));
       if(message.type==='room-snapshot'&&message.room?.lifecycle==='lobby'){
         // The lobby flag prevents redirecting back into the old round only on arrival.
         // Once the reset is confirmed, the host must be able to open the next round.
