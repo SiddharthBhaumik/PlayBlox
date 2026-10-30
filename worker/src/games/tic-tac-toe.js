@@ -45,6 +45,10 @@ export const ticTacToe = {
     };
   },
 
+  // These games require exactly two participants. A departure therefore
+  // falls below the minimum and the shared lifecycle returns the party to lobby.
+  onPlayerLeave() { return null; },
+
   validateAction(context, state, action) {
     if (!state || !Array.isArray(state.board) || state.board.length !== 9) return { ok: false, reason: "The game state is invalid." };
     if (state.winnerId || state.isDraw) return { ok: false, reason: "This round has finished." };
