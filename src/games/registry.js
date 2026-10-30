@@ -100,7 +100,7 @@ export const gameRegistry = [
     id: 'decrypto',
     name: 'Decrypto',
     description: 'Give three clues, decode your team’s secret code, and intercept the other team’s.',
-    guide: "Choose Blue or Red. Each team has four secret numbered words. Every round, each team’s clue-giver receives a three-digit code and gives three clues. Teammates decode it while opponents attempt an interception. Two successful interceptions win; two decoding mistakes lose. Each team needs at least two players.",
+    guide: "GOAL: Two teams compete to communicate secret three-digit codes without letting the opponents intercept them.\\n\\nTEAMS: Choose Blue or Red. Teams may be uneven, but each needs at least two players. Each team has four numbered secret words.\\n\\nEACH ROUND: One clue-giver per team receives a private three-digit code (each digit points to one of their four words) and gives three clues in order. Teammates use their four words and the clues to decode the code. The opposing team studies the clues and tries to intercept it.\\n\\nSCORING: A successful interception earns an interception token. A team that fails to decode its own code earns a miscommunication token. Two interceptions win; two miscommunications lose. Codes and secret words are private to their team.",
     emoji: '🔐',
     color: '#dce8ff',
     status: 'ready',
