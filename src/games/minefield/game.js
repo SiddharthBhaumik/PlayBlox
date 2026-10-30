@@ -45,7 +45,7 @@ function render(){
  $("flags-label").textContent="🚩 "+(privateState?.captured?.[t]??state.captured?.[t]??0)+" / 3";$("mines-label").textContent="💣 "+(privateState?.minesCarried??0);
  const turn=state.turnPlayerId===playerId?"Your turn":(room.players.find(p=>p.id===state.turnPlayerId)?.nickname||"Opponent")+"'s turn";$("turn-label").textContent=state.phase==="flags"?"Setup":state.phase==="finished"?"Finished":turn;
  $("turn-message").textContent=state.phase==="flags"?"Place your flags to prepare the battlefield.":myTurn()?"It's your turn. Roll, move, and use your actions.":"Wait for your opponent to finish their turn.";
- $("event-message").textContent=state.lastEvent||"Explore the battlefield.";$("map-message").textContent=privateState?.scanTurns>0?"Full board scan active":privateState?.radarTurns>0?"Extended radar active":"Fog of war · nearby tiles are revealed";
+ $("event-message").textContent=state.lastEvent||"Explore the battlefield.";$("map-message").textContent=privateState?.scanTurns>0?"Full board scan active":privateState?.radarTurns>0?"Extended radar active":"Fog of war · nearby tiles are revealed";\n const hints=privateState?.enemyFlagHints||[];$("flag-hints").textContent=hints.length?"Enemy flag signals: "+hints.map((h,i)=>"Flag "+(i+1)+" · "+(h.nearby?"nearby":h.area+" side")).join("  |  "):"";
  $("die-face").textContent=state.die||"—";$("movement-label").textContent=state.rolled?"Movement remaining: "+state.movementRemaining:"Roll to begin moving.";
  $("roll-button").disabled=!myTurn()||state.rolled;$("end-turn").disabled=!myTurn()||!state.rolled;
  $("mine-mode").disabled=!myTurn()||(privateState?.minesCarried||0)<1;$("mine-mode").classList.toggle("selected",mode==="mine");
@@ -68,8 +68,8 @@ async function tileClick(k){
   $("flag-count").textContent=selectedFlags.length+" / 3 selected";$("submit-flags").disabled=selectedFlags.length!==3;return;
  }
  if(!myTurn())return;
- if(mode==="mine"){await act({type:"place-mine",at:k});mode="move";return}
- if(mode==="disarm"){await act({type:"activate-power",power:"disarm",at:k});mode="move";return}
+ if(mode==="mine"){await act({type:"place-mine",at:k});mode="move";render();return}
+ if(mode==="disarm"){await act({type:"activate-power",power:"disarm",at:k});mode="move";render();return}
  if(state.rolled&&state.movementRemaining>0&&adjacent(privateState.position,k))await act({type:"move",to:k});
 }
 $("submit-flags").addEventListener("click",()=>act({type:"place-flags",flags:selectedFlags}));
