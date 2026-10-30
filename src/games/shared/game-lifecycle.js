@@ -24,7 +24,7 @@ export function setupGameLifecycle({ root, getRoom, getPlayerId, api, backToLobb
     panel = document.createElement("section");
     panel.className = "playblox-lifecycle";
     panel.setAttribute("aria-live", "polite");
-    panel.innerHTML = '<p class="playblox-lifecycle-kicker">WHAT HAPPENS NEXT?</p><h2 class="playblox-lifecycle-title">Round complete</h2><p class="playblox-lifecycle-status"></p><div class="playblox-lifecycle-votes"></div><div class="playblox-lifecycle-actions"><button type="button" class="playblox-lifecycle-replay">↻ Replay</button><button type="button" class="playblox-lifecycle-lobby">↩ Return to lobby</button><button type="button" class="playblox-lifecycle-leave">Leave game and return to lobby</button><button type="button" class="playblox-lifecycle-end">End game for everyone</button></div><p class="playblox-lifecycle-error" role="alert"></p>';
+    panel.innerHTML = '<p class="playblox-lifecycle-kicker">WHAT HAPPENS NEXT?</p><h2 class="playblox-lifecycle-title">Round complete</h2><p class="playblox-lifecycle-status"></p><div class="playblox-lifecycle-votes"></div><div class="playblox-lifecycle-kick-list"></div><div class="playblox-lifecycle-actions"><button type="button" class="playblox-lifecycle-replay">↻ Replay</button><button type="button" class="playblox-lifecycle-lobby">↩ Return to lobby</button><button type="button" class="playblox-lifecycle-leave">Leave game and return to lobby</button><button type="button" class="playblox-lifecycle-end">End game for everyone</button></div><p class="playblox-lifecycle-error" role="alert"></p>';
     root.append(panel);
     lifecycleInstances.set(root, panel);
     const status = panel.querySelector(".playblox-lifecycle-status");
@@ -95,6 +95,32 @@ export function setupGameLifecycle({ root, getRoom, getPlayerId, api, backToLobb
       const name = room.players.find(p => p.id === id)?.nickname || "Player";
       return name + ": " + (votes[id] === "replay" ? "Replay" : "Waiting");
     }).join(" · ");
+    const kickList = panel.querySelector(".playblox-lifecycle-kick-list");
+    kickList.replaceChildren();
+    if (player?.isHost) {
+      const heading = document.createElement("strong");
+      heading.textContent = "Party members";
+      kickList.append(heading);
+      room.players.filter(member => member.id !== getPlayerId()).forEach(member => {
+        const row = document.createElement("div"); row.className = "playblox-kick-row";
+        const name = document.createElement("span"); name.textContent = member.nickname + (member.role === "player" ? " · Playing" : member.role === "spectator" ? " · Spectating" : " · Waiting");
+        const kick = document.createElement("button"); kick.type = "button"; kick.textContent = "Kick";
+        kick.addEventListener("click", async () => {
+          if (!window.confirm("Remove " + member.nickname + " from this party?")) return;
+          kick.disabled = true;
+          try {
+            await api("/api/rooms/" + encodeURIComponent(room.code) + "/kick", {
+              method: "POST", body: JSON.stringify({ playerId: member.id }),
+            });
+          } catch (e) {
+            panel.querySelector(".playblox-lifecycle-error").textContent = e.message || "Could not remove that player.";
+            kick.disabled = false;
+          }
+        });
+        row.append(name, kick); kickList.append(row);
+      });
+      kickList.hidden = false;
+    } else kickList.hidden = true;
     panel.querySelector(".playblox-lifecycle-replay").disabled = votes[getPlayerId()] === "replay";
     panel.querySelector(".playblox-lifecycle-lobby").disabled = false;
     panel.querySelector(".playblox-lifecycle-error").textContent = "";
