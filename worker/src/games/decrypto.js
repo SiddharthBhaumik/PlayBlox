@@ -43,7 +43,8 @@ export const decrypto = {
   if(counts.red.length<2&&counts.blue.length>=2)return winFor(next,"blue", "Red fell below two players.");
   if(counts.blue.length<2||counts.red.length<2)return null;
   if(state.phase==="finished")return next;
-  return {...next,phase:state.phase==="teams"?"teams":"clues",codes:{},clues:{},ownGuesses:{},intercepts:{},submitted:{blue:false,red:false}};
+  const clueGiverIndex={blue:(state.clueGiverIndex?.blue||0)%counts.blue.length,red:(state.clueGiverIndex?.red||0)%counts.red.length};
+  return {...next,phase:state.phase==="teams"?"teams":"clues",clueGiverIndex,codes:{blue:newCode(),red:newCode()},clues:{},ownGuesses:{},intercepts:{},submitted:{blue:false,red:false}};
  },
  validateAction(context,state,action) {
   const id=context.player.id;
