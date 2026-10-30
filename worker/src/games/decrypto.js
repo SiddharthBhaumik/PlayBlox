@@ -99,10 +99,12 @@ export const decrypto = {
    const submitted={...state.submitted,[team]:true};
    return submitted.blue&&submitted.red?{...state,clues,submitted,phase:"decode"}:{...state,clues,submitted};
   }
-  if(action.type==="decode"||action.type==="intercept") {
-   const key=action.type==="decode"?"ownGuesses":"intercepts";
-   const values={...state[key],[team]:String(action.code).trim()};
-   const next={...state,[key]:values};
+  if(action.type==="submit-both"||action.type==="decode"||action.type==="intercept") {
+   const ownGuesses={...state.ownGuesses},intercepts={...state.intercepts};
+   if(action.type==="submit-both"){ownGuesses[team]=String(action.ownCode).trim();intercepts[team]=String(action.interceptCode).trim();}
+   else if(action.type==="decode")ownGuesses[team]=String(action.code).trim();
+   else intercepts[team]=String(action.code).trim();
+   const next={...state,ownGuesses,intercepts};
    if(!next.ownGuesses.blue||!next.ownGuesses.red||!next.intercepts.blue||!next.intercepts.red)return next;
    const counts=teamIds(next);
    const codes={...next.codes};
