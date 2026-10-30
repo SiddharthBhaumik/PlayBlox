@@ -761,6 +761,14 @@ export class PartyRoom extends DurableObject {
         const connected = this.room.players.filter(player => player.connected);
         this.assignSpecificHost(connected.length ? randomItem(connected) : randomItem(this.room.players));
       }
+      // A participant whose reconnect window expires has left the match just
+      // like an explicit departure. Reconcile each expired seat through the
+      // same game hook so remaining players never wait on a missing player.
+      for (const entry of expired) {
+        if (this.room.lifecycle === "lobby" || entry.role !== "player") continue;
+        const game = getServerGame(this.room.gameId);
+        await this.reconcileGameAfterDeparture(game, entry.id, entry);
+      }
       this.room.lastActivityAt = now;
       for (const entry of expired) this.recordHistory("left-after-disconnect", `${entry.nickname} was removed after the reconnect window expired`, { playerId: entry.id });
       await this.persistAndSchedule();
