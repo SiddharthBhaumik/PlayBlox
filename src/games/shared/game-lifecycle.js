@@ -12,7 +12,7 @@ export function setupGameLifecycle({ root, getRoom, getPlayerId, api, backToLobb
     panel = document.createElement("section");
     panel.className = "playblox-lifecycle";
     panel.setAttribute("aria-live", "polite");
-    panel.innerHTML = '<p class="playblox-lifecycle-kicker">WHAT HAPPENS NEXT?</p><h2 class="playblox-lifecycle-title">Round complete</h2><p class="playblox-lifecycle-status"></p><div class="playblox-lifecycle-votes"></div><div class="playblox-lifecycle-actions"><button type="button" class="playblox-lifecycle-replay">↻ Replay</button><button type="button" class="playblox-lifecycle-lobby">↩ Return to lobby</button><button type="button" class="playblox-lifecycle-end">End game for everyone</button></div><p class="playblox-lifecycle-error" role="alert"></p>';
+    panel.innerHTML = '<p class="playblox-lifecycle-kicker">WHAT HAPPENS NEXT?</p><h2 class="playblox-lifecycle-title">Round complete</h2><p class="playblox-lifecycle-status"></p><div class="playblox-lifecycle-votes"></div><div class="playblox-lifecycle-actions"><button type="button" class="playblox-lifecycle-replay">↻ Replay</button><button type="button" class="playblox-lifecycle-lobby">↩ Return to lobby</button><button type="button" class="playblox-lifecycle-leave">Leave game and return to lobby</button><button type="button" class="playblox-lifecycle-end">End game for everyone</button></div><p class="playblox-lifecycle-error" role="alert"></p>';
     root.append(panel);
     lifecycleInstances.set(root, panel);
     const status = panel.querySelector(".playblox-lifecycle-status");
@@ -21,6 +21,7 @@ export function setupGameLifecycle({ root, getRoom, getPlayerId, api, backToLobb
     const replay = panel.querySelector(".playblox-lifecycle-replay");
     const lobby = panel.querySelector(".playblox-lifecycle-lobby");
     const end = panel.querySelector(".playblox-lifecycle-end");
+    const leave = panel.querySelector(".playblox-lifecycle-leave");
     const submit = async (choice, button) => {
       const room = getRoom();
       if (!room || button.disabled) return;
@@ -42,6 +43,16 @@ export function setupGameLifecycle({ root, getRoom, getPlayerId, api, backToLobb
       if (!window.confirm("Return everyone in this match to the party lobby?")) return;
       submit("lobby", lobby);
     });
+    leave.addEventListener("click", async () => {
+      if (!window.confirm("Leave this game and return to the party lobby? You will remain in the party.")) return;
+      leave.disabled = true; error.textContent = "";
+      try {
+        const room = getRoom();
+        const result = await api("/api/rooms/" + encodeURIComponent(room.code) + "/game/leave", { method: "POST", body: "{}" });
+        if (backToLobby) location.href = backToLobby;
+        else if (result.status === "lobby") location.reload();
+      } catch (e) { error.textContent = e.message || "Could not leave the game."; leave.disabled = false; }
+    });
     end.addEventListener("click", async () => {
       if (!window.confirm("End the game for everyone and return to the party lobby?")) return;
       end.disabled = true; error.textContent = "";
@@ -61,13 +72,15 @@ export function setupGameLifecycle({ root, getRoom, getPlayerId, api, backToLobb
     panel.querySelector(".playblox-lifecycle-replay").hidden = !finished || !(room.gameState?.playerOrder || []).includes(getPlayerId());
     panel.querySelector(".playblox-lifecycle-lobby").hidden = !finished || !(room.gameState?.playerOrder || []).includes(getPlayerId());
     panel.querySelector(".playblox-lifecycle-end").hidden = !player?.isHost;
+    panel.querySelector(".playblox-lifecycle-leave").hidden = !finished || !room.gameState?.playerOrder?.includes(getPlayerId());
     const votes = room?.rematchVotes || {};
     const participantIds = room?.gameState?.playerOrder || [];
-    const decided = participantIds.filter(id => votes[id] === "replay").length;
+    const activeIds = participantIds.filter(id => room.players.some(p => p.id === id && p.role === "player"));
+    const decided = activeIds.filter(id => votes[id] === "replay").length;
     panel.querySelector(".playblox-lifecycle-status").textContent = finished
-      ? decided + " of " + participantIds.length + " players have voted to replay. Returning to the lobby ends the match for everyone."
+      ? decided + " of " + activeIds.length + " remaining players have voted to replay. Returning to the lobby ends the match for everyone."
       : "Only the host can end the match early.";
-    panel.querySelector(".playblox-lifecycle-votes").textContent = participantIds.map(id => {
+    panel.querySelector(".playblox-lifecycle-votes").textContent = participantIds.filter(id => room.players.some(p => p.id === id && p.role === "player")).map(id => {
       const name = room.players.find(p => p.id === id)?.nickname || "Player";
       return name + ": " + (votes[id] === "replay" ? "Replay" : "Waiting");
     }).join(" · ");
