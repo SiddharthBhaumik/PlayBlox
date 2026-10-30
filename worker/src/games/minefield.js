@@ -1,4 +1,4 @@
-const SIZE=20, MAX_LIVES=3, MINE_LIFE=4;
+const SIZE=20, MAX_LIVES=3, MINE_LIFE=6;
 const key=(x,y)=>x+","+y;
 const xy=k=>typeof k==="string"?k.split(",").map(Number):[];
 const validTile=k=>typeof k==="string"&&/^(?:[0-9]|1[0-9]),(?:[0-9]|1[0-9])$/.test(k);
@@ -28,15 +28,17 @@ function makeMap(random){
  return {walls:[...walls],rooms,blue,red,seed:Math.floor(random()*0xffffffff)};
 }
 function visibleFrom(pos,radius,walls){const [x,y]=xy(pos),out=[];for(let yy=0;yy<SIZE;yy++)for(let xx=0;xx<SIZE;xx++){const k=key(xx,yy);if(Math.abs(xx-x)+Math.abs(yy-y)<=radius)out.push(k)}return out}
-function randomPower(random){return ["scan","extra-life","radar","shield","speed","disarm"][Math.floor(random()*6)]}
+function randomPower(random){const pool=["scan","jammer","jammer","extra-life","extra-life","shield","shield","speed","speed","speed","speed"];return pool[Math.floor(random()*pool.length)]}
 function generateCode(){return Math.floor(1+Math.random()*6)}
 function teamOf(state,id){return state.teams[id]}
 function win(state,winner,reason){return {...state,phase:"finished",winner,finishReason:reason,turnPlayerId:null,movementRemaining:0,die:null}}
 function updateVisibility(state,team){
- const p=state.positions[team],radius=state.scanTurns[team]>0?40:state.radarTurns[team]>0?3:2;
- const visible=visibleFrom(p,radius,new Set(state.walls));
- const explored={...state.explored,[team]:[...new Set([...(state.explored[team]||[]),...visible])]};
- return {...state,visible:{...state.visible,[team]:visible},explored};
+ const p=state.positions[team],radius=state.scanTurns[team]>0?40:2;
+ const visible=visibleFrom(p,radius,new Set(state.walls)),stamp={...(state.exploredAt?.[team]||{})};
+ for(const k of visible)stamp[k]=state.turnNumber;
+ const exploredAt={...(state.exploredAt||{}),[team]:stamp};
+ const explored=Object.keys(stamp).filter(k=>state.turnNumber-stamp[k]<=3);
+ return {...state,visible:{...state.visible,[team]:visible},exploredAt,explored:{...state.explored,[team]:explored}};
 }
 function respawnRooms(state,random){
  const rooms={...state.rooms};for(const [k,r] of Object.entries(rooms)){if(!r.active&&r.respawnAt<=state.turnNumber){rooms[k]={...r,active:true,respawnAt:null}}}
@@ -48,7 +50,7 @@ export const minefield={
  createInitialState(context){
   const players=context.players.filter(p=>p.role==="player"&&p.connected);const ids=players.map(p=>p.id),seed=crypto.getRandomValues(new Uint32Array(1))[0],random=rng(seed),map=makeMap(random);
   const teams={[ids[0]]:"blue",[ids[1]]:"red"};
-  const state={playerOrder:ids,teams,phase:"flags",round:1,turnNumber:0,turnPlayerId:null,positions:{blue:map.blue,red:map.red},walls:map.walls,rooms:map.rooms,flags:{blue:[],red:[]},flagsPlaced:{blue:false,red:false},captured:{blue:0,red:0},lives:{blue:2,red:2},mines:{blue:0,red:0},activeMines:{},inventory:{blue:[],red:[]},scanTurns:{blue:0,red:0},radarTurns:{blue:0,red:0},shield:{blue:0,red:0},speed:{blue:0,red:0},die:null,movementRemaining:0,rolled:false,movedThisTurn:false,minePlacedThisTurn:false,powerUsedThisTurn:false,visible:{blue:[],red:[]},explored:{blue:[],red:[]},seed:map.seed,lastEvent:"Place three secret flags anywhere on open floor, outside protected bases."};
+  const state={playerOrder:ids,teams,phase:"flags",round:1,turnNumber:0,turnPlayerId:null,positions:{blue:map.blue,red:map.red},walls:map.walls,rooms:map.rooms,flags:{blue:[],red:[]},flagsPlaced:{blue:false,red:false},captured:{blue:0,red:0},lives:{blue:2,red:2},mines:{blue:0,red:0},activeMines:{},inventory:{blue:[],red:[]},scanTurns:{blue:0,red:0},jamZones:{blue:null,red:null},shield:{blue:0,red:0},speed:{blue:0,red:0},die:null,movementRemaining:0,rolled:false,movedThisTurn:false,minePlacedThisTurn:false,powerUsedThisTurn:false,visible:{blue:[],red:[]},explored:{blue:[],red:[]},exploredAt:{blue:{},red:{}},seed:map.seed,lastEvent:"Place three secret flags anywhere on open floor, outside protected bases."};
   return updateVisibility(updateVisibility(state,"blue"),"red");
  },
  onPlayerLeave(context,state,playerId){const left=state?.teams?.[playerId];const playerOrder=(state?.playerOrder||[]).filter(id=>id!==playerId);if(!left)return {...state,playerOrder};const winner=other(left);return {...win({...state,playerOrder},winner,"Your opponent left the match. You win by forfeit."),forfeit:true};},
@@ -61,17 +63,17 @@ export const minefield={
   if(action?.type==="roll")return !state.rolled?{ok:true}:{ok:false,reason:"You have already rolled this turn."};
   if(action?.type==="move"){if(!validTile(action.to))return {ok:false,reason:"Invalid destination. Choose a tile on the 20×20 board."};if(!state.rolled||state.movementRemaining<=0)return {ok:false,reason:"Roll first or finish your movement."};const [x,y]=xy(state.positions[team]),[nx,ny]=xy(action.to||"");if(!inBounds(nx,ny)||Math.abs(nx-x)+Math.abs(ny-y)!==1||state.walls.includes(action.to))return {ok:false,reason:"Move one adjacent tile at a time; walls block movement."};if(Object.values(state.positions).includes(action.to))return {ok:false,reason:"That tile is occupied."};return {ok:true}}
   if(action?.type==="place-mine"){if(!validTile(action.at))return {ok:false,reason:"Invalid mine location. Choose a tile on the 20×20 board."};if(state.minePlacedThisTurn)return {ok:false,reason:"You can place only one mine per turn."};if(Object.values(state.activeMines).filter(m=>m.owner===team).length>=3)return {ok:false,reason:"You can have at most three active mines."};if(state.mines[team]<1)return {ok:false,reason:"You don't have a mine to place."};const [x,y]=xy(state.positions[team]),[nx,ny]=xy(action.at||"");if(!inBounds(nx,ny)||Math.abs(nx-x)+Math.abs(ny-y)!==1||state.walls.includes(action.at)||state.rooms[action.at]||Object.values(state.positions).includes(action.at)||state.activeMines[action.at]||[...(state.flags.blue||[]),...(state.flags.red||[])].includes(action.at)||state.minePlacedThisTurn||manhattan(action.at,state.positions.blue)<=3||manhattan(action.at,state.positions.red)<=3)return {ok:false,reason:"Choose an empty adjacent floor tile outside both protected bases."};return {ok:true}}
-  if(action?.type==="activate-power"){if(!["scan","extra-life","radar","shield","speed","disarm"].includes(action.power))return {ok:false,reason:"Unknown power-up."};if(state.powerUsedThisTurn)return {ok:false,reason:"You have already activated a power-up this turn."};if(!state.inventory[team].includes(action.power))return {ok:false,reason:"You don't have that power-up."};if(action.power==="extra-life"&&state.lives[team]>=MAX_LIVES)return {ok:false,reason:"Your lives are already at the maximum of 3."};if(action.power==="disarm"){if(!validTile(action.at))return {ok:false,reason:"Invalid mine location."};const [x,y]=xy(state.positions[team]),[nx,ny]=xy(action.at);if(Math.abs(nx-x)+Math.abs(ny-y)!==1||!state.activeMines[action.at])return {ok:false,reason:"Choose an adjacent active mine to disarm."}}return {ok:true}}
+  if(action?.type==="activate-power"){if(!["scan","extra-life","shield","speed","jammer"].includes(action.power))return {ok:false,reason:"Unknown power-up."};if(state.powerUsedThisTurn)return {ok:false,reason:"You have already activated a power-up this turn."};if(!state.inventory[team].includes(action.power))return {ok:false,reason:"You don't have that power-up."};if(action.power==="extra-life"&&state.lives[team]>=MAX_LIVES)return {ok:false,reason:"Your lives are already at the maximum of 3."};return {ok:true}}
   if(action?.type==="end-turn")return state.rolled?{ok:true}:{ok:false,reason:"Roll the die before ending your turn."};
   return {ok:false,reason:"Unknown Minefield action."};
  },
  reduceAction(context,state,action){
   const team=state.teams[context.player.id],random=rng((state.seed+state.turnNumber*997+state.round*37)>>>0);
   if(action.type==="place-flags"){const flags={...state.flags,[team]:action.flags.slice()};const flagsPlaced={...state.flagsPlaced,[team]:true};const next={...state,flags,flagsPlaced};if(flagsPlaced.blue&&flagsPlaced.red){next.phase="playing";next.turnPlayerId=state.playerOrder[0];next.lastEvent="Both players placed their flags. Blue takes the first turn."}return updateVisibility(next,team)}
-  if(action.type==="roll"){const die=Math.floor(random()*6)+1,bonus=state.speed[team]>0?2:0;return {...state,die,movementRemaining:die+bonus,rolled:true,movedThisTurn:false,lastEvent:"Rolled "+die+(bonus? " (+2 speed bonus)":"")+". Move up to "+(die+bonus)+" tiles."}}
+  if(action.type==="roll"){const die=Math.floor(random()*6)+1,movement=die*(state.speed[team]>0?2:1);return {...state,die,movementRemaining:movement,rolled:true,movedThisTurn:false,lastEvent:"Rolled "+die+(movement>die?" (Speed doubled movement)":"")+". Move up to "+movement+" tiles."}}
   if(action.type==="move"){
    const positions={...state.positions,[team]:action.to},activeMines={...state.activeMines},rooms={...state.rooms},lives={...state.lives},mines={...state.mines},inventory={...state.inventory},captured={...state.captured};let remaining=state.movementRemaining-1,lastEvent="Moved to "+action.to+".";
-   if(activeMines[action.to]){const mine=activeMines[action.to];delete activeMines[action.to];if(state.shield[team]>0){const shield={...state.shield,[team]:state.shield[team]-1};return updateVisibility({...state,positions,activeMines,shield,movementRemaining:0,movedThisTurn:true,lastEvent:"Your shield absorbed a mine!"},team)}lives[team]=Math.max(0,lives[team]-1);remaining=0;lastEvent="BOOM! A mine cost you one life and stopped your movement."}
+   if(activeMines[action.to]&&!Object.entries(state.jamZones||{}).some(([jt,z])=>jt!==activeMines[action.to].owner&&z&&z.turns>0&&Math.abs(xy(z.center)[0]-xy(action.to)[0])<=1&&Math.abs(xy(z.center)[1]-xy(action.to)[1])<=1)){const mine=activeMines[action.to];delete activeMines[action.to];if(state.shield[team]>0){const shield={...state.shield,[team]:state.shield[team]-1};return updateVisibility({...state,positions,activeMines,shield,movementRemaining:0,movedThisTurn:true,lastEvent:"Your shield absorbed a mine!"},team)}lives[team]=Math.max(0,lives[team]-1);remaining=0;lastEvent="BOOM! A mine cost you one life and stopped your movement."}
    if(lives[team]<=0)return win({...state,positions,activeMines,lives,movementRemaining:0,movedThisTurn:true},other(team),"Your opponent lost all their lives.");
    const enemy=other(team),hit=(state.flags[enemy]||[]).includes(action.to);if(hit){captured[team]++;const flags={...state.flags,[enemy]:state.flags[enemy].filter(k=>k!==action.to)};if(captured[team]>=3)return win({...state,positions,activeMines,flags,captured,lives,movementRemaining:0,movedThisTurn:true},""+team,"All three enemy flags captured!");return updateVisibility({...state,positions,activeMines,flags,captured,lives,movementRemaining:0,movedThisTurn:true,lastEvent:"You captured an enemy flag!"},team)}
    if(lives[team]<=0)return win({...state,positions,activeMines,lives,movementRemaining:0,movedThisTurn:true},enemy,"Your opponent lost all their lives.");
@@ -81,13 +83,13 @@ export const minefield={
   if(action.type==="place-mine"){const activeMines={...state.activeMines,[action.at]:{owner:team,turns:MINE_LIFE}};return {...state,activeMines,mines:{...state.mines,[team]:state.mines[team]-1},minePlacedThisTurn:true,lastEvent:"Mine placed at "+action.at+". You can always see your own mines."}}
   if(action.type==="activate-power"){
    const inventory={...state.inventory,[team]:state.inventory[team].filter((p,i)=>p!==action.power||state.inventory[team].indexOf(p)!==i)},scanTurns={...state.scanTurns},radarTurns={...state.radarTurns},lives={...state.lives},shield={...state.shield},speed={...state.speed},activeMines={...state.activeMines};let lastEvent="Activated "+action.power+".";
-   if(action.power==="scan")scanTurns[team]=4;if(action.power==="radar")radarTurns[team]=4;if(action.power==="extra-life")lives[team]=Math.min(MAX_LIVES,lives[team]+1);if(action.power==="shield")shield[team]=1;if(action.power==="speed"){speed[team]=1;if(state.rolled)state={...state,movementRemaining:state.movementRemaining+2}}if(action.power==="disarm"){delete activeMines[action.at];lastEvent="You disarmed an adjacent mine."}
+   if(action.power==="scan")scanTurns[team]=4;if(action.power==="jammer"){state={...state,jamZones:{...state.jamZones,[team]:{center:state.positions[team],turns:2}}};lastEvent="Mine Jammer activated: enemy mines in a 3×3 area are disabled for 2 turns."}if(action.power==="extra-life")lives[team]=Math.min(MAX_LIVES,lives[team]+1);if(action.power==="shield")shield[team]=1;if(action.power==="speed"){speed[team]=1;if(state.rolled)state={...state,movementRemaining:state.die*2}}
    return updateVisibility({...state,inventory,scanTurns,radarTurns,lives,shield,speed,activeMines,powerUsedThisTurn:true,lastEvent},team);
   }
   if(action.type==="end-turn"){
-   const activeMines={};for(const [k,m] of Object.entries(state.activeMines)){const turns=m.owner===team?m.turns:m.turns-1;if(turns>0)activeMines[k]={...m,turns}}
-   const nextTeam=other(team),nextPlayerId=state.playerOrder.find(id=>state.teams[id]===nextTeam),turnNumber=state.turnNumber+1,round=nextTeam==="blue"?state.round+1:state.round;
-   let next={...state,activeMines,turnNumber,round,turnPlayerId:nextPlayerId,die:null,movementRemaining:0,rolled:false,movedThisTurn:false,minePlacedThisTurn:false,powerUsedThisTurn:false,speed:{...state.speed,[team]:0},scanTurns:{...state.scanTurns,[team]:Math.max(0,(state.scanTurns[team]||0)-1)},radarTurns:{...state.radarTurns,[team]:Math.max(0,(state.radarTurns[team]||0)-1)},lastEvent:"Turn passed to "+nextTeam+"."};
+   const activeMines={};for(const [k,m] of Object.entries(state.activeMines)){const turns=m.turns-1;if(turns>0)activeMines[k]={...m,turns}}
+   const nextTeam=other(team),nextPlayerId=state.playerOrder.find(id=>state.teams[id]===nextTeam),turnNumber=state.turnNumber+1,round=nextTeam==="blue"?state.round+1:state.round,jamZones={...state.jamZones};for(const jt of ["blue","red"]){if(jamZones[jt]){const turns=jamZones[jt].turns-1;jamZones[jt]=turns>0?{...jamZones[jt],turns}:null}}
+   let next={...state,activeMines,jamZones,turnNumber,round,turnPlayerId:nextPlayerId,die:null,movementRemaining:0,rolled:false,movedThisTurn:false,minePlacedThisTurn:false,powerUsedThisTurn:false,speed:{...state.speed,[team]:0},scanTurns:{...state.scanTurns,[team]:Math.max(0,(state.scanTurns[team]||0)-1)},lastEvent:"Turn passed to "+nextTeam+"."};
    next=respawnRooms(next,random);return updateVisibility(updateVisibility(next,team),nextTeam);
   }
   return state;
@@ -95,8 +97,8 @@ export const minefield={
  getPrivateState(state,playerId){
   const team=state.teams?.[playerId];if(!team)return null;const enemy=other(team),pos=state.positions[team],visible=new Set(state.visible[team]||[]),enemyPos=state.positions[enemy];
   const enemyFlags=state.flags[enemy]||[],hints=enemyFlags.map(flag=>({nearby:manhattan(flag,pos)<=2,area:xy(flag)[0]<10?"west":"east"}));
-  const mines=Object.entries(state.activeMines).filter(([k,m])=>m.owner===team||visible.has(k)).map(([at,m])=>({at,owner:m.owner,turns:m.turns}));
-  return {team,position:pos,enemyPosition:visible.has(enemyPos)?enemyPos:null,flags:state.flags[team],enemyFlagHints:hints,visible:[...(state.visible[team]||[])],explored:[...(state.explored[team]||[])],mines,turnPlayerId:state.turnPlayerId,die:state.die,movementRemaining:state.movementRemaining,rolled:state.rolled,inventory:state.inventory[team],minesCarried:state.mines[team],lives:state.lives,scanTurns:state.scanTurns[team],radarTurns:state.radarTurns[team],shield:state.shield[team],captured:state.captured};
+  const mines=Object.entries(state.activeMines).filter(([k,m])=>m.owner===team||state.scanTurns[team]>0).map(([at,m])=>({at,owner:m.owner,turns:m.turns}));
+  return {team,position:pos,enemyPosition:visible.has(enemyPos)?enemyPos:null,flags:state.flags[team],enemyFlagHints:hints,visible:[...(state.visible[team]||[])],explored:[...(state.explored[team]||[])],trailAges:Object.fromEntries((state.explored[team]||[]).map(k=>[k,Math.max(0,state.turnNumber-(state.exploredAt?.[team]?.[k]??state.turnNumber))])),jamTurns:state.jamZones?.[team]?.turns||0,mines,turnPlayerId:state.turnPlayerId,die:state.die,movementRemaining:state.movementRemaining,rolled:state.rolled,inventory:state.inventory[team],minesCarried:state.mines[team],lives:state.lives,scanTurns:state.scanTurns[team],shield:state.shield[team],captured:state.captured};
  },
  getPublicState(state){if(!state)return state;return {playerOrder:state.playerOrder,phase:state.phase,round:state.round,turnNumber:state.turnNumber,turnPlayerId:state.turnPlayerId,walls:state.walls,rooms:state.rooms,flagsPlaced:state.flagsPlaced,captured:state.captured,lives:state.lives,die:state.die,movementRemaining:state.movementRemaining,rolled:state.rolled,lastEvent:state.lastEvent,winner:state.winner,finishReason:state.finishReason};},
  getStatus(context,state){return state.phase==="finished"?"finished":"active"},
