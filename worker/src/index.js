@@ -98,6 +98,7 @@ export default {
     if (action === "game/reset" && request.method === "POST") return withCors(await stub.fetch("https://party-room.internal/game/reset", request), request);
     if (action === "game/rematch" && request.method === "POST") return withCors(await stub.fetch("https://party-room.internal/game/rematch", request), request);
     if (action === "game/leave" && request.method === "POST") return withCors(await stub.fetch("https://party-room.internal/game/leave", request), request);
+    if (action === "kick" && request.method === "POST") return withCors(await stub.fetch("https://party-room.internal/kick", request), request);
     if (action === "ws" && request.headers.get("Upgrade")?.toLowerCase() === "websocket") {
       if (!isAllowedOrigin(request)) return json({ error: "This website origin is not allowed." }, 403, request);
       return stub.fetch("https://party-room.internal/ws" + url.search, request);
@@ -128,6 +129,7 @@ export class PartyRoom extends DurableObject {
     if (url.pathname === "/game/reset" && request.method === "POST") return this.resetGame(request);
     if (url.pathname === "/game/rematch" && request.method === "POST") return this.rematch(request);
     if (url.pathname === "/game/leave" && request.method === "POST") return this.leaveGame(request);
+    if (url.pathname === "/kick" && request.method === "POST") return this.kickPlayer(request);
     if (url.pathname === "/ws" && request.method === "GET" && request.headers.get("Upgrade")?.toLowerCase() === "websocket") {
       if (!isAllowedOrigin(request)) return json({ error: "This website origin is not allowed." }, 403, request);
       return this.connect(url);
@@ -421,6 +423,57 @@ export class PartyRoom extends DurableObject {
       } catch {}
     }
     return json({ ok: true, status: "playing", choice: "replay", room: publicRoom(this.room) }, 200, request);
+  }
+  async kickPlayer(request) {
+    const host = this.authorizePlayer(request);
+    if (!host) return json({ error: "A valid player session is required." }, 401, request);
+    if (!host.isHost) return json({ error: "Only the host can remove party members." }, 403, request);
+    let body;
+    try { body = await request.json(); } catch { return json({ error: "Send a valid JSON body." }, 400, request); }
+    if (typeof body.playerId !== "string" || !body.playerId) return json({ error: "Choose a player to remove." }, 400, request);
+    if (body.playerId === host.id) return json({ error: "The host cannot kick themselves." }, 400, request);
+    const target = this.room.players.find(entry => entry.id === body.playerId);
+    if (!target) return json({ error: "That player is no longer in the party." }, 404, request);
+
+    const wasActivePlayer = this.room.lifecycle !== "lobby" && target.role === "player";
+    this.room.players = this.room.players.filter(entry => entry.id !== target.id);
+    this.room.rematchVotes = { ...(this.room.rematchVotes || {}) };
+    delete this.room.rematchVotes[target.id];
+    this.room.guidePlayerIds = (this.room.guidePlayerIds || []).filter(id => id !== target.id);
+    this.room.guideReadyPlayerIds = (this.room.guideReadyPlayerIds || []).filter(id => id !== target.id);
+    this.recordHistory("player-kicked", host.nickname + " removed " + target.nickname + " from the party", {
+      playerId: target.id, kickedBy: host.id,
+    });
+
+    // Game modules own different state shapes. If a selected participant is
+    // removed mid-game, end the round generically rather than mutate game state
+    // in a game-specific and potentially invalid way.
+    if (wasActivePlayer) {
+      this.room.lifecycle = "lobby";
+      for (const entry of this.room.players) if (entry.role === "spectator" || entry.role === "waiting") entry.role = "player";
+      this.room.gameId = null; this.room.gameMetadata = null; this.room.gameState = null;
+      this.room.results = null; this.room.rematchVotes = {};
+      this.room.stateVersion = (this.room.stateVersion || 0) + 1;
+      this.room.recentActionIds = [];
+    }
+
+    for (const socket of this.ctx.getWebSockets()) {
+      if (socket.deserializeAttachment()?.playerId === target.id) {
+        try { socket.close(4003, "Removed from party by host"); } catch {}
+      }
+    }
+    this.room.lastActivityAt = Date.now();
+    await this.persistAndSchedule();
+    const snapshot = publicRoom(this.room);
+    this.broadcast({ type: "room-updated", room: snapshot, stateVersion: this.room.stateVersion });
+    for (const socket of this.ctx.getWebSockets()) {
+      try {
+        if (socket.readyState === WebSocket.OPEN && socket.deserializeAttachment()?.playerId === target.id) {
+          socket.send(JSON.stringify({ type: "kicked", message: "The host removed you from this party." }));
+        }
+      } catch {}
+    }
+    return json({ ok: true, kickedPlayerId: target.id, endedGame: wasActivePlayer, room: snapshot }, 200, request);
   }
   async leaveGame(request) {
     const player = this.authorizePlayer(request);
