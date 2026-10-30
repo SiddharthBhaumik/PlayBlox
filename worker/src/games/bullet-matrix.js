@@ -45,6 +45,16 @@ export const bulletMatrix = {
     };
   },
 
+  // Reconcile the simultaneous-action quorum after a participant leaves.
+  onPlayerLeave(context, state, playerId) {
+    const playerOrder = (state?.playerOrder || []).filter(id => id !== playerId);
+    const alivePlayerIds = (state?.alivePlayerIds || []).filter(id => id !== playerId);
+    if (alivePlayerIds.length < this.players.min) return null;
+    const ammo = { ...(state.ammo || {}) }; delete ammo[playerId];
+    return { ...state, playerOrder, alivePlayerIds, ammo, pendingActions: {},
+      submittedPlayerIds: [], winnerId: null, isDraw: false };
+  },
+
   validateAction(context, state, action) {
     if (!state || !Array.isArray(state.alivePlayerIds) || !state.ammo) return { ok: false, reason: "The game state is invalid." };
     if (state.winnerId || state.isDraw) return { ok: false, reason: "The match has finished." };
