@@ -156,6 +156,17 @@ export class PartyRoom extends DurableObject {
     try { body = await request.json(); } catch { return json({ error: "Send a valid JSON body." }, 400, request); }
     const nickname = cleanText(body.nickname, 18);
     if (!nickname) return json({ error: "A nickname is required." }, 400, request);
+    const now = Date.now();
+    this.room.kickedPlayers = this.room.kickedPlayers || {};
+    for (const [key, until] of Object.entries(this.room.kickedPlayers)) {
+      if (until <= now) delete this.room.kickedPlayers[key];
+    }
+    const nicknameKey = nickname.toLocaleLowerCase();
+    const kickedUntil = this.room.kickedPlayers[nicknameKey] || 0;
+    if (kickedUntil > now) {
+      const seconds = Math.ceil((kickedUntil - now) / 1000);
+      return json({ error: `You were recently removed from this party. Please wait ${seconds} seconds before rejoining with this nickname.`, retryAfterSeconds: seconds }, 429, request);
+    }
     const existingToken = typeof body.playerToken === "string" ? body.playerToken : "";
     if (existingToken) {
       const player = this.room.players.find(entry => entry.token === existingToken);
@@ -507,6 +518,10 @@ export class PartyRoom extends DurableObject {
     const target = this.room.players.find(entry => entry.id === body.playerId);
     if (!target) return json({ error: "That player is no longer in the party." }, 404, request);
 
+    // Apply a short, room-scoped rejoin cooldown to the kicked nickname.
+    // Nicknames are the only stable identity available after the player's session is revoked.
+    this.room.kickedPlayers = this.room.kickedPlayers || {};
+    this.room.kickedPlayers[target.nickname.trim().toLocaleLowerCase()] = Date.now() + 2 * 60 * 1000;
     const wasActivePlayer = this.room.lifecycle !== "lobby" && target.role === "player";
     const game = wasActivePlayer ? getServerGame(this.room.gameId) : null;
     this.room.players = this.room.players.filter(entry => entry.id !== target.id);
@@ -529,7 +544,7 @@ export class PartyRoom extends DurableObject {
       if (socket.deserializeAttachment()?.playerId !== target.id) continue;
       try {
         if (socket.readyState === WebSocket.OPEN) {
-          socket.send(JSON.stringify({ type: "kicked", message: "The host removed you from this party." }));
+          socket.send(JSON.stringify({ type: "kicked", message: "The host removed you from this party. You can rejoin using the same nickname after 2 minutes.", timeoutSeconds: 120 }));
           socket.close(4003, "Removed from party by host");
         }
       } catch {}
