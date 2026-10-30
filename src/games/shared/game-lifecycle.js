@@ -62,7 +62,6 @@ export function setupGameLifecycle({ root, getRoom, getPlayerId, api, backToLobb
         const room = getRoom();
         const result = await api("/api/rooms/" + encodeURIComponent(room.code) + "/game/leave", { method: "POST", body: "{}" });
         location.assign(lobbyDestination(room.code, backToLobby?.()));
-        else if (result.status === "lobby") location.assign(lobbyDestination(room.code, backToLobby?.()));
       } catch (e) { error.textContent = e.message || "Could not leave the game."; leave.disabled = false; }
     });
     end.addEventListener("click", async () => {
