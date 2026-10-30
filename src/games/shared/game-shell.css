@@ -33,5 +33,6 @@ main:has(.playblox-lifecycle) #continue-round,
 main:has(.playblox-lifecycle) #restart-game,
 main:has(.playblox-lifecycle) .rematch-prompt,
 main:has(.playblox-lifecycle) #rematch-prompt,
-main:has(.playblox-lifecycle) #replay-status{display:none!important}
+main:has(.playblox-lifecycle) #replay-status,
+main:has(.playblox-lifecycle) #leave-game{display:none!important}
 @media(max-width:520px){.playblox-lifecycle{padding:15px}.playblox-lifecycle-actions{display:grid;grid-template-columns:1fr}.playblox-lifecycle-actions button{width:100%}}
