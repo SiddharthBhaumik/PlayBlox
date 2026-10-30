@@ -24,7 +24,7 @@ export function setupGameLifecycle({ root, getRoom, getPlayerId, api, backToLobb
     panel = document.createElement("section");
     panel.className = "playblox-lifecycle";
     panel.setAttribute("aria-live", "polite");
-    panel.innerHTML = '<p class="playblox-lifecycle-kicker">WHAT HAPPENS NEXT?</p><h2 class="playblox-lifecycle-title">Round complete</h2><p class="playblox-lifecycle-status"></p><div class="playblox-lifecycle-votes"></div><div class="playblox-lifecycle-kick-list"></div><div class="playblox-lifecycle-actions"><button type="button" class="playblox-lifecycle-replay">↻ Replay</button><button type="button" class="playblox-lifecycle-lobby">↩ Return to lobby</button><button type="button" class="playblox-lifecycle-leave">Leave game and return to lobby</button><button type="button" class="playblox-lifecycle-end">End game for everyone</button></div><p class="playblox-lifecycle-error" role="alert"></p>';
+    panel.innerHTML = '<p class="playblox-lifecycle-kicker">WHAT HAPPENS NEXT?</p><h2 class="playblox-lifecycle-title">Round complete</h2><p class="playblox-lifecycle-status"></p><div class="playblox-lifecycle-votes"></div><div class="playblox-lifecycle-kick-list"></div><div class="playblox-lifecycle-actions"><button type="button" class="playblox-lifecycle-replay">↻ Replay / Continue</button><button type="button" class="playblox-lifecycle-lobby">↩ Return to lobby</button><button type="button" class="playblox-lifecycle-leave">Leave game and return to lobby</button><button type="button" class="playblox-lifecycle-end">End game for everyone</button></div><p class="playblox-lifecycle-error" role="alert"></p>';
     root.append(panel);
     lifecycleInstances.set(root, panel);
     const status = panel.querySelector(".playblox-lifecycle-status");
@@ -81,6 +81,7 @@ export function setupGameLifecycle({ root, getRoom, getPlayerId, api, backToLobb
     panel.hidden = !room || (!finished && !player?.isHost && player?.role !== "player");
     panel.querySelector(".playblox-lifecycle-title").textContent = finished ? "Round complete" : "Game in progress";
     panel.querySelector(".playblox-lifecycle-replay").hidden = !finished || !(room.gameState?.playerOrder || []).includes(getPlayerId());
+    panel.querySelector(".playblox-lifecycle-replay").textContent = "↻ Replay / Continue";
     panel.querySelector(".playblox-lifecycle-lobby").hidden = !finished || !(room.gameState?.playerOrder || []).includes(getPlayerId());
     panel.querySelector(".playblox-lifecycle-end").hidden = !player?.isHost || finished;
     panel.querySelector(".playblox-lifecycle-leave").hidden = !room.gameState?.playerOrder?.includes(getPlayerId());
@@ -91,13 +92,14 @@ export function setupGameLifecycle({ root, getRoom, getPlayerId, api, backToLobb
     panel.querySelector(".playblox-lifecycle-status").textContent = finished
       ? decided + " of " + activeIds.length + " remaining players have voted to replay. Returning to the lobby ends the match for everyone."
       : (player?.isHost ? "The host can end the game for everyone. Any player can leave the game and return to the party lobby." : "You can leave this game and return to the party lobby without leaving the party.");
-    panel.querySelector(".playblox-lifecycle-votes").textContent = participantIds.filter(id => room.players.some(p => p.id === id && p.role === "player")).map(id => {
+    panel.querySelector(".playblox-lifecycle-votes").hidden = !finished;
+    panel.querySelector(".playblox-lifecycle-votes").textContent = finished ? participantIds.filter(id => room.players.some(p => p.id === id && p.role === "player")).map(id => {
       const name = room.players.find(p => p.id === id)?.nickname || "Player";
       return name + ": " + (votes[id] === "replay" ? "Replay" : "Waiting");
-    }).join(" · ");
+    }).join(" · ") : "";
     const kickList = panel.querySelector(".playblox-lifecycle-kick-list");
     kickList.replaceChildren();
-    if (player?.isHost) {
+    if (player?.isHost && finished) {
       const heading = document.createElement("strong");
       heading.textContent = "Party members";
       kickList.append(heading);
