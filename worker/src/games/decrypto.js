@@ -3,7 +3,7 @@ import { DECRYPTO_WORDS } from "./decrypto-words.js";
 const random = items => items[Math.floor(Math.random() * items.length)];
 const shuffled = items => [...items].sort(() => Math.random() - 0.5);
 const drawWords = used => {
-  const pool = shuffled(DECRYPTO_WORDS.filter(word => !used.has(word)));
+  const pool = shuffled([...new Set(DECRYPTO_WORDS)].filter(word => !used.has(word)));
   const words = pool.slice(0, 4);
   words.forEach(word => used.add(word));
   return words;
