@@ -61,6 +61,10 @@ export const battleship = {
     if (!state || !state.playerOrder.includes(playerId)) return null;
     return { fleet: state.fleets?.[playerId] || null, fleetReady: (state.readyPlayerIds || []).includes(playerId) };
   },
+  // These games require exactly two participants. A departure therefore
+  // falls below the minimum and the shared lifecycle returns the party to lobby.
+  onPlayerLeave() { return null; },
+
   validateAction(context, state, action) {
     if (!state || !Array.isArray(state.playerOrder) || state.playerOrder.length !== 2) return { ok: false, reason: "The game state is invalid." };
     if (!state.playerOrder.includes(context.player.id) || context.players?.find(player => player.id === context.player.id)?.role !== "player") return { ok: false, reason: "Only the two players can play." };
