@@ -486,7 +486,7 @@ export class PartyRoom extends DurableObject {
     this.room.guideReadyPlayerIds = (this.room.guideReadyPlayerIds || []).filter(id => id !== departedId);
     this.room.rematchVotes = { ...(this.room.rematchVotes || {}) };
     delete this.room.rematchVotes[departedId];
-    if (previousLifecycle === "guide" && this.room.guidePlayerIds.every(id => this.room.guideReadyPlayerIds.includes(id))) {
+    if (this.room.lifecycle === "guide" && previousLifecycle === "guide" && this.room.guidePlayerIds.every(id => this.room.guideReadyPlayerIds.includes(id))) {
       this.room.lifecycle = "playing";
     }
     this.room.stateVersion = (this.room.stateVersion || 0) + 1;
