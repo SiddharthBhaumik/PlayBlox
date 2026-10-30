@@ -8,6 +8,7 @@ import { bulletMatrix } from "./bullet-matrix.js";
 import { questionableAnswers } from "./questionable-answers.js";
 import { wavelength } from "./wavelength.js";
 import { battleship } from "./battleship.js";
+import { decrypto } from "./decrypto.js";
 
 const serverGames = new Map();
 
@@ -32,6 +33,7 @@ registerServerGame(bulletMatrix);
 registerServerGame(questionableAnswers);
 registerServerGame(wavelength);
 registerServerGame(battleship);
+registerServerGame(decrypto);
 
 export function getServerGame(id) { return serverGames.get(id) || null; }
 export function listServerGames() {
