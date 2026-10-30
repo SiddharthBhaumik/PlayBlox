@@ -12,6 +12,7 @@ function key(x,y){return x+","+y}
 function coords(k){return k.split(",").map(Number)}
 function adjacent(a,b){const [x,y]=coords(a),[u,v]=coords(b);return Math.abs(x-u)+Math.abs(y-v)===1}
 function validFlagTile(k){const [x,y]=coords(k),blueBase=key(1,1),redBase=key(18,18);return !(state?.walls||[]).includes(k)&&!state?.rooms?.[k]&&Math.abs(x-1)+Math.abs(y-1)>3&&Math.abs(x-18)+Math.abs(y-18)>3&&!(privateState?.flags||[]).includes(k)}
+function canPlaceMineAt(k){const pos=privateState?.position,knownMines=new Set((privateState?.mines||[]).map(m=>m.at));if(!pos||!adjacent(pos,k))return false;const [x,y]=coords(k);return !(state?.walls||[]).includes(k)&&!state?.rooms?.[k]&&!Object.values(state?.positions||{}).includes(k)&&!knownMines.has(k)&&!(privateState?.flags||[]).includes(k)&&Math.abs(x-1)+Math.abs(y-1)>3&&Math.abs(x-18)+Math.abs(y-18)>3}
 function setError(m){$("error-message").textContent=m||""}
 async function api(path,options={}){const response=await fetch(API+path,{...options,headers:{...(options.body?{"Content-Type":"application/json"}:{}),...(token?{Authorization:"Bearer "+token}:{}),...(options.headers||{})}});const data=await response.json().catch(()=>({}));if(!response.ok){const e=Error(data.error||"The request failed.");e.stateVersion=data.stateVersion;throw e}return data}
 async function act(action){if(acting)return;acting=true;setError("");try{const d=await api("/api/rooms/"+encodeURIComponent(code)+"/game/action",{method:"POST",body:JSON.stringify({actionId:crypto.randomUUID(),expectedStateVersion:version,action})});version=d.stateVersion??version;await sync()}catch(e){setError(e.message);if(Number.isInteger(e.stateVersion))version=e.stateVersion;try{await sync()}catch{}}finally{acting=false;render()}}
@@ -31,7 +32,7 @@ function renderBoard(){
   const k=key(x,y),r=state.rooms?.[k],isVisible=visible.has(k),isExplored=explored.has(k),button=document.createElement("button");
   button.type="button";button.className="tile";button.setAttribute("role","gridcell");button.dataset.tile=k;
   if(walls.has(k))button.classList.add("wall");if(r)button.classList.add("room",r.type);if(!isVisible&&!isExplored&&!walls.has(k)&&!r)button.classList.add("fog");if(state?.phase==="flags"){const [tx,ty]=coords(k),inBase=Math.abs(tx-1)+Math.abs(ty-1)<=3||Math.abs(tx-18)+Math.abs(ty-18)<=3;if(walls.has(k)||r||inBase){button.classList.add("flag-unavailable");button.disabled=true;}}
-  if(mineMap.has(k))button.classList.add(mineMap.get(k).owner===team()?"own-mine":"spotted-mine");
+  if(mineMap.has(k))button.classList.add(mineMap.get(k).owner===team()?"own-mine":"spotted-mine");if(mode==="mine"&&canPlaceMineAt(k))button.classList.add("mine-placement-option");
   if(k===privateState?.position)button.classList.add("my-position");if(k===privateState?.enemyPosition)button.classList.add("enemy-position");
   button.textContent=cellContent(k,visible,explored);
   if(privateState?.flags?.includes(k))button.classList.add("own-flag");
@@ -56,7 +57,7 @@ function render(){
  const select=$("power-select"),old=select.value;select.replaceChildren(new Option("Choose a power-up",""));(privateState?.inventory||[]).forEach(p=>select.add(new Option(p.replace("-"," ").replace(/\b\w/g,c=>c.toUpperCase()),p)));select.value=(privateState?.inventory||[]).includes(old)?old:"";
  $("activate-power").disabled=!myTurn()||!select.value;
  $("inventory-label").textContent=(privateState?.inventory||[]).length?(privateState.inventory.join(" · ")):"No power-ups yet.";
- $("mine-hint").textContent="Your mines are always visible. Opponent mines appear when discovered.";
+ $("mine-hint").textContent=mode==="mine"?(privateState?.minesCarried||0)+" mine(s) ready. Highlighted tiles are valid adjacent places; click one to plant.":"Your mines are always visible. Opponent mines appear when discovered.";
  $("setup-panel").hidden=state.phase!=="flags"||Boolean(state.flagsPlaced?.[t]);$("flag-count").textContent=selectedFlags.length+" / 3 selected";$("submit-flags").disabled=selectedFlags.length!==3;
  $("result-panel").hidden=state.phase!=="finished";
  if(state.phase==="finished"){$("result-title").textContent=state.winner===t?"🏆 You win!":"💥 Match over";$("result-copy").textContent=state.finishReason||"The match has ended."}
@@ -72,14 +73,14 @@ async function tileClick(k){
   $("flag-count").textContent=selectedFlags.length+" / 3 selected";$("submit-flags").disabled=selectedFlags.length!==3;return;
  }
  if(!myTurn())return;
- if(mode==="mine"){await act({type:"place-mine",at:k});mode="move";render();return}
+ if(mode==="mine"){if(!canPlaceMineAt(k)){setError("Choose a highlighted empty tile directly next to your player, outside both protected bases.");return}await act({type:"place-mine",at:k});if(!document.getElementById("error-message").textContent)mode="move";render();return}
  if(mode==="disarm"){await act({type:"activate-power",power:"disarm",at:k});mode="move";render();return}
  if(state.rolled&&state.movementRemaining>0&&adjacent(privateState.position,k))await act({type:"move",to:k});
 }
 $("submit-flags").addEventListener("click",()=>act({type:"place-flags",flags:selectedFlags}));
 $("roll-button").addEventListener("click",()=>act({type:"roll"}));
 $("end-turn").addEventListener("click",()=>act({type:"end-turn"}));
-$("mine-mode").addEventListener("click",()=>{mode=mode==="mine"?"move":"mine";$("selection-message").textContent=mode==="mine"?"Choose an adjacent empty tile for your mine.":"Select an adjacent tile to move.";render()});
+$("mine-mode").addEventListener("click",()=>{mode=mode==="mine"?"move":"mine";setError("");$("selection-message").textContent=mode==="mine"?"Plant a mine: choose one of the highlighted tiles next to your player.":"Select an adjacent tile to move.";render()});
 $("power-select").addEventListener("change",()=>{if(mode==="disarm"){mode="move";$("selection-message").textContent="Select an adjacent tile to move.";}});
 $("activate-power").addEventListener("click",async()=>{const power=$("power-select").value;if(!power)return;if(power==="disarm"){mode="disarm";$("selection-message").textContent="Choose an adjacent mine to disarm."}else await act({type:"activate-power",power})});
 $("zoom-in").addEventListener("click",()=>{zoom=Math.min(1.8,zoom+.15);$("board").style.setProperty("--cell-size",zoom+"rem")});
