@@ -52,7 +52,7 @@ function publicRoom(room) {
       disconnectExpiresAt,
     })),
     playerCount: room.players.length, playerCap: ROOM_CAP, createdAt: room.createdAt,
-    gameId: room.gameId ?? null, selectedGameId: room.selectedGameId ?? null, guidePlayerIds: room.guidePlayerIds ?? [], guideReadyPlayerIds: room.guideReadyPlayerIds ?? [], lifecycle: room.lifecycle ?? "lobby", stateVersion: room.stateVersion ?? 0, game: room.gameMetadata ?? null, gameState: room.gameId && getServerGame(room.gameId)?.getPublicState
+    gameId: room.gameId ?? null, selectedGameId: room.selectedGameId ?? null, originalPlayerIds: room.originalPlayerIds ?? [], activePlayerIds: room.activePlayerIds ?? [], guidePlayerIds: room.guidePlayerIds ?? [], guideReadyPlayerIds: room.guideReadyPlayerIds ?? [], lifecycle: room.lifecycle ?? "lobby", stateVersion: room.stateVersion ?? 0, game: room.gameMetadata ?? null, gameState: room.gameId && getServerGame(room.gameId)?.getPublicState
       ? getServerGame(room.gameId).getPublicState(room.gameState)
       : (room.gameState ?? null), results: room.results ?? null, rematchVotes: room.rematchVotes ?? {}, history: room.history ?? [],
   };
@@ -244,6 +244,8 @@ export class PartyRoom extends DurableObject {
     for (const entry of selectedPlayers) entry.role = "player";
     for (const entry of unselectedPlayers) entry.role = game.spectators?.supported ? "spectator" : "waiting";
     this.room.gameId = game.id;
+    this.room.originalPlayerIds = selectedPlayers.map(entry => entry.id);
+    this.room.activePlayerIds = selectedPlayers.map(entry => entry.id);
     this.room.gameMetadata = { id: game.id, name: game.name, interactionModel: game.interactionModel, guide: game.guide, lateJoinPolicy: game.lateJoinPolicy, players: game.players, spectators: game.spectators ?? { supported: false } };
     this.room.lifecycle = "guide";
     this.room.gameState = initialState;
@@ -373,7 +375,7 @@ export class PartyRoom extends DurableObject {
       this.recordHistory("returned-to-lobby", player.nickname + " chose to return everyone to the lobby", { gameId: game.id });
       this.room.lifecycle = "lobby";
       for (const entry of this.room.players) if (entry.role === "spectator" || entry.role === "waiting") entry.role = "player";
-      this.room.gameId = null; this.room.gameMetadata = null; this.room.gameState = null; this.room.results = null;
+      this.room.gameId = null; this.room.gameMetadata = null; this.room.gameState = null; this.room.originalPlayerIds = []; this.room.activePlayerIds = []; this.room.results = null;
       this.room.stateVersion = (this.room.stateVersion || 0) + 1;
       this.room.recentActionIds = []; this.room.rematchVotes = {}; this.room.lastActivityAt = Date.now();
       await this.persistAndSchedule();
@@ -408,6 +410,7 @@ export class PartyRoom extends DurableObject {
     }
     if (!nextState) return json({ error: "The game returned no next state." }, 500, request);
     this.room.gameState = nextState;
+    this.room.activePlayerIds = (nextState.playerOrder || []).slice();
     this.room.lifecycle = "playing"; this.room.results = null; this.room.rematchVotes = {};
     this.room.stateVersion = (this.room.stateVersion || 0) + 1; this.room.recentActionIds = [];
     this.room.lastActivityAt = Date.now();
@@ -462,6 +465,7 @@ export class PartyRoom extends DurableObject {
       return "lobby";
     }
     this.room.gameState = nextState;
+    this.room.activePlayerIds = nextState.playerOrder.slice();
     this.room.guidePlayerIds = (this.room.guidePlayerIds || []).filter(id => id !== departedId);
     this.room.guideReadyPlayerIds = (this.room.guideReadyPlayerIds || []).filter(id => id !== departedId);
     this.room.rematchVotes = { ...(this.room.rematchVotes || {}) };
@@ -560,6 +564,7 @@ export class PartyRoom extends DurableObject {
     this.room.lifecycle = "lobby";
     for (const entry of this.room.players) if (entry.role === "spectator" || entry.role === "waiting") entry.role = "player";
     this.room.gameId = null;
+    this.room.originalPlayerIds = []; this.room.activePlayerIds = [];
     this.room.gameMetadata = null;
     this.room.gameState = null;
     this.room.results = null;
@@ -578,9 +583,10 @@ export class PartyRoom extends DurableObject {
   }
   gameContext(game, player) {
     return {
-      room: { code: this.room.code, name: this.room.name, gameId: this.room.gameId, lifecycle: this.room.lifecycle },
+      room: { code: this.room.code, name: this.room.name, gameId: this.room.gameId, lifecycle: this.room.lifecycle, originalPlayerIds: this.room.originalPlayerIds || [], activePlayerIds: this.room.activePlayerIds || [] },
       player: { id: player.id, nickname: player.nickname, isHost: player.isHost },
       players: this.room.players.map(({ id, nickname, isHost, connected, role = "player" }) => ({ id, nickname, isHost, connected, role })),
+      originalPlayerIds: this.room.originalPlayerIds || [], activePlayerIds: this.room.activePlayerIds || [],
       game: { id: game.id, interactionModel: game.interactionModel, lateJoinPolicy: game.lateJoinPolicy },
     };
   }
