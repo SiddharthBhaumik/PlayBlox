@@ -11,6 +11,7 @@ function myTurn(){return Boolean(team()&&state?.turnPlayerId===playerId&&room?.l
 function key(x,y){return x+","+y}
 function coords(k){return k.split(",").map(Number)}
 function adjacent(a,b){const [x,y]=coords(a),[u,v]=coords(b);return Math.abs(x-u)+Math.abs(y-v)===1}
+function validFlagTile(k){const [x,y]=coords(k),blueBase=key(1,1),redBase=key(18,18);return !(state?.walls||[]).includes(k)&&!state?.rooms?.[k]&&Math.abs(x-1)+Math.abs(y-1)>3&&Math.abs(x-18)+Math.abs(y-18)>3&&!(privateState?.flags||[]).includes(k)}
 function setError(m){$("error-message").textContent=m||""}
 async function api(path,options={}){const response=await fetch(API+path,{...options,headers:{...(options.body?{"Content-Type":"application/json"}:{}),...(token?{Authorization:"Bearer "+token}:{}),...(options.headers||{})}});const data=await response.json().catch(()=>({}));if(!response.ok){const e=Error(data.error||"The request failed.");e.stateVersion=data.stateVersion;throw e}return data}
 async function act(action){if(acting)return;acting=true;setError("");try{const d=await api("/api/rooms/"+encodeURIComponent(code)+"/game/action",{method:"POST",body:JSON.stringify({actionId:crypto.randomUUID(),expectedStateVersion:version,action})});version=d.stateVersion??version;await sync()}catch(e){setError(e.message);if(Number.isInteger(e.stateVersion))version=e.stateVersion;try{await sync()}catch{}}finally{acting=false;render()}}
@@ -29,7 +30,7 @@ function renderBoard(){
  for(let y=0;y<20;y++)for(let x=0;x<20;x++){
   const k=key(x,y),r=state.rooms?.[k],isVisible=visible.has(k),isExplored=explored.has(k),button=document.createElement("button");
   button.type="button";button.className="tile";button.setAttribute("role","gridcell");button.dataset.tile=k;
-  if(walls.has(k))button.classList.add("wall");if(r)button.classList.add("room",r.type);if(!isVisible&&!isExplored&&!walls.has(k)&&!r)button.classList.add("fog");
+  if(walls.has(k))button.classList.add("wall");if(r)button.classList.add("room",r.type);if(!isVisible&&!isExplored&&!walls.has(k)&&!r)button.classList.add("fog");if(state?.phase==="flags"){const [tx,ty]=coords(k),inBase=Math.abs(tx-1)+Math.abs(ty-1)<=3||Math.abs(tx-18)+Math.abs(ty-18)<=3;if(walls.has(k)||r||inBase){button.classList.add("flag-unavailable");button.disabled=true;}}
   if(mineMap.has(k))button.classList.add(mineMap.get(k).owner===team()?"own-mine":"spotted-mine");
   if(k===privateState?.position)button.classList.add("my-position");if(k===privateState?.enemyPosition)button.classList.add("enemy-position");
   button.textContent=cellContent(k,visible,explored);
@@ -65,7 +66,8 @@ async function tileClick(k){
  if(!state||acting)return;
  if(state.phase==="flags"){
   if(state.flagsPlaced?.[team()])return;
-  if(selectedFlags.includes(k))selectedFlags=selectedFlags.filter(x=>x!==k);else if(selectedFlags.length<3)selectedFlags.push(k);
+  setError("");
+  if(selectedFlags.includes(k))selectedFlags=selectedFlags.filter(x=>x!==k);else if(!validFlagTile(k)){setError("Choose an open floor tile outside both protected bases and rooms.");return}else if(selectedFlags.length<3)selectedFlags.push(k);
   document.querySelectorAll(".tile").forEach(b=>b.classList.toggle("flag-selected",selectedFlags.includes(b.dataset.tile)));
   $("flag-count").textContent=selectedFlags.length+" / 3 selected";$("submit-flags").disabled=selectedFlags.length!==3;return;
  }
