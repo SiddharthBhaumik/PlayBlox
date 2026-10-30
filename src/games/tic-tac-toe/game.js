@@ -41,6 +41,7 @@ function render() {
   const currentPlayer = room.players.find(p => p.id === gameState.currentPlayerId);
   const isMyTurn = gameState.currentPlayerId === myPlayerId;
   const finished = room.lifecycle === "results" || Boolean(gameState.winnerId || gameState.isDraw);
+  const activeIds = new Set(gameState.playerOrder || []);
   document.querySelectorAll(".tic-cell").forEach((cell, index) => {
     const mark = gameState.board[index];
     cell.textContent = mark || "";
