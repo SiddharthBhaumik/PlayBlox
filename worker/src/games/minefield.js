@@ -32,7 +32,7 @@ function generateCode(){return Math.floor(1+Math.random()*6)}
 function teamOf(state,id){return state.teams[id]}
 function win(state,winner,reason){return {...state,phase:"finished",winner,finishReason:reason,turnPlayerId:null,movementRemaining:0,die:null}}
 function updateVisibility(state,team){
- const p=state.positions[team],radius=state.scanTurns[team]>0?20:state.radarTurns[team]>0?3:2;
+ const p=state.positions[team],radius=state.scanTurns[team]>0?40:state.radarTurns[team]>0?3:2;
  const visible=visibleFrom(p,radius,new Set(state.walls));
  const explored={...state.explored,[team]:[...new Set([...(state.explored[team]||[]),...visible])]};
  return {...state,visible:{...state.visible,[team]:visible},explored};
@@ -54,7 +54,7 @@ export const minefield={
  validateAction(context,state,action){
   const id=context.player.id,team=state?.teams?.[id];if(!team||!state.playerOrder.includes(id))return {ok:false,reason:"You are not part of this match."};
   if(state.phase==="finished")return {ok:false,reason:"The match has finished."};
-  if(state.phase==="flags"){if(action?.type!=="place-flags"||state.flagsPlaced[team])return {ok:false,reason:"Place your three flags once."};if(!Array.isArray(action.flags)||action.flags.length!==3||new Set(action.flags).size!==3)return {ok:false,reason:"Choose three different flag locations."};const walls=new Set(state.walls);for(const k of action.flags){if(typeof k!=="string")return {ok:false,reason:"Invalid flag location."};const [x,y]=xy(k);if(!inBounds(x,y)||walls.has(k)||state.rooms[k]||manhattan(k,state.positions.blue)<=3||manhattan(k,state.positions.red)<=3)return {ok:false,reason:"Flags must be on open floor, outside both protected bases and rooms."};if(team==="blue"&&x+y>20||team==="red"&&x+y<18)return {ok:false,reason:"Place flags in your own half of the map."}}return {ok:true}}
+  if(state.phase==="flags"){if(action?.type!=="place-flags"||state.flagsPlaced[team])return {ok:false,reason:"Place your three flags once."};if(!Array.isArray(action.flags)||action.flags.length!==3||new Set(action.flags).size!==3)return {ok:false,reason:"Choose three different flag locations."};const walls=new Set(state.walls),occupiedFlags=new Set([...state.flags.blue,...state.flags.red]);for(const k of action.flags){if(typeof k!=="string")return {ok:false,reason:"Invalid flag location."};const [x,y]=xy(k);if(!inBounds(x,y)||walls.has(k)||state.rooms[k]||occupiedFlags.has(k)||manhattan(k,state.positions.blue)<=3||manhattan(k,state.positions.red)<=3)return {ok:false,reason:"Flags must be on open floor, outside both protected bases and rooms."};if(team==="blue"&&x+y>20||team==="red"&&x+y<18)return {ok:false,reason:"Place flags in your own half of the map."}}return {ok:true}}
   if(state.phase!=="playing")return {ok:false,reason:"The match is not ready."};
   if(state.turnPlayerId!==id)return {ok:false,reason:"Wait for your turn."};
   if(action?.type==="roll")return !state.rolled?{ok:true}:{ok:false,reason:"You have already rolled this turn."};
@@ -71,10 +71,10 @@ export const minefield={
   if(action.type==="move"){
    const positions={...state.positions,[team]:action.to},activeMines={...state.activeMines},rooms={...state.rooms},lives={...state.lives},mines={...state.mines},inventory={...state.inventory},captured={...state.captured};let remaining=state.movementRemaining-1,lastEvent="Moved to "+action.to+".";
    if(activeMines[action.to]){const mine=activeMines[action.to];delete activeMines[action.to];if(state.shield[team]>0){const shield={...state.shield,[team]:state.shield[team]-1};return updateVisibility({...state,positions,activeMines,shield,movementRemaining:0,movedThisTurn:true,lastEvent:"Your shield absorbed a mine!"},team)}lives[team]=Math.max(0,lives[team]-1);remaining=0;lastEvent="BOOM! A mine cost you one life and stopped your movement."}
-   const enemy=other(team),hit=(state.flags[enemy]||[]).includes(action.to);if(hit){captured[team]++;const flags={...state.flags,[enemy]:state.flags[enemy].filter(k=>k!==action.to)};if(captured[team]>=3)return win({...state,positions,activeMines,flags,captured,lives,movementRemaining:0,movedThisTurn:true},""+team,"All three enemy flags captured!");return updateVisibility({...state,positions,activeMines,flags,captured,lives,movementRemaining:0,movedThisTurn:true,lastEvent:"You captured an enemy flag!"},team)}
+   if(lives[team]<=0)return win({...state,positions,activeMines,lives,movementRemaining:0,movedThisTurn:true},other(team),"Your opponent lost all their lives.");\n   const enemy=other(team),hit=(state.flags[enemy]||[]).includes(action.to);if(hit){captured[team]++;const flags={...state.flags,[enemy]:state.flags[enemy].filter(k=>k!==action.to)};if(captured[team]>=3)return win({...state,positions,activeMines,flags,captured,lives,movementRemaining:0,movedThisTurn:true},""+team,"All three enemy flags captured!");return updateVisibility({...state,positions,activeMines,flags,captured,lives,movementRemaining:0,movedThisTurn:true,lastEvent:"You captured an enemy flag!"},team)}
    if(lives[team]<=0)return win({...state,positions,activeMines,lives,movementRemaining:0,movedThisTurn:true},enemy,"Your opponent lost all their lives.");
    const room=rooms[action.to];if(room?.active){if(room.type==="mine"){mines[team]=Math.min(3,mines[team]+(Math.floor(random()*2)+1));lastEvent="Mine depot! You collected mines."}if(room.type==="power"){const power=randomPower(random);if(inventory[team].length<2)inventory[team]=[...inventory[team],power];lastEvent="Power room! You found "+power+"."}if(room.type==="medical"){lives[team]=Math.min(MAX_LIVES,lives[team]+1);lastEvent="Medical room! You recovered one life."}rooms[action.to]={...room,active:false,respawnAt:state.turnNumber+Math.floor(random()*4)+3}}
-   let next={...state,positions,activeMines,rooms,lives,mines,inventory,captured,movementRemaining:remaining,movedThisTurn:true,lastEvent};if(state.scanTurns[team]>0)next.scanTurns={...state.scanTurns,[team]:state.scanTurns[team]-1};if(state.radarTurns[team]>0)next.radarTurns={...state.radarTurns,[team]:state.radarTurns[team]-1};return updateVisibility(next,team);
+   let next={...state,positions,activeMines,rooms,lives,mines,inventory,captured,movementRemaining:remaining,movedThisTurn:true,lastEvent};return updateVisibility(next,team);
   }
   if(action.type==="place-mine"){const activeMines={...state.activeMines,[action.at]:{owner:team,turns:MINE_LIFE}};return {...state,activeMines,mines:{...state.mines,[team]:state.mines[team]-1},minePlacedThisTurn:true,lastEvent:"Mine placed at "+action.at+". You can always see your own mines."}}
   if(action.type==="activate-power"){
@@ -85,7 +85,7 @@ export const minefield={
   if(action.type==="end-turn"){
    const activeMines={};for(const [k,m] of Object.entries(state.activeMines)){const turns=m.turns-1;if(turns>0)activeMines[k]={...m,turns}}
    const nextTeam=other(team),turnNumber=state.turnNumber+1,round=nextTeam==="blue"?state.round+1:state.round;
-   let next={...state,activeMines,turnNumber,round,turnPlayerId:nextTeam,die:null,movementRemaining:0,rolled:false,movedThisTurn:false,minePlacedThisTurn:false,powerUsedThisTurn:false,speed:{...state.speed,[team]:0},lastEvent:"Turn passed to "+nextTeam+"."};
+   let next={...state,activeMines,turnNumber,round,turnPlayerId:nextTeam,die:null,movementRemaining:0,rolled:false,movedThisTurn:false,minePlacedThisTurn:false,powerUsedThisTurn:false,speed:{...state.speed,[team]:0},scanTurns:{...state.scanTurns,[team]:Math.max(0,(state.scanTurns[team]||0)-1)},radarTurns:{...state.radarTurns,[team]:Math.max(0,(state.radarTurns[team]||0)-1)},lastEvent:"Turn passed to "+nextTeam+"."};
    next=respawnRooms(next,random);return updateVisibility(updateVisibility(next,team),nextTeam);
   }
   return state;
