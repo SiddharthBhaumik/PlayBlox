@@ -31,7 +31,7 @@ export const decrypto = {
   const playerOrder=context.players.filter(p=>p.role==="player"&&p.connected).map(p=>p.id);
   const used=new Set();
   return {playerOrder,phase:"teams",round:1,teams:{},words:{blue:drawWords(used),red:drawWords(used)},
-   clueGiverIndex:{blue:0,red:0},codes:{},clues:{},ownGuesses:{},intercepts:{},
+   clueGiverIndex:{blue:0,red:0},codes:{blue:newCode(),red:newCode()},clues:{},ownGuesses:{},intercepts:{},
    interceptions:{blue:0,red:0},miscommunications:{blue:0,red:0},submitted:{blue:false,red:false},winner:null,finishReason:null};
  },
  onPlayerLeave(context,state,playerId) {
@@ -62,7 +62,7 @@ export const decrypto = {
   const teams=teamIds(state),team=state.teams[id];
   if(!team)return {ok:false,reason:"Your team is not assigned."};
   if(action?.type==="submit-clues"&&state.phase==="clues") {
-   if(state.playerOrder[ state.clueGiverIndex[team] ]!==id)return {ok:false,reason:"Only your team's clue-giver can submit clues."};
+   if(teamIds(state)[team][state.clueGiverIndex[team]]!==id)return {ok:false,reason:"Only your team's clue-giver can submit clues."};
    if(state.submitted[team])return {ok:false,reason:"Your team has already submitted its clues."};
    if(!Array.isArray(action.clues)||action.clues.length!==3||action.clues.some(c=>typeof c!=="string"||!c.trim()||c.length>100))return {ok:false,reason:"Enter three clear clues."};
    return {ok:true};
@@ -105,7 +105,7 @@ export const decrypto = {
    for(const t of ["blue","red"]) {
     const expected=(codes[t]||[]).join("");
     if(next.ownGuesses[t]!==expected)miscommunications[t]++;
-    if(next.intercepts[t]===expected)interceptions[other(t)]++;
+    if(next.intercepts[t]===codes[other(t)].join(""))interceptions[t]++;
    }
    let winner=null,reason=null;
    if(interceptions.blue>=2||interceptions.red>=2) {
@@ -126,7 +126,7 @@ export const decrypto = {
   const team=state.teams?.[playerId];
   if(!team)return null;
   const privateData={team,words:state.words[team]};
-  if(state.phase==="clues"&&state.playerOrder[state.clueGiverIndex[team]]===playerId)privateData.code=state.codes[team];
+  if(state.phase==="clues"&&teamIds(state)[team][state.clueGiverIndex[team]]===playerId)privateData.code=state.codes[team];
   return privateData;
  },
  getPublicState(state) {
