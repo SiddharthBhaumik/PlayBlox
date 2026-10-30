@@ -5,6 +5,18 @@
  */
 const lifecycleInstances = new WeakMap();
 
+function lobbyDestination(code, fallback) {
+  const gamePath = window.location.pathname;
+  const marker = gamePath.indexOf("/src/games/");
+  const projectRoot = marker >= 0 ? gamePath.slice(0, marker + 1) : "/";
+  const target = new URL(projectRoot, window.location.origin);
+  target.searchParams.set("party", code);
+  target.searchParams.set("lobby", "1");
+  // Prefer the repository-aware path derived from the game URL. This avoids
+  // accidentally navigating to the domain root on GitHub project Pages.
+  return target.href || fallback;
+}
+
 export function setupGameLifecycle({ root, getRoom, getPlayerId, api, backToLobby }) {
   if (!root) return () => {};
   let panel = lifecycleInstances.get(root);
@@ -31,7 +43,7 @@ export function setupGameLifecycle({ root, getRoom, getPlayerId, api, backToLobb
           method: "POST", body: JSON.stringify({ choice }),
         });
         if (result.status === "lobby") {
-          if (backToLobby) location.href = backToLobby;
+          location.assign(lobbyDestination(room.code, backToLobby?.()));
         } else if (result.status === "waiting") {
           status.textContent = choice === "replay" ? "Your replay choice is saved. Waiting for everyone else." : "Your choice is saved.";
           votes.textContent = Object.keys(result.votes || {}).length + " of " + (room.gameState?.playerOrder || []).length + " players have chosen.";
@@ -49,8 +61,8 @@ export function setupGameLifecycle({ root, getRoom, getPlayerId, api, backToLobb
       try {
         const room = getRoom();
         const result = await api("/api/rooms/" + encodeURIComponent(room.code) + "/game/leave", { method: "POST", body: "{}" });
-        if (backToLobby) location.href = backToLobby;
-        else if (result.status === "lobby") location.reload();
+        location.assign(lobbyDestination(room.code, backToLobby?.()));
+        else if (result.status === "lobby") location.assign(lobbyDestination(room.code, backToLobby?.()));
       } catch (e) { error.textContent = e.message || "Could not leave the game."; leave.disabled = false; }
     });
     end.addEventListener("click", async () => {
