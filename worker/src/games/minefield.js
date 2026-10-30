@@ -86,8 +86,8 @@ export const minefield={
   }
   if(action.type==="end-turn"){
    const activeMines={};for(const [k,m] of Object.entries(state.activeMines)){const turns=m.owner===team?m.turns:m.turns-1;if(turns>0)activeMines[k]={...m,turns}}
-   const nextTeam=other(team),turnNumber=state.turnNumber+1,round=nextTeam==="blue"?state.round+1:state.round;
-   let next={...state,activeMines,turnNumber,round,turnPlayerId:nextTeam,die:null,movementRemaining:0,rolled:false,movedThisTurn:false,minePlacedThisTurn:false,powerUsedThisTurn:false,speed:{...state.speed,[team]:0},scanTurns:{...state.scanTurns,[team]:Math.max(0,(state.scanTurns[team]||0)-1)},radarTurns:{...state.radarTurns,[team]:Math.max(0,(state.radarTurns[team]||0)-1)},lastEvent:"Turn passed to "+nextTeam+"."};
+   const nextTeam=other(team),nextPlayerId=state.playerOrder.find(id=>state.teams[id]===nextTeam),turnNumber=state.turnNumber+1,round=nextTeam==="blue"?state.round+1:state.round;
+   let next={...state,activeMines,turnNumber,round,turnPlayerId:nextPlayerId,die:null,movementRemaining:0,rolled:false,movedThisTurn:false,minePlacedThisTurn:false,powerUsedThisTurn:false,speed:{...state.speed,[team]:0},scanTurns:{...state.scanTurns,[team]:Math.max(0,(state.scanTurns[team]||0)-1)},radarTurns:{...state.radarTurns,[team]:Math.max(0,(state.radarTurns[team]||0)-1)},lastEvent:"Turn passed to "+nextTeam+"."};
    next=respawnRooms(next,random);return updateVisibility(updateVisibility(next,team),nextTeam);
   }
   return state;
