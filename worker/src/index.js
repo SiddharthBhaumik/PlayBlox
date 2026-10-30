@@ -344,157 +344,79 @@ export class PartyRoom extends DurableObject {
   async rematch(request) {
     const player = this.authorizePlayer(request);
     if (!player) return json({ error: "A valid player session is required." }, 401, request);
-    if (this.room.lifecycle !== "results") return json({ error: "The round must finish before continuing or restarting." }, 409, request);
+    if (this.room.lifecycle !== "results") return json({ error: "The round must finish before choosing what happens next." }, 409, request);
     const game = getServerGame(this.room.gameId);
-    if (!game?.createInitialState || !Array.isArray(this.room.gameState?.playerOrder)) return json({ error: "This game does not support another round yet." }, 409, request);
+    if (!game?.createInitialState || !Array.isArray(this.room.gameState?.playerOrder)) {
+      return json({ error: "This game does not support replay yet." }, 409, request);
+    }
     const participants = this.room.gameState.playerOrder;
     if (!participants.includes(player.id)) return json({ error: "Only players from this round can choose what happens next." }, 403, request);
     let body;
     try { body = await request.json(); } catch { return json({ error: "Send a valid JSON body." }, 400, request); }
 
-    if (game.id === "wavelength") {
-      const choice = body.choice;
-      if (!["continue", "restart"].includes(choice)) return json({ error: "Choose Continue or Restart." }, 400, request);
-      this.room.rematchVotes = { ...(this.room.rematchVotes || {}), [player.id]: choice };
-      this.recordHistory("round-choice", player.nickname + " chose " + choice + " for Wavelength", { gameId: game.id, choice });
-      const everyoneAgrees = participants.every(id =>
-        this.room.rematchVotes[id] === choice &&
-        this.room.players.some(entry => entry.id === id && entry.connected && entry.role === "player")
-      );
-      if (everyoneAgrees) {
-        const context = this.gameContext(game, player);
-        let nextState;
-        try {
-          nextState = choice === "restart"
-            ? await game.createInitialState(context, this.room.gameState)
-            : await game.startNextRound(context, this.room.gameState, "continue");
-        } catch { return json({ error: "The next round could not be initialized." }, 500, request); }
-        if (!nextState) return json({ error: "The game returned no next state." }, 500, request);
-        this.room.gameState = nextState;
-        this.room.lifecycle = "playing";
-        this.room.results = null;
-        this.room.rematchVotes = {};
-        this.room.stateVersion = (this.room.stateVersion || 0) + 1;
-        this.room.recentActionIds = [];
-        this.room.lastActivityAt = Date.now();
-        this.recordHistory(choice === "restart" ? "game-restarted" : "next-round-started",
-          choice === "restart" ? "Wavelength restarted with scores reset" : "Wavelength continued to the next round",
-          { gameId: game.id });
-        await this.persistAndSchedule();
-        const publicSnapshot = publicRoom(this.room);
-        for (const ws of this.ctx.getWebSockets()) {
-          try {
-            if (ws.readyState !== WebSocket.OPEN) continue;
-            const socketPlayerId = ws.deserializeAttachment()?.playerId;
-            const privateState = game.getPrivateState ? await game.getPrivateState(this.room.gameState, socketPlayerId) : null;
-            ws.send(JSON.stringify({ type: "game-started", room: publicSnapshot, privateState, stateVersion: this.room.stateVersion, choice }));
-          } catch {}
-        }
-        return json({ ok: true, status: "playing", choice, room: publicRoom(this.room) }, 200, request);
-      }
-      this.room.lastActivityAt = Date.now();
-      await this.persistAndSchedule();
-      this.broadcast({ type: "rematch-vote", votes: this.room.rematchVotes, playerIds: participants });
-      return json({ ok: true, status: "waiting", votes: this.room.rematchVotes }, 200, request);
+    // One lifecycle contract for every game. Legacy payloads remain accepted while
+    // older clients are phased out: playAgain/choice map to replay or lobby.
+    let choice = body.choice;
+    if (choice === "continue" || choice === "restart") choice = "replay";
+    if (choice === "lobby") choice = "lobby";
+    if (typeof body.playAgain === "boolean") choice = body.playAgain ? "replay" : "lobby";
+    if (typeof body.playAgain === "boolean" && body.choice === "replay") choice = "replay";
+    if (choice !== "replay" && choice !== "lobby") {
+      return json({ error: "Choose Replay or Return to lobby." }, 400, request);
     }
 
-    if (game.id === "battleship") {
-      const choice = body.choice;
-      if (!["continue", "lobby"].includes(choice)) return json({ error: "Choose Replay or Return to lobby." }, 400, request);
-
-      // Returning to the lobby is an immediate action for the whole party, not a vote.
-      if (choice === "lobby") {
-        this.recordHistory("returned-to-lobby", player.nickname + " ended the Battleship round and returned everyone to the lobby", { gameId: game.id });
-        this.room.lifecycle = "lobby";
-        for (const entry of this.room.players) if (entry.role === "spectator" || entry.role === "waiting") entry.role = "player";
-        this.room.gameId = null; this.room.gameMetadata = null; this.room.gameState = null; this.room.results = null;
-        this.room.stateVersion = (this.room.stateVersion || 0) + 1;
-        this.room.recentActionIds = [];
-        this.room.rematchVotes = {};
-        this.room.lastActivityAt = Date.now();
-        await this.persistAndSchedule();
-        this.broadcast({ type: "room-updated", room: publicRoom(this.room), stateVersion: this.room.stateVersion });
-        return json({ ok: true, status: "lobby", room: publicRoom(this.room) }, 200, request);
-      }
-
-      if (this.room.rematchVotes?.[player.id]) return json({ error: "Your Replay choice has already been recorded." }, 409, request);
-      this.room.rematchVotes = { ...(this.room.rematchVotes || {}), [player.id]: "continue" };
-      this.recordHistory("round-choice", player.nickname + " chose Replay for Battleship", { gameId: game.id, choice });
-      const allAgreed = participants.every(id => this.room.rematchVotes[id] === "continue" &&
-        this.room.players.some(entry => entry.id === id && entry.connected && entry.role === "player"));
-      if (allAgreed) {
-        const context = this.gameContext(game, player);
-        let nextState;
-        try { nextState = await game.createInitialState(context, this.room.gameState); }
-        catch { return json({ error: "The next battle could not be initialized." }, 500, request); }
-        if (!nextState) return json({ error: "The game returned no initial state." }, 500, request);
-        this.room.gameState = nextState;
-        this.room.lifecycle = "playing"; this.room.results = null; this.room.rematchVotes = {};
-        this.room.stateVersion = (this.room.stateVersion || 0) + 1; this.room.recentActionIds = [];
-        this.room.lastActivityAt = Date.now();
-        this.recordHistory("rematch-started", "Battleship rematch started", { gameId: game.id });
-        await this.persistAndSchedule();
-        const publicSnapshot = publicRoom(this.room);
-        for (const ws of this.ctx.getWebSockets()) {
-          try {
-            if (ws.readyState !== WebSocket.OPEN) continue;
-            const socketPlayerId = ws.deserializeAttachment()?.playerId;
-            const privateState = game.getPrivateState ? await game.getPrivateState(this.room.gameState, socketPlayerId) : null;
-            ws.send(JSON.stringify({ type: "game-started", room: publicSnapshot, privateState, stateVersion: this.room.stateVersion, rematch: true }));
-          } catch {}
-        }
-        return json({ ok: true, status: "playing", room: publicRoom(this.room) }, 200, request);
-      }
-      this.room.lastActivityAt = Date.now();
-      await this.persistAndSchedule();
-      this.broadcast({ type: "rematch-vote", votes: this.room.rematchVotes, playerIds: participants });
-      return json({ ok: true, status: "waiting", votes: this.room.rematchVotes }, 200, request);
-    }
-
-    // Existing rematch behavior for all other games remains unchanged.
-    if (typeof body.playAgain !== "boolean") return json({ error: "Choose whether to play again." }, 400, request);
-    if (!body.playAgain) {
-      this.recordHistory("returned-to-lobby", `${game.name} ended; returned to lobby`, { gameId: game.id });
+    if (choice === "lobby") {
+      this.recordHistory("returned-to-lobby", player.nickname + " chose to return everyone to the lobby", { gameId: game.id });
       this.room.lifecycle = "lobby";
       for (const entry of this.room.players) if (entry.role === "spectator" || entry.role === "waiting") entry.role = "player";
-      this.room.gameId = null; this.room.gameMetadata = null; this.room.gameState = null;
-      this.room.results = null; this.room.rematchVotes = {};
+      this.room.gameId = null; this.room.gameMetadata = null; this.room.gameState = null; this.room.results = null;
       this.room.stateVersion = (this.room.stateVersion || 0) + 1;
-      this.room.recentActionIds = [];
-      this.room.lastActivityAt = Date.now();
+      this.room.recentActionIds = []; this.room.rematchVotes = {}; this.room.lastActivityAt = Date.now();
       await this.persistAndSchedule();
       this.broadcast({ type: "room-updated", room: publicRoom(this.room), stateVersion: this.room.stateVersion });
       return json({ ok: true, status: "lobby", room: publicRoom(this.room) }, 200, request);
     }
-    this.room.rematchVotes = { ...(this.room.rematchVotes || {}), [player.id]: true };
-    this.recordHistory("rematch-vote", `${player.nickname} voted to replay ${game.name}`, { gameId: game.id });
-    const allAgreed = participants.every(id => this.room.rematchVotes[id] === true &&
+
+    // Votes are deliberately mutable until the final participant agrees.
+    this.room.rematchVotes = { ...(this.room.rematchVotes || {}), [player.id]: "replay" };
+    this.recordHistory("lifecycle-vote", player.nickname + " voted to replay " + game.name, { gameId: game.id, choice });
+    const allAgreed = participants.every(id => this.room.rematchVotes[id] === "replay" &&
       this.room.players.some(entry => entry.id === id && entry.connected && entry.role === "player"));
-    if (allAgreed) {
-      const context = this.gameContext(game, player);
-      try { this.room.gameState = await game.createInitialState(context, this.room.gameState); }
-      catch { return json({ error: "The next round could not be initialized." }, 500, request); }
-      if (!this.room.gameState) return json({ error: "The game returned no initial state." }, 500, request);
-      this.room.lifecycle = "playing"; this.room.results = null; this.room.rematchVotes = {};
-      this.room.stateVersion = (this.room.stateVersion || 0) + 1; this.room.recentActionIds = [];
+    if (!allAgreed) {
       this.room.lastActivityAt = Date.now();
-      this.recordHistory("rematch-started", `${game.name} replay started`, { gameId: game.id });
       await this.persistAndSchedule();
-      const publicSnapshot = publicRoom(this.room);
-      for (const ws of this.ctx.getWebSockets()) {
-        try {
-          if (ws.readyState !== WebSocket.OPEN) continue;
-          const socketPlayerId = ws.deserializeAttachment()?.playerId;
-          const privateState = game.getPrivateState ? await game.getPrivateState(this.room.gameState, socketPlayerId) : null;
-          ws.send(JSON.stringify({ type: "game-started", room: publicSnapshot, privateState, stateVersion: this.room.stateVersion, rematch: true }));
-        } catch {}
-      }
-      return json({ ok: true, status: "playing", room: publicRoom(this.room) }, 200, request);
+      this.broadcast({ type: "rematch-vote", votes: this.room.rematchVotes, playerIds: participants });
+      return json({ ok: true, status: "waiting", choice: "replay", votes: this.room.rematchVotes }, 200, request);
     }
+
+    const context = this.gameContext(game, player);
+    let nextState;
+    try {
+      // Wavelength's next-round hook preserves cumulative scores. Other games
+      // start a fresh match through their existing initial-state contract.
+      nextState = game.startNextRound
+        ? await game.startNextRound(context, this.room.gameState, "continue")
+        : await game.createInitialState(context, this.room.gameState);
+    } catch {
+      return json({ error: "The next round could not be initialized." }, 500, request);
+    }
+    if (!nextState) return json({ error: "The game returned no next state." }, 500, request);
+    this.room.gameState = nextState;
+    this.room.lifecycle = "playing"; this.room.results = null; this.room.rematchVotes = {};
+    this.room.stateVersion = (this.room.stateVersion || 0) + 1; this.room.recentActionIds = [];
     this.room.lastActivityAt = Date.now();
+    this.recordHistory("rematch-started", game.name + " replay started", { gameId: game.id });
     await this.persistAndSchedule();
-    this.broadcast({ type: "rematch-vote", votes: this.room.rematchVotes, playerIds: participants });
-    return json({ ok: true, status: "waiting", votes: this.room.rematchVotes }, 200, request);
+    const publicSnapshot = publicRoom(this.room);
+    for (const ws of this.ctx.getWebSockets()) {
+      try {
+        if (ws.readyState !== WebSocket.OPEN) continue;
+        const socketPlayerId = ws.deserializeAttachment()?.playerId;
+        const privateState = game.getPrivateState ? await game.getPrivateState(this.room.gameState, socketPlayerId) : null;
+        ws.send(JSON.stringify({ type: "game-started", room: publicSnapshot, privateState, stateVersion: this.room.stateVersion, rematch: true }));
+      } catch {}
+    }
+    return json({ ok: true, status: "playing", choice: "replay", room: publicRoom(this.room) }, 200, request);
   }
   async resetGame(request) {
     const player = this.authorizePlayer(request);

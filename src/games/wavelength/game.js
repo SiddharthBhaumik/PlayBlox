@@ -1,4 +1,5 @@
 import { renderGameGuide, renderGamePlayerPanel, setupHostEndRound } from "../shared/game-shell.js";
+import { setupGameLifecycle } from "../shared/game-lifecycle.js";
 const API_BASE_URL = window.PLAYBLOX_API_BASE_URL || (["localhost","127.0.0.1"].includes(location.hostname) ? "http://localhost:8787" : "https://playblox-party-service.playblox-party.workers.dev");
 const params = new URLSearchParams(location.search), code = (params.get("party") || "").toUpperCase();
 const token = code ? sessionStorage.getItem("playblox:" + code + ":token") : null;
@@ -9,6 +10,8 @@ const player=id=>room?.players.find(p=>p.id===id);
 const clueGiverId=()=>gameState?.playerOrder?.[gameState.clueGiverIndex];
 const isFinished=()=>room?.lifecycle==="results"||gameState?.phase==="finished";
 function help(message,error=false){$("game-help").textContent=message;$("game-help").classList.toggle("error",error)}
+const syncGameLifecycle = setupGameLifecycle({ root: document.querySelector("main"), getRoom: () => room, getPlayerId: () => myPlayerId, api, backToLobby: () => $("back-to-lobby").href });
+
 function setConnection(message,offline=false){$("connection-status").textContent=message;$("connection-status").classList.toggle("offline",offline)}
 async function api(path,options={}){let response;try{response=await fetch(API_BASE_URL+path,{...options,headers:{...(options.body?{"Content-Type":"application/json"}:{}),Authorization:"Bearer "+token,...(options.headers||{})}})}catch{throw new Error("Could not reach the party service.")}const data=await response.json().catch(()=>({}));if(!response.ok){const e=new Error(data.error||"Something went wrong.");e.stateVersion=data.stateVersion;throw e}return data}
 async function syncRoom(){const data=await api("/api/rooms/"+encodeURIComponent(code));room=data.room;gameState=room.gameState;stateVersion=room.stateVersion||0;render()}
@@ -16,6 +19,7 @@ function sendAction(action){return api("/api/rooms/"+encodeURIComponent(code)+"/
 function renderHistory(){const list=$("history-list");list.replaceChildren();(gameState.history||[]).slice().reverse().forEach(result=>{const row=document.createElement("article");row.className="history-item";const title=document.createElement("strong");title.textContent="Round "+result.round+" · "+(player(result.clueGiverId)?.nickname||"Clue-giver");const detail=document.createElement("span");detail.textContent="“"+result.clue+"” · target "+result.target+" · average "+result.average+" · clue-giver +"+result.clueGiverPoints+" · your points: "+(result.guessPoints?.[myPlayerId]?.points ?? (result.clueGiverId===myPlayerId?result.clueGiverPoints:"—"));const points=document.createElement("b");const ownPoints=result.clueGiverId===myPlayerId?result.clueGiverPoints:(result.guessPoints?.[myPlayerId]?.points??0);points.textContent="+"+ownPoints+" pts for you";row.append(title,detail,points);list.append(row)})}
 function render(){
  if(!room||!gameState)return;
+ syncGameLifecycle();
  renderGameGuide({room,code,token,apiBaseUrl:API_BASE_URL,myPlayerId});
  $("room-label").textContent=(room.name||"Party")+" · "+code;
  renderGamePlayerPanel({container:$("player-roster"),room,gameState:{currentPlayerId:clueGiverId()},myPlayerId});

@@ -1,4 +1,5 @@
 import { renderGameGuide, renderGamePlayerPanel, setupHostEndRound } from "../shared/game-shell.js";
+import { setupGameLifecycle } from "../shared/game-lifecycle.js";
 const API_BASE_URL = window.PLAYBLOX_API_BASE_URL
   || (["localhost", "127.0.0.1"].includes(location.hostname)
     ? "http://localhost:8787"
@@ -29,8 +30,11 @@ function showError(message) {
   $("game-help").textContent = message;
   $("game-help").classList.add("error");
 }
+const syncGameLifecycle = setupGameLifecycle({ root: document.querySelector("main"), getRoom: () => room, getPlayerId: () => myPlayerId, api, backToLobby: () => $("back-to-lobby").href });
+
 function render() {
   if (!room || !gameState) return;
+  syncGameLifecycle();
   renderGameGuide({ room, code, token, apiBaseUrl: API_BASE_URL, myPlayerId });
   $("room-label").textContent = (room.name || "Party") + " · " + code;
   const mySymbol = gameState.symbols?.[myPlayerId];

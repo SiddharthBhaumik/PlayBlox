@@ -1,4 +1,5 @@
 import { renderGameGuide, renderGamePlayerPanel, setupHostEndRound } from "../shared/game-shell.js";
+import { setupGameLifecycle } from "../shared/game-lifecycle.js";
 const API_BASE_URL = window.PLAYBLOX_API_BASE_URL || (["localhost","127.0.0.1"].includes(location.hostname) ? "http://localhost:8787" : "https://playblox-party-service.playblox-party.workers.dev");
 const params = new URLSearchParams(location.search);
 const code = (params.get("party") || "").toUpperCase();
@@ -10,6 +11,8 @@ $("back-to-lobby").href = "../../../" + (code ? "?party=" + encodeURIComponent(c
 
 function setConnection(message, offline=false) { $("connection-status").textContent=message; $("connection-status").classList.toggle("offline",offline); }
 function help(message,error=false) { $("game-help").textContent=message; $("game-help").classList.toggle("error",error); }
+const syncGameLifecycle = setupGameLifecycle({ root: document.querySelector("main"), getRoom: () => room, getPlayerId: () => myPlayerId, api, backToLobby: () => $("back-to-lobby").href });
+
 function player(id) { return room?.players.find(p=>p.id===id); }
 function isFinished() { return room?.lifecycle==="results" || gameState?.phase==="finished"; }
 function isSubmitted() { return (gameState?.submittedPlayerIds||[]).includes(myPlayerId); }
@@ -82,6 +85,7 @@ function renderReveal() {
 }
 function render() {
   if(!room||!gameState)return;
+  syncGameLifecycle();
   renderGameGuide({room,code,token,apiBaseUrl:API_BASE_URL,myPlayerId});
   $("room-label").textContent=(room.name||"Party")+" · "+code;
   const finished=isFinished(), phase=gameState.phase, submitted=isSubmitted();
