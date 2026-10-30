@@ -36,3 +36,10 @@ main:has(.playblox-lifecycle) #rematch-prompt,
 main:has(.playblox-lifecycle) #replay-status,
 main:has(.playblox-lifecycle) #leave-game{display:none!important}
 @media(max-width:520px){.playblox-lifecycle{padding:15px}.playblox-lifecycle-actions{display:grid;grid-template-columns:1fr}.playblox-lifecycle-actions button{width:100%}}
+
+/* Host-only player removal controls */
+.kick-player-button,.playblox-kick-row button{border:1px solid #d78b7d;border-radius:9px;background:#fff0eb;color:#9a4035;padding:7px 10px;font-size:11px;font-weight:1000}
+.kick-player-button{margin-left:auto;flex:0 0 auto}
+.playblox-lifecycle-kick-list{display:flex;flex-direction:column;gap:8px;margin:12px 0}
+.playblox-kick-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 10px;border:1px solid rgba(41,53,46,.14);border-radius:10px;background:rgba(255,255,255,.65);font-size:12px;font-weight:800}
+.playblox-kick-row button{flex:0 0 auto}
