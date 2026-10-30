@@ -1,4 +1,5 @@
 import { renderGameGuide, renderGamePlayerPanel, setupHostEndRound } from "../shared/game-shell.js";
+import { setupGameLifecycle } from "../shared/game-lifecycle.js";
 const API_BASE_URL = window.PLAYBLOX_API_BASE_URL || (["localhost","127.0.0.1"].includes(location.hostname) ? "http://localhost:8787" : "https://playblox-party-service.playblox-party.workers.dev");
 const $ = id => document.getElementById(id);
 const params = new URLSearchParams(location.search);
@@ -10,11 +11,14 @@ let selectedAction = null, selectedTargets = {}, shieldStrength = 1, submitting 
 $("back-to-lobby").href = "../../../" + (code ? "?party=" + encodeURIComponent(code) + "&lobby=1" : "");
 function setConnection(message, offline=false){$("connection-status").textContent=message;$("connection-status").classList.toggle("offline",offline)}
 function help(message,error=false){$("game-help").textContent=message;$("game-help").classList.toggle("error",error)}
+const syncGameLifecycle = setupGameLifecycle({ root: document.querySelector("main"), getRoom: () => room, getPlayerId: () => myPlayerId, api, backToLobby: () => $("back-to-lobby").href });
+
 function currentPlayer(){return room?.players.find(p=>p.id===myPlayerId)}
 function isAlive(){return Boolean(gameState?.alivePlayerIds?.includes(myPlayerId))}
 function finished(){return room?.lifecycle==="results" || Boolean(gameState?.winnerId || gameState?.isDraw)}
 function render(){
  if(!room||!gameState)return;
+ syncGameLifecycle();
  renderGameGuide({room,code,token,apiBaseUrl:API_BASE_URL,myPlayerId});
  $("room-label").textContent=(room.name||"Party")+" · "+code;
  $("round-label").textContent="Round "+(finished() ? (gameState.lastRound?.round || gameState.round || 1) : (gameState.round || 1));
