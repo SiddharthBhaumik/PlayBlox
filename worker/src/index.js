@@ -534,7 +534,7 @@ export class PartyRoom extends DurableObject {
         }
       } catch {}
     }
-    if (wasActivePlayer && lifecycle !== "lobby") await this.broadcastGameSnapshot(game, lifecycle === "playing" ? "game-state" : "room-updated");
+    if (wasActivePlayer && lifecycle !== "lobby") await this.broadcastGameSnapshot(game, lifecycle === "playing" && this.room.guidePlayerIds?.length === 0 ? "game-started" : lifecycle === "playing" ? "game-state" : "room-updated");
     else this.broadcast({ type: "room-updated", room: snapshot, stateVersion: this.room.stateVersion });
     return json({ ok: true, kickedPlayerId: target.id, endedGame: wasActivePlayer && lifecycle === "lobby",
       continuedGame: wasActivePlayer && lifecycle !== "lobby", room: snapshot }, 200, request);
@@ -616,7 +616,7 @@ export class PartyRoom extends DurableObject {
     }
     await this.persistAndSchedule();
     const snapshot = publicRoom(this.room);
-    if (activeDeparture && lifecycle !== "lobby") await this.broadcastGameSnapshot(game, lifecycle === "playing" ? "game-state" : "room-updated");
+    if (activeDeparture && lifecycle !== "lobby") await this.broadcastGameSnapshot(game, lifecycle === "playing" ? (this.room.lifecycle === "playing" && this.room.guidePlayerIds?.length === 0 ? "game-started" : "game-state") : "room-updated");
     else this.broadcast({ type: "room-updated", room: snapshot, stateVersion: this.room.stateVersion });
     return json({ ok: true, status: lifecycle, room: snapshot }, 200, request);
   }
