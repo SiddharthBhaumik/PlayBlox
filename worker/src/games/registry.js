@@ -9,6 +9,7 @@ import { questionableAnswers } from "./questionable-answers.js";
 import { wavelength } from "./wavelength.js";
 import { battleship } from "./battleship.js";
 import { decrypto } from "./decrypto.js";
+import { minefield } from "./minefield.js";
 
 const serverGames = new Map();
 
@@ -34,6 +35,7 @@ registerServerGame(questionableAnswers);
 registerServerGame(wavelength);
 registerServerGame(battleship);
 registerServerGame(decrypto);
+registerServerGame(minefield);
 
 export function getServerGame(id) { return serverGames.get(id) || null; }
 export function listServerGames() {
