@@ -235,6 +235,19 @@ function connectRoom(code,token){
     socket.addEventListener('message',event=>{
       if(generation!==socketGeneration||socket!==roomSocket)return;
       let message;try{message=JSON.parse(event.data)}catch{return}
+      if(message.type==='kicked'){
+        const removedCode=activeRoomCode;
+        const notice=message.message||'The host removed you from this party. You can rejoin after 2 minutes.';
+        if(removedCode){
+          sessionStorage.removeItem('playblox:'+removedCode+':token');
+          sessionStorage.removeItem('playblox:'+removedCode+':nickname');
+        }
+        leavingLobby=true;socketGeneration++;clearSocketTimers();
+        if(roomSocket){const removedSocket=roomSocket;roomSocket=null;removedSocket.close();}
+        returnToPlayground();
+        window.alert(notice);
+        return;
+      }
       if(message.type==='room-snapshot'&&message.playerId)activePlayerId=message.playerId;
       if(['room-snapshot','room-updated','game-started','game-guide','guide-progress'].includes(message.type)&&message.room)renderPlayers(message.room);
       if(message.type==='room-snapshot'&&message.room?.lifecycle==='lobby'){
