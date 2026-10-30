@@ -46,6 +46,22 @@ export const wavelength = {
     };
   },
 
+  // Called by the shared room lifecycle when a participant leaves or is kicked.
+  onPlayerLeave(context, state, playerId) {
+    const oldOrder = state?.playerOrder || [];
+    const playerOrder = oldOrder.filter(id => id !== playerId);
+    if (playerOrder.length < this.players.min) return null;
+    const oldGiver = oldOrder[state.clueGiverIndex] || null;
+    const nextGiver = oldGiver === playerId
+      ? playerOrder[Math.min(state.clueGiverIndex || 0, playerOrder.length - 1)]
+      : oldGiver;
+    const clueGiverIndex = Math.max(0, playerOrder.indexOf(nextGiver));
+    const scores = Object.fromEntries(playerOrder.map(id => [id, state.scores?.[id] || 0]));
+    if (state.phase === "finished") return { ...state, playerOrder, scores, clueGiverIndex };
+    return { ...state, playerOrder, scores, clueGiverIndex, turnNumber: clueGiverIndex + 1,
+      phase: "clue", clue: "", guesses: {}, submittedPlayerIds: [], rerollsUsed: 0 };
+  },
+
   validateAction(context, state, action) {
     if (!state || !Array.isArray(state.playerOrder)) return { ok: false, reason: "The game state is invalid." };
     if (state.phase === "finished") return { ok: false, reason: "The game has finished." };
@@ -123,8 +139,11 @@ export const wavelength = {
 
   startNextRound(context, state, choice) {
     if (choice === "restart") return this.createInitialState(context);
+    const activeIds = context.players.filter(player => player.role === "player" && player.connected).map(player => player.id);
     return {
       ...state,
+      playerOrder: activeIds,
+      scores: Object.fromEntries(activeIds.map(id => [id, state.scores?.[id] || 0])),
       round: state.round + 1,
       turnNumber: 1,
       clueGiverIndex: 0,
