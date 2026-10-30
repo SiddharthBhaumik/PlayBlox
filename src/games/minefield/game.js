@@ -78,6 +78,7 @@ $("submit-flags").addEventListener("click",()=>act({type:"place-flags",flags:sel
 $("roll-button").addEventListener("click",()=>act({type:"roll"}));
 $("end-turn").addEventListener("click",()=>act({type:"end-turn"}));
 $("mine-mode").addEventListener("click",()=>{mode=mode==="mine"?"move":"mine";$("selection-message").textContent=mode==="mine"?"Choose an adjacent empty tile for your mine.":"Select an adjacent tile to move.";render()});
+$("power-select").addEventListener("change",()=>{if(mode==="disarm"){mode="move";$("selection-message").textContent="Select an adjacent tile to move.";}});
 $("activate-power").addEventListener("click",async()=>{const power=$("power-select").value;if(!power)return;if(power==="disarm"){mode="disarm";$("selection-message").textContent="Choose an adjacent mine to disarm."}else await act({type:"activate-power",power})});
 $("zoom-in").addEventListener("click",()=>{zoom=Math.min(1.8,zoom+.15);$("board").style.setProperty("--cell-size",zoom+"rem")});
 $("zoom-out").addEventListener("click",()=>{zoom=Math.max(.65,zoom-.15);$("board").style.setProperty("--cell-size",zoom+"rem")});
