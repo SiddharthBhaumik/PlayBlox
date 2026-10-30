@@ -23,7 +23,7 @@ function makeMap(random){
  const floors=[];for(let y=0;y<SIZE;y++)for(let x=0;x<SIZE;x++){const k=key(x,y);if(!walls.has(k)&&k!==blue&&k!==red)floors.push(k)}
  const used=new Set([blue,red]);
  function paired(count,type){let made=0;for(const k of shuffled(floors,random)){if(made>=count)break;const [x,y]=xy(k),m=key(19-x,19-y);if(used.has(k)||used.has(m)||walls.has(m))continue;used.add(k);used.add(m);rooms[k]={type,active:true};rooms[m]={type,active:true};made+=2}}
- const rooms={};paired(3,"mine");paired(2,"power");paired(1,"medical");
+ const rooms={};paired(6,"mine");paired(4,"power");paired(2,"medical");
  return {walls:[...walls],rooms,blue,red,seed:Math.floor(random()*0xffffffff)};
 }
 function visibleFrom(pos,radius,walls){const [x,y]=xy(pos),out=[];for(let yy=0;yy<SIZE;yy++)for(let xx=0;xx<SIZE;xx++){const k=key(xx,yy);if(Math.abs(xx-x)+Math.abs(yy-y)<=radius)out.push(k)}return out}
