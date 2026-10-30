@@ -156,15 +156,15 @@ export class PartyRoom extends DurableObject {
     try { body = await request.json(); } catch { return json({ error: "Send a valid JSON body." }, 400, request); }
     const nickname = cleanText(body.nickname, 18);
     if (!nickname) return json({ error: "A nickname is required." }, 400, request);
-    const now = Date.now();
+    const cooldownCheckAt = Date.now();
     this.room.kickedPlayers = this.room.kickedPlayers || {};
     for (const [key, until] of Object.entries(this.room.kickedPlayers)) {
-      if (until <= now) delete this.room.kickedPlayers[key];
+      if (until <= cooldownCheckAt) delete this.room.kickedPlayers[key];
     }
     const nicknameKey = nickname.toLocaleLowerCase();
     const kickedUntil = this.room.kickedPlayers[nicknameKey] || 0;
-    if (kickedUntil > now) {
-      const seconds = Math.ceil((kickedUntil - now) / 1000);
+    if (kickedUntil > cooldownCheckAt) {
+      const seconds = Math.ceil((kickedUntil - cooldownCheckAt) / 1000);
       return json({ error: `You were recently removed from this party. Please wait ${seconds} seconds before rejoining with this nickname.`, retryAfterSeconds: seconds }, 429, request);
     }
     const existingToken = typeof body.playerToken === "string" ? body.playerToken : "";
