@@ -525,6 +525,7 @@ export class PartyRoom extends DurableObject {
     const wasActivePlayer = this.room.lifecycle !== "lobby" && target.role === "player";
     const game = wasActivePlayer ? getServerGame(this.room.gameId) : null;
     this.room.players = this.room.players.filter(entry => entry.id !== target.id);
+    const hostChange = target.isHost ? this.transferHostToConnectedPlayer() : null;
     this.room.rematchVotes = { ...(this.room.rematchVotes || {}) };
     delete this.room.rematchVotes[target.id];
     this.room.guidePlayerIds = (this.room.guidePlayerIds || []).filter(id => id !== target.id);
@@ -549,8 +550,9 @@ export class PartyRoom extends DurableObject {
         }
       } catch {}
     }
+    if (hostChange) this.broadcastHostChange(hostChange);
     if (wasActivePlayer && lifecycle !== "lobby") await this.broadcastGameSnapshot(game, lifecycle === "playing" && this.room.guidePlayerIds?.length === 0 ? "game-started" : lifecycle === "playing" ? "game-state" : "room-updated");
-    else this.broadcast({ type: "room-updated", room: snapshot, stateVersion: this.room.stateVersion });
+    else this.broadcast({ type: "room-updated", room: publicRoom(this.room), stateVersion: this.room.stateVersion });
     return json({ ok: true, kickedPlayerId: target.id, endedGame: wasActivePlayer && lifecycle === "lobby",
       continuedGame: wasActivePlayer && lifecycle !== "lobby", room: snapshot }, 200, request);
   }
@@ -616,6 +618,7 @@ export class PartyRoom extends DurableObject {
     const activeDeparture = this.room.lifecycle !== "lobby" && player.role === "player";
     const game = activeDeparture ? getServerGame(this.room.gameId) : null;
     this.room.players = this.room.players.filter(entry => entry.id !== player.id);
+    const hostChange = player.isHost ? this.transferHostToConnectedPlayer() : null;
     const now = Date.now(); this.room.lastActivityAt = now;
     this.recordHistory("left", `${player.nickname} left the party`, { playerId: player.id });
     let lifecycle = this.room.lifecycle;
@@ -631,6 +634,7 @@ export class PartyRoom extends DurableObject {
     }
     await this.persistAndSchedule();
     const snapshot = publicRoom(this.room);
+    if (hostChange) this.broadcastHostChange(hostChange);
     if (activeDeparture && lifecycle !== "lobby") await this.broadcastGameSnapshot(game, lifecycle === "playing" ? (this.room.lifecycle === "playing" && this.room.guidePlayerIds?.length === 0 ? "game-started" : "game-state") : "room-updated");
     else this.broadcast({ type: "room-updated", room: snapshot, stateVersion: this.room.stateVersion });
     return json({ ok: true, status: lifecycle, room: snapshot }, 200, request);
@@ -651,9 +655,12 @@ export class PartyRoom extends DurableObject {
     server.serializeAttachment({ playerId: player.id, connectionId });
     const wasDisconnected = !player.connected;
     player.connected = true; player.disconnectExpiresAt = null;
+    // If no connected host remains, the first connected player takes ownership.
+    const hostChange = this.room.hostId == null ? this.transferHostToConnectedPlayer() : null;
     // Reconnects are reflected in live presence; avoid cluttering lobby history for transient socket swaps.
     this.room.emptySinceAt = null; this.room.lastActivityAt = Date.now();
     await this.persistAndSchedule();
+    if (hostChange) this.broadcastHostChange(hostChange);
     const activeGame = getServerGame(this.room.gameId);
     const privateState = activeGame?.getPrivateState ? await activeGame.getPrivateState(this.room.gameState, player.id) : null;
     server.send(JSON.stringify({ type: "room-snapshot", room: publicRoom(this.room), playerId: player.id, privateState, stateVersion: this.room.stateVersion || 0 }));
@@ -731,7 +738,7 @@ export class PartyRoom extends DurableObject {
       deadlines.push(this.room.lastActivityAt + ROOM_IDLE_TTL_MS);
       for (const player of this.room.players) {
         if (!player.connected && player.disconnectExpiresAt) {
-          const activeParticipant = this.room.lifecycle === "playing" && player.role === "player"
+          const activeParticipant = !player.isHost && this.room.lifecycle === "playing" && player.role === "player"
             && this.room.gameState?.alivePlayerIds?.includes(player.id);
           if (!activeParticipant) deadlines.push(player.disconnectExpiresAt);
         }
@@ -757,7 +764,7 @@ export class PartyRoom extends DurableObject {
     const activeGame = this.room.lifecycle === "playing" ? getServerGame(this.room.gameId) : null;
     if (activeGame?.preserveDisconnectedPlayersWhileActive === true) {
       for (const player of this.room.players) {
-        if (!player.connected && player.role === "player" && this.room.gameState?.alivePlayerIds?.includes(player.id)
+        if (!player.isHost && !player.connected && player.role === "player" && this.room.gameState?.alivePlayerIds?.includes(player.id)
           && player.disconnectExpiresAt && now >= player.disconnectExpiresAt) {
           player.disconnectExpiresAt = null;
         }
@@ -766,16 +773,14 @@ export class PartyRoom extends DurableObject {
     const expired = this.room.players.filter(player => !player.connected && player.disconnectExpiresAt && now >= player.disconnectExpiresAt);
     if (expired.length) {
       const expiredIds = new Set(expired.map(player => player.id));
-      const hostExpired = expired.some(player => player.isHost);
+      const expiredHost = expired.find(player => player.isHost) || null;
       this.room.players = this.room.players.filter(player => !expiredIds.has(player.id));
       if (this.room.players.length === 0) {
         for (const entry of expired) this.recordHistory("left-after-disconnect", entry.nickname + " was removed after the reconnect window expired", { playerId: entry.id });
         for (const socket of this.ctx.getWebSockets()) { try { socket.close(1000, "Party closed"); } catch {} }
         this.room = null; await this.ctx.storage.deleteAll(); return;
-      } else if (hostExpired) {
-        const connected = this.room.players.filter(player => player.connected);
-        this.assignSpecificHost(connected.length ? randomItem(connected) : randomItem(this.room.players));
       }
+      const hostChange = expiredHost ? this.transferHostToConnectedPlayer(expiredHost.id) : null;
       // A participant whose reconnect window expires has left the match just
       // like an explicit departure. Reconcile each expired seat through the
       // same game hook so remaining players never wait on a missing player.
@@ -787,13 +792,29 @@ export class PartyRoom extends DurableObject {
       this.room.lastActivityAt = now;
       for (const entry of expired) this.recordHistory("left-after-disconnect", `${entry.nickname} was removed after the reconnect window expired`, { playerId: entry.id });
       await this.persistAndSchedule();
+      if (hostChange) this.broadcastHostChange(hostChange);
       this.broadcast({ type: "room-updated", room: publicRoom(this.room), expiredPlayerIds: [...expiredIds] });
       return;
     }
     await this.persistAndSchedule();
   }
-  assignSpecificHost(host) {
-    this.room.hostId = host.id;
-    for (const player of this.room.players) player.isHost = player.id === host.id;
+  transferHostToConnectedPlayer(previousHostId = this.room.hostId) {
+    const connected = this.room.players.filter(player => player.connected);
+    const nextHost = connected.length ? randomItem(connected) : null;
+    this.room.hostId = nextHost?.id ?? null;
+    for (const player of this.room.players) player.isHost = Boolean(nextHost && player.id === nextHost.id);
+    if (!nextHost) return { previousHostId, nextHost: null };
+    if (previousHostId === nextHost.id) return null;
+    this.recordHistory("host-transferred", `${nextHost.nickname} is now the host`, { previousHostId, hostId: nextHost.id });
+    return { previousHostId, nextHost: { id: nextHost.id, nickname: nextHost.nickname } };
+  }
+  broadcastHostChange(change) {
+    if (!change) return;
+    this.broadcast({
+      type: "host-changed",
+      message: change.nextHost ? `${change.nextHost.nickname} is now the host.` : "The host disconnected. Host privileges will be assigned when someone reconnects.",
+      host: change.nextHost,
+      room: publicRoom(this.room),
+    });
   }
 }
