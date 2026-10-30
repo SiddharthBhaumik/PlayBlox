@@ -25,8 +25,24 @@ export const questionableAnswers = {
       : { ok: false, reason: "Questionable Answers needs 3–8 connected players." };
   },
 
-  createInitialState(context) {
-    const playerOrder = context.players.filter(player => player.role === "player" && player.connected).map(player => player.id);
+  createInitialState(context, previousState = null) {
+    const eligibleIds = context.players.filter(player => player.role === "player" && player.connected).map(player => player.id);
+    // Keep the previous seating order for a replay, but exchange two seats so
+    // at least one player pairing changes before the next cycle begins.
+    const previousOrder = Array.isArray(previousState?.playerOrder)
+      ? previousState.playerOrder.filter(id => eligibleIds.includes(id))
+      : [];
+    const playerOrder = previousOrder.length === eligibleIds.length
+      ? previousOrder
+      : [...eligibleIds];
+    if (previousState?.phase === "finished" && playerOrder.length > 1) {
+      const bytes = new Uint32Array(2);
+      crypto.getRandomValues(bytes);
+      const first = bytes[0] % playerOrder.length;
+      let second = bytes[1] % (playerOrder.length - 1);
+      if (second >= first) second++;
+      [playerOrder[first], playerOrder[second]] = [playerOrder[second], playerOrder[first]];
+    }
     return {
       playerOrder,
       phase: "assign",
