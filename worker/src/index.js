@@ -97,6 +97,7 @@ export default {
     if (action === "game/action" && request.method === "POST") return withCors(await stub.fetch("https://party-room.internal/game/action", request), request);
     if (action === "game/reset" && request.method === "POST") return withCors(await stub.fetch("https://party-room.internal/game/reset", request), request);
     if (action === "game/rematch" && request.method === "POST") return withCors(await stub.fetch("https://party-room.internal/game/rematch", request), request);
+    if (action === "game/leave" && request.method === "POST") return withCors(await stub.fetch("https://party-room.internal/game/leave", request), request);
     if (action === "ws" && request.headers.get("Upgrade")?.toLowerCase() === "websocket") {
       if (!isAllowedOrigin(request)) return json({ error: "This website origin is not allowed." }, 403, request);
       return stub.fetch("https://party-room.internal/ws" + url.search, request);
@@ -126,6 +127,7 @@ export class PartyRoom extends DurableObject {
     if (url.pathname === "/game/action" && request.method === "POST") return this.gameAction(request);
     if (url.pathname === "/game/reset" && request.method === "POST") return this.resetGame(request);
     if (url.pathname === "/game/rematch" && request.method === "POST") return this.rematch(request);
+    if (url.pathname === "/game/leave" && request.method === "POST") return this.leaveGame(request);
     if (url.pathname === "/ws" && request.method === "GET" && request.headers.get("Upgrade")?.toLowerCase() === "websocket") {
       if (!isAllowedOrigin(request)) return json({ error: "This website origin is not allowed." }, 403, request);
       return this.connect(url);
@@ -349,7 +351,7 @@ export class PartyRoom extends DurableObject {
     if (!game?.createInitialState || !Array.isArray(this.room.gameState?.playerOrder)) {
       return json({ error: "This game does not support replay yet." }, 409, request);
     }
-    const participants = this.room.gameState.playerOrder;
+    const participants = this.room.gameState.playerOrder.filter(id => this.room.players.some(entry => entry.id === id && entry.role === "player"));
     if (!participants.includes(player.id)) return json({ error: "Only players from this round can choose what happens next." }, 403, request);
     let body;
     try { body = await request.json(); } catch { return json({ error: "Send a valid JSON body." }, 400, request); }
@@ -380,6 +382,8 @@ export class PartyRoom extends DurableObject {
     // Votes are deliberately mutable until the final participant agrees.
     this.room.rematchVotes = { ...(this.room.rematchVotes || {}), [player.id]: "replay" };
     this.recordHistory("lifecycle-vote", player.nickname + " voted to replay " + game.name, { gameId: game.id, choice });
+    const minimum = game.players?.min ?? 1;
+    if (participants.length < minimum) return json({ error: `This game needs at least ${minimum} remaining players to replay.` }, 409, request);
     const allAgreed = participants.every(id => this.room.rematchVotes[id] === "replay" &&
       this.room.players.some(entry => entry.id === id && entry.connected && entry.role === "player"));
     if (!allAgreed) {
@@ -417,6 +421,65 @@ export class PartyRoom extends DurableObject {
       } catch {}
     }
     return json({ ok: true, status: "playing", choice: "replay", room: publicRoom(this.room) }, 200, request);
+  }
+  async leaveGame(request) {
+    const player = this.authorizePlayer(request);
+    if (!player) return json({ error: "A valid player session is required." }, 401, request);
+    if (!["guide", "playing", "results"].includes(this.room.lifecycle)) return json({ error: "There is no active game to leave." }, 409, request);
+    const game = getServerGame(this.room.gameId);
+    const order = this.room.gameState?.playerOrder || this.room.guidePlayerIds || [];
+    if (!order.includes(player.id) || player.role !== "player") return json({ error: "You are not an active player in this game." }, 409, request);
+    player.role = "waiting";
+    this.room.rematchVotes = { ...(this.room.rematchVotes || {}) };
+    delete this.room.rematchVotes[player.id];
+    const remaining = order.filter(id => this.room.players.some(entry => entry.id === id && entry.role === "player"));
+    this.recordHistory("game-left", player.nickname + " left the game and returned to the lobby", { playerId: player.id, gameId: game?.id });
+    const minimum = game?.players?.min ?? 1;
+    if (remaining.length < minimum) {
+      this.room.lifecycle = "lobby";
+      for (const entry of this.room.players) if (entry.role === "spectator" || entry.role === "waiting") entry.role = "player";
+      this.room.gameId = null; this.room.gameMetadata = null; this.room.gameState = null; this.room.results = null; this.room.rematchVotes = {};
+      this.room.stateVersion = (this.room.stateVersion || 0) + 1; this.room.recentActionIds = [];
+      await this.persistAndSchedule();
+      this.broadcast({ type: "room-updated", room: publicRoom(this.room), stateVersion: this.room.stateVersion });
+      return json({ ok: true, status: "lobby", room: publicRoom(this.room) }, 200, request);
+    }
+
+    // Leaving during a round closes that round, not the party. Remaining players
+    // can replay if they all agree; the departed player stays in the lobby.
+    this.room.lifecycle = "results";
+    this.room.results = { outcome: "player-left", departedPlayerId: player.id, departedNickname: player.nickname };
+    const allRemainingVoted = remaining.every(id => this.room.rematchVotes[id] === "replay" &&
+      this.room.players.some(entry => entry.id === id && entry.connected && entry.role === "player"));
+    if (allRemainingVoted) {
+      const voter = this.room.players.find(entry => remaining.includes(entry.id));
+      let nextState;
+      try {
+        const context = this.gameContext(game, voter);
+        nextState = game.startNextRound
+          ? await game.startNextRound(context, this.room.gameState, "continue")
+          : await game.createInitialState(context, this.room.gameState);
+      } catch { nextState = null; }
+      if (nextState) {
+        this.room.gameState = nextState; this.room.lifecycle = "playing"; this.room.results = null;
+        this.room.rematchVotes = {}; this.room.stateVersion = (this.room.stateVersion || 0) + 1;
+        this.room.recentActionIds = [];
+        this.recordHistory("rematch-started", game.name + " replay started after a player left", { gameId: game.id });
+      }
+    }
+    this.room.lastActivityAt = Date.now();
+    await this.persistAndSchedule();
+    const snapshot = publicRoom(this.room);
+    const eventType = this.room.lifecycle === "playing" ? "game-started" : "room-updated";
+    for (const ws of this.ctx.getWebSockets()) {
+      try {
+        if (ws.readyState !== WebSocket.OPEN) continue;
+        const socketPlayerId = ws.deserializeAttachment()?.playerId;
+        const privateState = game?.getPrivateState ? await game.getPrivateState(this.room.gameState, socketPlayerId) : null;
+        ws.send(JSON.stringify({ type: eventType, room: snapshot, privateState, stateVersion: this.room.stateVersion, rematch: this.room.lifecycle === "playing" }));
+      } catch {}
+    }
+    return json({ ok: true, status: this.room.lifecycle === "playing" ? "playing" : "left-game", remainingPlayerIds: remaining, minimumPlayers: minimum, room: snapshot }, 200, request);
   }
   async resetGame(request) {
     const player = this.authorizePlayer(request);

@@ -5,6 +5,18 @@
  */
 const lifecycleInstances = new WeakMap();
 
+function lobbyDestination(code, fallback) {
+  const gamePath = window.location.pathname;
+  const marker = gamePath.indexOf("/src/games/");
+  const projectRoot = marker >= 0 ? gamePath.slice(0, marker + 1) : "/";
+  const target = new URL(projectRoot, window.location.origin);
+  target.searchParams.set("party", code);
+  target.searchParams.set("lobby", "1");
+  // Prefer the repository-aware path derived from the game URL. This avoids
+  // accidentally navigating to the domain root on GitHub project Pages.
+  return target.href || fallback;
+}
+
 export function setupGameLifecycle({ root, getRoom, getPlayerId, api, backToLobby }) {
   if (!root) return () => {};
   let panel = lifecycleInstances.get(root);
@@ -12,7 +24,7 @@ export function setupGameLifecycle({ root, getRoom, getPlayerId, api, backToLobb
     panel = document.createElement("section");
     panel.className = "playblox-lifecycle";
     panel.setAttribute("aria-live", "polite");
-    panel.innerHTML = '<p class="playblox-lifecycle-kicker">WHAT HAPPENS NEXT?</p><h2 class="playblox-lifecycle-title">Round complete</h2><p class="playblox-lifecycle-status"></p><div class="playblox-lifecycle-votes"></div><div class="playblox-lifecycle-actions"><button type="button" class="playblox-lifecycle-replay">↻ Replay</button><button type="button" class="playblox-lifecycle-lobby">↩ Return to lobby</button><button type="button" class="playblox-lifecycle-end">End game for everyone</button></div><p class="playblox-lifecycle-error" role="alert"></p>';
+    panel.innerHTML = '<p class="playblox-lifecycle-kicker">WHAT HAPPENS NEXT?</p><h2 class="playblox-lifecycle-title">Round complete</h2><p class="playblox-lifecycle-status"></p><div class="playblox-lifecycle-votes"></div><div class="playblox-lifecycle-actions"><button type="button" class="playblox-lifecycle-replay">↻ Replay</button><button type="button" class="playblox-lifecycle-lobby">↩ Return to lobby</button><button type="button" class="playblox-lifecycle-leave">Leave game and return to lobby</button><button type="button" class="playblox-lifecycle-end">End game for everyone</button></div><p class="playblox-lifecycle-error" role="alert"></p>';
     root.append(panel);
     lifecycleInstances.set(root, panel);
     const status = panel.querySelector(".playblox-lifecycle-status");
@@ -21,6 +33,7 @@ export function setupGameLifecycle({ root, getRoom, getPlayerId, api, backToLobb
     const replay = panel.querySelector(".playblox-lifecycle-replay");
     const lobby = panel.querySelector(".playblox-lifecycle-lobby");
     const end = panel.querySelector(".playblox-lifecycle-end");
+    const leave = panel.querySelector(".playblox-lifecycle-leave");
     const submit = async (choice, button) => {
       const room = getRoom();
       if (!room || button.disabled) return;
@@ -30,7 +43,7 @@ export function setupGameLifecycle({ root, getRoom, getPlayerId, api, backToLobb
           method: "POST", body: JSON.stringify({ choice }),
         });
         if (result.status === "lobby") {
-          if (backToLobby) location.href = backToLobby;
+          location.assign(lobbyDestination(room.code, backToLobby?.()));
         } else if (result.status === "waiting") {
           status.textContent = choice === "replay" ? "Your replay choice is saved. Waiting for everyone else." : "Your choice is saved.";
           votes.textContent = Object.keys(result.votes || {}).length + " of " + (room.gameState?.playerOrder || []).length + " players have chosen.";
@@ -41,6 +54,15 @@ export function setupGameLifecycle({ root, getRoom, getPlayerId, api, backToLobb
     lobby.addEventListener("click", () => {
       if (!window.confirm("Return everyone in this match to the party lobby?")) return;
       submit("lobby", lobby);
+    });
+    leave.addEventListener("click", async () => {
+      if (!window.confirm("Leave this game and return to the party lobby? You will remain in the party.")) return;
+      leave.disabled = true; error.textContent = "";
+      try {
+        const room = getRoom();
+        const result = await api("/api/rooms/" + encodeURIComponent(room.code) + "/game/leave", { method: "POST", body: "{}" });
+        location.assign(lobbyDestination(room.code, backToLobby?.()));
+      } catch (e) { error.textContent = e.message || "Could not leave the game."; leave.disabled = false; }
     });
     end.addEventListener("click", async () => {
       if (!window.confirm("End the game for everyone and return to the party lobby?")) return;
@@ -56,18 +78,20 @@ export function setupGameLifecycle({ root, getRoom, getPlayerId, api, backToLobb
     const room = getRoom();
     const player = room?.players?.find(entry => entry.id === getPlayerId());
     const finished = room?.lifecycle === "results";
-    panel.hidden = !room || (!finished && !player?.isHost);
+    panel.hidden = !room || (!finished && !player?.isHost && player?.role !== "player");
     panel.querySelector(".playblox-lifecycle-title").textContent = finished ? "Round complete" : "Game in progress";
     panel.querySelector(".playblox-lifecycle-replay").hidden = !finished || !(room.gameState?.playerOrder || []).includes(getPlayerId());
     panel.querySelector(".playblox-lifecycle-lobby").hidden = !finished || !(room.gameState?.playerOrder || []).includes(getPlayerId());
-    panel.querySelector(".playblox-lifecycle-end").hidden = !player?.isHost;
+    panel.querySelector(".playblox-lifecycle-end").hidden = !player?.isHost || finished;
+    panel.querySelector(".playblox-lifecycle-leave").hidden = !room.gameState?.playerOrder?.includes(getPlayerId());
     const votes = room?.rematchVotes || {};
     const participantIds = room?.gameState?.playerOrder || [];
-    const decided = participantIds.filter(id => votes[id] === "replay").length;
+    const activeIds = participantIds.filter(id => room.players.some(p => p.id === id && p.role === "player"));
+    const decided = activeIds.filter(id => votes[id] === "replay").length;
     panel.querySelector(".playblox-lifecycle-status").textContent = finished
-      ? decided + " of " + participantIds.length + " players have voted to replay. Returning to the lobby ends the match for everyone."
-      : "Only the host can end the match early.";
-    panel.querySelector(".playblox-lifecycle-votes").textContent = participantIds.map(id => {
+      ? decided + " of " + activeIds.length + " remaining players have voted to replay. Returning to the lobby ends the match for everyone."
+      : (player?.isHost ? "The host can end the game for everyone. Any player can leave the game and return to the party lobby." : "You can leave this game and return to the party lobby without leaving the party.");
+    panel.querySelector(".playblox-lifecycle-votes").textContent = participantIds.filter(id => room.players.some(p => p.id === id && p.role === "player")).map(id => {
       const name = room.players.find(p => p.id === id)?.nickname || "Player";
       return name + ": " + (votes[id] === "replay" ? "Replay" : "Waiting");
     }).join(" · ");
