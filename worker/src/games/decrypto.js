@@ -66,7 +66,7 @@ export const decrypto = {
   if(action?.type==="submit-both"&&state.phase==="decode") {
    if(teamIds(state)[team][state.clueGiverIndex[team]]===id)return {ok:false,reason:"The clue-giver cannot submit the team guesses this round."};
    if(state.ownGuesses[team]||state.intercepts[team])return {ok:false,reason:"Your team has already submitted this round."};
-   if(!/^\\s*[1-4]{3}\\s*$/.test(String(action.ownCode||""))||!/^\\s*[1-4]{3}\\s*$/.test(String(action.interceptCode||"")))return {ok:false,reason:"Enter both three-digit codes using digits 1–4."};
+   if(!/^\s*[1-4]{3}\s*$/.test(String(action.ownCode||""))||!/^\s*[1-4]{3}\s*$/.test(String(action.interceptCode||"")))return {ok:false,reason:"Enter both three-digit codes using digits 1–4."};
    return {ok:true};
   }
   if(action?.type==="decode"&&state.phase==="decode") {
