@@ -31,7 +31,7 @@ function renderBoard(){
  for(let y=0;y<20;y++)for(let x=0;x<20;x++){
   const k=key(x,y),r=state.rooms?.[k],isVisible=visible.has(k),isExplored=explored.has(k),button=document.createElement("button");
   button.type="button";button.className="tile";button.setAttribute("role","gridcell");button.dataset.tile=k;
-  if(walls.has(k))button.classList.add("wall");if(r)button.classList.add("room",r.type);if(!isVisible&&!isExplored&&!walls.has(k)&&!r)button.classList.add("fog");if(state?.phase==="flags"){const [tx,ty]=coords(k),inBase=Math.abs(tx-1)+Math.abs(ty-1)<=3||Math.abs(tx-18)+Math.abs(ty-18)<=3;if(walls.has(k)||r||inBase){button.classList.add("flag-unavailable");button.disabled=true;}}
+  if(walls.has(k))button.classList.add("wall");if(r)button.classList.add("room",r.type);if(!isVisible&&!isExplored&&!walls.has(k)&&!r)button.classList.add("fog");if(!isVisible&&isExplored)button.classList.add("trail-"+(privateState?.trailAges?.[k]||0));if(state?.phase==="flags"){const [tx,ty]=coords(k),inBase=Math.abs(tx-1)+Math.abs(ty-1)<=3||Math.abs(tx-18)+Math.abs(ty-18)<=3;if(walls.has(k)||r||inBase){button.classList.add("flag-unavailable");button.disabled=true;}}
   if(mineMap.has(k))button.classList.add(mineMap.get(k).owner===team()?"own-mine":"spotted-mine");if(mode==="mine"&&canPlaceMineAt(k))button.classList.add("mine-placement-option");
   if(k===privateState?.position)button.classList.add("my-position");if(k===privateState?.enemyPosition)button.classList.add("enemy-position");
   button.textContent=cellContent(k,visible,explored);
@@ -48,7 +48,7 @@ function render(){
  $("flags-label").textContent="🚩 "+(privateState?.captured?.[t]??state.captured?.[t]??0)+" / 3";$("mines-label").textContent="💣 "+(privateState?.minesCarried??0);
  const turn=state.turnPlayerId===playerId?"Your turn":(room.players.find(p=>p.id===state.turnPlayerId)?.nickname||"Opponent")+"'s turn";$("turn-label").textContent=state.phase==="flags"?"Setup":state.phase==="finished"?"Finished":turn;
  $("turn-message").textContent=state.phase==="flags"?"Place your flags to prepare the battlefield.":myTurn()?"It's your turn. Roll, move, and use your actions.":"Wait for your opponent to finish their turn.";
- $("event-message").textContent=state.lastEvent||"Explore the battlefield.";$("map-message").textContent=privateState?.scanTurns>0?"Full board scan active":privateState?.radarTurns>0?"Extended radar active":"Fog of war · nearby tiles are revealed";
+ $("event-message").textContent=state.lastEvent||"Explore the battlefield.";$("map-message").textContent=privateState?.scanTurns>0?"Scan active · all enemy mines revealed":privateState?.jamTurns>0?"Mine Jammer active · "+privateState.jamTurns+" turn(s) left":"Fog of war · trails last 3 turns";
  const hints=privateState?.enemyFlagHints||[];$("flag-hints").textContent=hints.length?"Enemy flag signals: "+hints.map((h,i)=>"Flag "+(i+1)+" · "+(h.nearby?"nearby":h.area+" side")).join("  |  "):"";
  $("die-face").textContent=state.die||"—";$("movement-label").textContent=state.rolled?"Movement remaining: "+state.movementRemaining:"Roll to begin moving.";
  $("roll-button").disabled=!myTurn()||state.rolled;$("end-turn").disabled=!myTurn()||!state.rolled;
@@ -57,7 +57,7 @@ function render(){
  const select=$("power-select"),old=select.value;select.replaceChildren(new Option("Choose a power-up",""));(privateState?.inventory||[]).forEach(p=>select.add(new Option(p.replace("-"," ").replace(/\b\w/g,c=>c.toUpperCase()),p)));select.value=(privateState?.inventory||[]).includes(old)?old:"";
  $("activate-power").disabled=!myTurn()||!select.value;
  $("inventory-label").textContent=(privateState?.inventory||[]).length?(privateState.inventory.join(" · ")):"No power-ups yet.";
- $("mine-hint").textContent=mode==="mine"?(privateState?.minesCarried||0)+" mine(s) ready. Highlighted tiles are valid adjacent places; click one to plant.":"Your mines are always visible. Opponent mines appear when discovered.";
+ $("mine-hint").textContent=mode==="mine"?(privateState?.minesCarried||0)+" mine(s) ready. Highlighted tiles are valid adjacent places; click one to plant.":"Your mines are always visible. Scan reveals all enemy mines; Mine Jammer disables enemy mines in a 3×3 area.";
  $("setup-panel").hidden=state.phase!=="flags"||Boolean(state.flagsPlaced?.[t]);$("flag-count").textContent=selectedFlags.length+" / 3 selected";$("submit-flags").disabled=selectedFlags.length!==3;
  $("result-panel").hidden=state.phase!=="finished";
  if(state.phase==="finished"){$("result-title").textContent=state.winner===t?"🏆 You win!":"💥 Match over";$("result-copy").textContent=state.finishReason||"The match has ended."}
@@ -74,14 +74,14 @@ async function tileClick(k){
  }
  if(!myTurn())return;
  if(mode==="mine"){if(!canPlaceMineAt(k)){setError("Choose a highlighted empty tile directly next to your player, outside both protected bases.");return}await act({type:"place-mine",at:k});if(!document.getElementById("error-message").textContent)mode="move";render();return}
- if(mode==="disarm"){await act({type:"activate-power",power:"disarm",at:k});mode="move";render();return}
+ 
  if(state.rolled&&state.movementRemaining>0&&adjacent(privateState.position,k))await act({type:"move",to:k});
 }
 $("submit-flags").addEventListener("click",()=>act({type:"place-flags",flags:selectedFlags}));
 $("roll-button").addEventListener("click",()=>act({type:"roll"}));
 $("end-turn").addEventListener("click",()=>act({type:"end-turn"}));
 $("mine-mode").addEventListener("click",()=>{mode=mode==="mine"?"move":"mine";setError("");$("selection-message").textContent=mode==="mine"?"Plant a mine: choose one of the highlighted tiles next to your player.":"Select an adjacent tile to move.";render()});
-$("power-select").addEventListener("change",()=>{if(mode==="disarm"){mode="move";$("selection-message").textContent="Select an adjacent tile to move.";}});
+$("power-select").addEventListener("change",()=>{});
 $("activate-power").addEventListener("click",async()=>{const power=$("power-select").value;if(!power)return;if(power==="disarm"){mode="disarm";$("selection-message").textContent="Choose an adjacent mine to disarm."}else await act({type:"activate-power",power})});
 $("zoom-in").addEventListener("click",()=>{zoom=Math.min(1.8,zoom+.15);$("board").style.setProperty("--cell-size",zoom+"rem")});
 $("zoom-out").addEventListener("click",()=>{zoom=Math.max(.65,zoom-.15);$("board").style.setProperty("--cell-size",zoom+"rem")});
