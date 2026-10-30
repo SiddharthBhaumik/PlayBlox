@@ -444,6 +444,7 @@ export class PartyRoom extends DurableObject {
       this.returnGameToLobby();
       return "lobby";
     }
+    this.room.activePlayerIds = remainingIds.slice();
     // Results are already complete. Keep the result screen, but remove the
     // departed seat so replay eligibility and next-round setup use the new roster.
     if (previousLifecycle === "results") {
