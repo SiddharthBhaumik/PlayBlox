@@ -22,7 +22,7 @@ export const decrypto = {
  description:"Give three clues, decode your team's secret code, and intercept the other team's.",
  guide:"GOAL: Two teams compete to communicate secret three-digit codes without letting the opponents intercept them.\n\nTEAMS: Choose Blue or Red. Teams may be uneven, but each needs at least two players. Each team has four numbered secret words.\n\nEACH ROUND: One clue-giver per team receives a private three-digit code (each digit points to one of their four words) and gives three clues in order. Teammates use their four words and the clues to decode the code. The opposing team studies the clues and tries to intercept it.\n\nSCORING: A successful interception earns an interception token. A team that fails to decode its own code earns a miscommunication token. Two interceptions win; two miscommunications lose. Codes and secret words are private to their team.",
  emoji:"🔐", color:"#dce8ff", entry:"./src/games/decrypto/index.html",
- players:{min:2,max:8}, interactionModel:"simultaneous", lateJoinPolicy:"spectate", spectators:{supported:true},
+ players:{min:4,max:8}, interactionModel:"simultaneous", lateJoinPolicy:"spectate", spectators:{supported:true},
  canStart(context) {
   const players=context.players.filter(p=>p.role==="player"&&p.connected);
   return players.length>=4&&players.length<=8?{ok:true}:{ok:false,reason:"Decrypto needs 4–8 connected players."};
