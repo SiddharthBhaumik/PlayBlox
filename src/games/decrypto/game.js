@@ -35,7 +35,7 @@ function render(){
   const team=mine,clueGiver=team?teamIds(team)[state.clueGiverIndex[team]]:null,isGiver=playerId===clueGiver&&!state.submitted?.[team];
   $("clue-panel").hidden=!isGiver;$("waiting-panel").hidden=isGiver;
   if(isGiver){$("clue-title").textContent="You're giving clues for "+team.toUpperCase();$("private-code").textContent="Your secret code: "+(privateState?.code?.join("")||"•••");$("clue-help").textContent="Clue 1 refers to digit 1–4, then clue 2, then clue 3. Only your team can see its four words."}
-  else $("waiting-title").textContent="Waiting for "+(team?team.toUpperCase():"both")+" team's clue-giver";
+  else {const pending=["blue","red"].filter(t=>!state.submitted?.[t]);const label=pending.length===2?"both teams' clue-givers":pending.length===1?pending[0].toUpperCase()+" team's clue-giver":"the next round";$("waiting-title").textContent="Waiting for "+label;}
  }
  if(state.phase==="decode"){
   $("waiting-panel").hidden=false;
