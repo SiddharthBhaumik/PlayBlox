@@ -82,7 +82,7 @@ $("roll-button").addEventListener("click",()=>act({type:"roll"}));
 $("end-turn").addEventListener("click",()=>act({type:"end-turn"}));
 $("mine-mode").addEventListener("click",()=>{mode=mode==="mine"?"move":"mine";setError("");$("selection-message").textContent=mode==="mine"?"Plant a mine: choose one of the highlighted tiles next to your player.":"Select an adjacent tile to move.";render()});
 $("power-select").addEventListener("change",()=>{});
-$("activate-power").addEventListener("click",async()=>{const power=$("power-select").value;if(!power)return;if(power==="disarm"){mode="disarm";$("selection-message").textContent="Choose an adjacent mine to disarm."}else await act({type:"activate-power",power})});
+$("activate-power").addEventListener("click",async()=>{const power=$("power-select").value;if(!power)return;await act({type:"activate-power",power})});
 $("zoom-in").addEventListener("click",()=>{zoom=Math.min(1.8,zoom+.15);$("board").style.setProperty("--cell-size",zoom+"rem")});
 $("zoom-out").addEventListener("click",()=>{zoom=Math.max(.65,zoom-.15);$("board").style.setProperty("--cell-size",zoom+"rem")});
 function connect(){const gen=++generation;if(socket)try{socket.close()}catch{}if(!code||!token){setError("Party session not found. Return to the lobby and join again.");return}
