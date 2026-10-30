@@ -86,9 +86,11 @@ async function api(path, options = {}) {
   }
   const data = await response.json().catch(() => ({}));
   if (!response.ok) {
-    const message = response.status === 405 && /\/game\/select$/.test(path)
-      ? 'The multiplayer service rejected game selection (405). Deploy the latest worker version, then refresh the lobby.'
-      : (data.error || 'Something went wrong. Please try again.');
+    const message = (response.status === 404 || response.status === 405) && /\/kick$/.test(path)
+      ? 'The party service does not have the latest kick endpoint yet. Deploy the Worker from the worker folder, then refresh the party.'
+      : response.status === 405 && /\/game\/select$/.test(path)
+        ? 'The multiplayer service rejected game selection (405). Deploy the latest worker version, then refresh the lobby.'
+        : (data.error || 'Something went wrong. Please try again.');
     const error = new Error(message); error.status = response.status; throw error;
   }
   return data;
