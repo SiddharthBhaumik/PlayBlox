@@ -452,10 +452,6 @@ export class PartyRoom extends DurableObject {
     const roster = state?.playerOrder || this.room.guidePlayerIds || [];
     const remainingIds = roster.filter(id => id !== departedId
       && this.room.players.some(entry => entry.id === id && entry.role === "player"));
-    if (remainingIds.length < (game?.players?.min ?? 1)) {
-      this.returnGameToLobby();
-      return "lobby";
-    }
     this.room.activePlayerIds = remainingIds.slice();
     // Results are already complete. Keep the result screen, but remove the
     // departed seat so replay eligibility and next-round setup use the new roster.
@@ -475,11 +471,16 @@ export class PartyRoom extends DurableObject {
     let nextState;
     try { nextState = await game.onPlayerLeave(this.gameContext(game, actor), state, departedId); }
     catch { nextState = null; }
-    if (!nextState || !Array.isArray(nextState.playerOrder) || nextState.playerOrder.includes(departedId)) {
+    if (!nextState || !Array.isArray(nextState.playerOrder) || nextState.playerOrder.includes(departedId)
+      || (nextState.playerOrder.length < (game?.players?.min ?? 1) && nextState.phase !== "finished")) {
       this.returnGameToLobby();
       return "lobby";
     }
     this.room.gameState = nextState;
+    if (nextState.phase === "finished") {
+      this.room.lifecycle = "results";
+      this.room.results = game?.getResults ? game.getResults(this.gameContext(game, actor), nextState) : null;
+    }
     this.room.activePlayerIds = nextState.playerOrder.slice();
     this.room.guidePlayerIds = (this.room.guidePlayerIds || []).filter(id => id !== departedId);
     this.room.guideReadyPlayerIds = (this.room.guideReadyPlayerIds || []).filter(id => id !== departedId);
