@@ -3,7 +3,7 @@
 - [Tic-Tac-Toe](./src/games/tic-tac-toe/index.html)
 - [Bullet Matrix](./src/games/bullet-matrix/index.html)
 - [Questionable Answers](./src/games/questionable-answers/index.html)
-- [Decrypto](./src/games/decrypto/index.html)
+- [Decrypto](./src/games/decrypto/index.html)\n- [Minefield (Beta)](./src/games/minefield/index.html) — experimental 20×20 tactical game
 
 
 ## Adding a game
