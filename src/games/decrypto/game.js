@@ -40,7 +40,7 @@ function render(){
  if(state.phase==="decode"){
   $("waiting-panel").hidden=false;
   for(const t of ["blue","red"]){const list=$(""+t+"-clues");list.replaceChildren();(state.clues?.[t]||[]).forEach(clue=>{const li=document.createElement("li");li.textContent=clue;list.append(li)})}
-  const team=mine,already=team&&(state.ownGuesses?.[team]||state.intercepts?.[team]);
+  const team=mine,already=team&&state.ownGuesses?.[team]&&state.intercepts?.[team];
   $("decode-panel").hidden=!team||Boolean(already);$("waiting-title").textContent=already?"Your team has submitted. Waiting for the other team…":"Waiting for your team's decode and interception";
   if(team&&!already)$("waiting-panel").hidden=true;
  }
