@@ -424,6 +424,70 @@ export class PartyRoom extends DurableObject {
     }
     return json({ ok: true, status: "playing", choice: "replay", room: publicRoom(this.room) }, 200, request);
   }
+  returnGameToLobby() {
+    this.room.lifecycle = "lobby";
+    for (const entry of this.room.players) if (entry.role === "spectator" || entry.role === "waiting") entry.role = "player";
+    this.room.gameId = null; this.room.gameMetadata = null; this.room.gameState = null;
+    this.room.results = null; this.room.rematchVotes = {}; this.room.guidePlayerIds = []; this.room.guideReadyPlayerIds = [];
+    this.room.stateVersion = (this.room.stateVersion || 0) + 1; this.room.recentActionIds = [];
+  }
+  async reconcileGameAfterDeparture(game, departedId, actor) {
+    const previousLifecycle = this.room.lifecycle;
+    const state = this.room.gameState;
+    const roster = state?.playerOrder || this.room.guidePlayerIds || [];
+    const remainingIds = roster.filter(id => id !== departedId
+      && this.room.players.some(entry => entry.id === id && entry.role === "player"));
+    if (remainingIds.length < (game?.players?.min ?? 1)) {
+      this.returnGameToLobby();
+      return "lobby";
+    }
+    // Results are already complete. Keep the result screen, but remove the
+    // departed seat so replay eligibility and next-round setup use the new roster.
+    if (previousLifecycle === "results") {
+      if (state && Array.isArray(state.playerOrder)) {
+        state.playerOrder = remainingIds;
+        if (state.scores) delete state.scores[departedId];
+      }
+      return "results";
+    }
+    if (typeof game?.onPlayerLeave !== "function") {
+      this.returnGameToLobby();
+      return "lobby";
+    }
+    let nextState;
+    try { nextState = await game.onPlayerLeave(this.gameContext(game, actor), state, departedId); }
+    catch { nextState = null; }
+    if (!nextState || !Array.isArray(nextState.playerOrder) || nextState.playerOrder.includes(departedId)) {
+      this.returnGameToLobby();
+      return "lobby";
+    }
+    this.room.gameState = nextState;
+    this.room.guidePlayerIds = (this.room.guidePlayerIds || []).filter(id => id !== departedId);
+    this.room.guideReadyPlayerIds = (this.room.guideReadyPlayerIds || []).filter(id => id !== departedId);
+    this.room.rematchVotes = { ...(this.room.rematchVotes || {}) };
+    delete this.room.rematchVotes[departedId];
+    if (previousLifecycle === "guide" && this.room.guidePlayerIds.every(id => this.room.guideReadyPlayerIds.includes(id))) {
+      this.room.lifecycle = "playing";
+    }
+    this.room.stateVersion = (this.room.stateVersion || 0) + 1;
+    this.room.recentActionIds = [];
+    return this.room.lifecycle;
+  }
+  async broadcastGameSnapshot(game, eventType = "game-state") {
+    const snapshot = publicRoom(this.room);
+    for (const ws of this.ctx.getWebSockets()) {
+      try {
+        if (ws.readyState !== WebSocket.OPEN) continue;
+        const socketPlayerId = ws.deserializeAttachment()?.playerId;
+        const privateState = game?.getPrivateState ? await game.getPrivateState(this.room.gameState, socketPlayerId) : null;
+        ws.send(JSON.stringify({ type: eventType, room: snapshot, gameId: this.room.gameId,
+          lifecycle: this.room.lifecycle, gameState: snapshot.gameState, privateState,
+          results: this.room.results ?? null, stateVersion: this.room.stateVersion }));
+      } catch {}
+    }
+    this.broadcast({ type: "room-updated", room: snapshot, stateVersion: this.room.stateVersion });
+  }
+
   async kickPlayer(request) {
     const host = this.authorizePlayer(request);
     if (!host) return json({ error: "A valid player session is required." }, 401, request);
@@ -436,6 +500,7 @@ export class PartyRoom extends DurableObject {
     if (!target) return json({ error: "That player is no longer in the party." }, 404, request);
 
     const wasActivePlayer = this.room.lifecycle !== "lobby" && target.role === "player";
+    const game = wasActivePlayer ? getServerGame(this.room.gameId) : null;
     this.room.players = this.room.players.filter(entry => entry.id !== target.id);
     this.room.rematchVotes = { ...(this.room.rematchVotes || {}) };
     delete this.room.rematchVotes[target.id];
@@ -444,36 +509,27 @@ export class PartyRoom extends DurableObject {
     this.recordHistory("player-kicked", host.nickname + " removed " + target.nickname + " from the party", {
       playerId: target.id, kickedBy: host.id,
     });
+    let lifecycle = this.room.lifecycle;
+    if (wasActivePlayer) lifecycle = await this.reconcileGameAfterDeparture(game, target.id, host);
 
-    // Game modules own different state shapes. If a selected participant is
-    // removed mid-game, end the round generically rather than mutate game state
-    // in a game-specific and potentially invalid way.
-    if (wasActivePlayer) {
-      this.room.lifecycle = "lobby";
-      for (const entry of this.room.players) if (entry.role === "spectator" || entry.role === "waiting") entry.role = "player";
-      this.room.gameId = null; this.room.gameMetadata = null; this.room.gameState = null;
-      this.room.results = null; this.room.rematchVotes = {};
-      this.room.stateVersion = (this.room.stateVersion || 0) + 1;
-      this.room.recentActionIds = [];
-    }
-
-    for (const socket of this.ctx.getWebSockets()) {
-      if (socket.deserializeAttachment()?.playerId === target.id) {
-        try { socket.close(4003, "Removed from party by host"); } catch {}
-      }
-    }
     this.room.lastActivityAt = Date.now();
     await this.persistAndSchedule();
     const snapshot = publicRoom(this.room);
-    this.broadcast({ type: "room-updated", room: snapshot, stateVersion: this.room.stateVersion });
+    // Notify the removed client before closing its socket so it can clear the
+    // saved party session and return to the home screen cleanly.
     for (const socket of this.ctx.getWebSockets()) {
+      if (socket.deserializeAttachment()?.playerId !== target.id) continue;
       try {
-        if (socket.readyState === WebSocket.OPEN && socket.deserializeAttachment()?.playerId === target.id) {
+        if (socket.readyState === WebSocket.OPEN) {
           socket.send(JSON.stringify({ type: "kicked", message: "The host removed you from this party." }));
+          socket.close(4003, "Removed from party by host");
         }
       } catch {}
     }
-    return json({ ok: true, kickedPlayerId: target.id, endedGame: wasActivePlayer, room: snapshot }, 200, request);
+    if (wasActivePlayer && lifecycle !== "lobby") await this.broadcastGameSnapshot(game, lifecycle === "playing" ? "game-state" : "room-updated");
+    else this.broadcast({ type: "room-updated", room: snapshot, stateVersion: this.room.stateVersion });
+    return json({ ok: true, kickedPlayerId: target.id, endedGame: wasActivePlayer && lifecycle === "lobby",
+      continuedGame: wasActivePlayer && lifecycle !== "lobby", room: snapshot }, 200, request);
   }
   async leaveGame(request) {
     const player = this.authorizePlayer(request);
@@ -485,54 +541,15 @@ export class PartyRoom extends DurableObject {
     player.role = "waiting";
     this.room.rematchVotes = { ...(this.room.rematchVotes || {}) };
     delete this.room.rematchVotes[player.id];
-    const remaining = order.filter(id => this.room.players.some(entry => entry.id === id && entry.role === "player"));
     this.recordHistory("game-left", player.nickname + " left the game and returned to the lobby", { playerId: player.id, gameId: game?.id });
-    const minimum = game?.players?.min ?? 1;
-    if (remaining.length < minimum) {
-      this.room.lifecycle = "lobby";
-      for (const entry of this.room.players) if (entry.role === "spectator" || entry.role === "waiting") entry.role = "player";
-      this.room.gameId = null; this.room.gameMetadata = null; this.room.gameState = null; this.room.results = null; this.room.rematchVotes = {};
-      this.room.stateVersion = (this.room.stateVersion || 0) + 1; this.room.recentActionIds = [];
-      await this.persistAndSchedule();
-      this.broadcast({ type: "room-updated", room: publicRoom(this.room), stateVersion: this.room.stateVersion });
-      return json({ ok: true, status: "lobby", room: publicRoom(this.room) }, 200, request);
-    }
-
-    // Leaving during a round closes that round, not the party. Remaining players
-    // can replay if they all agree; the departed player stays in the lobby.
-    this.room.lifecycle = "results";
-    this.room.results = { outcome: "player-left", departedPlayerId: player.id, departedNickname: player.nickname };
-    const allRemainingVoted = remaining.every(id => this.room.rematchVotes[id] === "replay" &&
-      this.room.players.some(entry => entry.id === id && entry.connected && entry.role === "player"));
-    if (allRemainingVoted) {
-      const voter = this.room.players.find(entry => remaining.includes(entry.id));
-      let nextState;
-      try {
-        const context = this.gameContext(game, voter);
-        nextState = game.startNextRound
-          ? await game.startNextRound(context, this.room.gameState, "continue")
-          : await game.createInitialState(context, this.room.gameState);
-      } catch { nextState = null; }
-      if (nextState) {
-        this.room.gameState = nextState; this.room.lifecycle = "playing"; this.room.results = null;
-        this.room.rematchVotes = {}; this.room.stateVersion = (this.room.stateVersion || 0) + 1;
-        this.room.recentActionIds = [];
-        this.recordHistory("rematch-started", game.name + " replay started after a player left", { gameId: game.id });
-      }
-    }
+    const lifecycle = await this.reconcileGameAfterDeparture(game, player.id, player);
     this.room.lastActivityAt = Date.now();
     await this.persistAndSchedule();
-    const snapshot = publicRoom(this.room);
-    const eventType = this.room.lifecycle === "playing" ? "game-started" : "room-updated";
-    for (const ws of this.ctx.getWebSockets()) {
-      try {
-        if (ws.readyState !== WebSocket.OPEN) continue;
-        const socketPlayerId = ws.deserializeAttachment()?.playerId;
-        const privateState = game?.getPrivateState ? await game.getPrivateState(this.room.gameState, socketPlayerId) : null;
-        ws.send(JSON.stringify({ type: eventType, room: snapshot, privateState, stateVersion: this.room.stateVersion, rematch: this.room.lifecycle === "playing" }));
-      } catch {}
-    }
-    return json({ ok: true, status: this.room.lifecycle === "playing" ? "playing" : "left-game", remainingPlayerIds: remaining, minimumPlayers: minimum, room: snapshot }, 200, request);
+    if (lifecycle !== "lobby") await this.broadcastGameSnapshot(game, lifecycle === "playing" ? "game-state" : "room-updated");
+    else this.broadcast({ type: "room-updated", room: publicRoom(this.room), stateVersion: this.room.stateVersion });
+    return json({ ok: true, status: lifecycle === "lobby" ? "lobby" : lifecycle === "playing" ? "playing" : "left-game",
+      remainingPlayerIds: this.room.gameState?.playerOrder || [], minimumPlayers: game?.players?.min ?? 1,
+      room: publicRoom(this.room) }, 200, request);
   }
   async resetGame(request) {
     const player = this.authorizePlayer(request);
