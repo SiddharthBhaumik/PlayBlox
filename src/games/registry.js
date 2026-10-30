@@ -96,6 +96,21 @@ export const gameRegistry = [
     lateJoinPolicy: 'spectate',
     spectators: { supported: true },
   },
+  {
+    id: 'decrypto',
+    name: 'Decrypto',
+    description: 'Give three clues, decode your team’s secret code, and intercept the other team’s.',
+    guide: "Choose Blue or Red. Each team has four secret numbered words. Every round, each team’s clue-giver receives a three-digit code and gives three clues. Teammates decode it while opponents attempt an interception. Two successful interceptions win; two decoding mistakes lose. Each team needs at least two players.",
+    emoji: '🔐',
+    color: '#dce8ff',
+    status: 'ready',
+    path: './src/games/decrypto/index.html',
+    entryMode: 'party',
+    players: { min: 2, max: 8 },
+    interactionModel: 'simultaneous',
+    lateJoinPolicy: 'spectate',
+    spectators: { supported: true },
+  },
   // Example for a future game (uncomment and edit when its page exists):
   // {
   //   id: 'memory-match',
