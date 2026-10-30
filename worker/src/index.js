@@ -431,6 +431,7 @@ export class PartyRoom extends DurableObject {
     this.room.lifecycle = "lobby";
     for (const entry of this.room.players) if (entry.role === "spectator" || entry.role === "waiting") entry.role = "player";
     this.room.gameId = null; this.room.gameMetadata = null; this.room.gameState = null;
+    this.room.originalPlayerIds = []; this.room.activePlayerIds = [];
     this.room.results = null; this.room.rematchVotes = {}; this.room.guidePlayerIds = []; this.room.guideReadyPlayerIds = [];
     this.room.stateVersion = (this.room.stateVersion || 0) + 1; this.room.recentActionIds = [];
   }
@@ -452,6 +453,8 @@ export class PartyRoom extends DurableObject {
         state.playerOrder = remainingIds;
         if (state.scores) delete state.scores[departedId];
       }
+      this.room.stateVersion = (this.room.stateVersion || 0) + 1;
+      this.room.recentActionIds = [];
       return "results";
     }
     if (typeof game?.onPlayerLeave !== "function") {
@@ -592,38 +595,30 @@ export class PartyRoom extends DurableObject {
     };
   }
   async leave(request) {
-    const token = request.headers.get("Authorization")?.replace(/^Bearer\s+/i, "");
+    const token = request.headers.get("Authorization")?.replace(/^Bearer\\s+/i, "");
     const player = this.room.players.find(entry => entry.token === token);
     if (!player) return json({ error: "Invalid player session." }, 401, request);
+    const activeDeparture = this.room.lifecycle !== "lobby" && player.role === "player";
+    const game = activeDeparture ? getServerGame(this.room.gameId) : null;
     this.room.players = this.room.players.filter(entry => entry.id !== player.id);
     const now = Date.now(); this.room.lastActivityAt = now;
-    this.recordHistory("left", `${player.nickname} left the lobby`, { playerId: player.id });
-    // If an active participant leaves explicitly, end the round cleanly instead of
-    // leaving a game whose required player can never return.
-    if (this.room.lifecycle !== "lobby" && player.role === "player") {
-      this.room.lifecycle = "lobby";
-      for (const entry of this.room.players) if (entry.role === "spectator" || entry.role === "waiting") entry.role = "player";
-      this.room.gameId = null; this.room.gameMetadata = null; this.room.gameState = null;
-      this.room.results = null; this.room.rematchVotes = {};
-      this.room.stateVersion = (this.room.stateVersion || 0) + 1;
-      this.room.recentActionIds = [];
-    }
+    this.recordHistory("left", `${player.nickname} left the party`, { playerId: player.id });
+    let lifecycle = this.room.lifecycle;
+    if (activeDeparture) lifecycle = await this.reconcileGameAfterDeparture(game, player.id, player);
+    this.room.rematchVotes = { ...(this.room.rematchVotes || {}) }; delete this.room.rematchVotes[player.id];
     for (const socket of this.ctx.getWebSockets()) {
       if (socket.deserializeAttachment()?.playerId === player.id) {
-        try { socket.close(1000, "Player left"); } catch {}
+        try { socket.close(1000, "Left party"); } catch {}
       }
     }
     if (this.room.players.length === 0) {
-      for (const socket of this.ctx.getWebSockets()) { try { socket.close(1000, "Party closed"); } catch {} }
-      this.room = null;
-      await this.ctx.storage.deleteAll();
-      return json({ ok: true, roomClosed: true }, 200, request);
+      this.room.emptySinceAt = now;
     }
-    this.room.emptySinceAt = null;
-    if (player.isHost) this.assignHost();
     await this.persistAndSchedule();
-    this.broadcast({ type: "room-updated", room: publicRoom(this.room) });
-    return json({ ok: true, roomClosed: false, room: publicRoom(this.room) }, 200, request);
+    const snapshot = publicRoom(this.room);
+    if (activeDeparture && lifecycle !== "lobby") await this.broadcastGameSnapshot(game, lifecycle === "playing" ? "game-state" : "room-updated");
+    else this.broadcast({ type: "room-updated", room: snapshot, stateVersion: this.room.stateVersion });
+    return json({ ok: true, status: lifecycle, room: snapshot }, 200, request);
   }
   async connect(url) {
     const token = url.searchParams.get("token") || "";
