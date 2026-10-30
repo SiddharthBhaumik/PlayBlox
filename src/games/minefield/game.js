@@ -1,4 +1,5 @@
 import { setupGameLifecycle } from "../shared/game-lifecycle.js";
+import { renderGameGuide } from "../shared/game-shell.js";
 const API=window.PLAYBLOX_API_BASE_URL||(["localhost","127.0.0.1"].includes(location.hostname)?"http://localhost:8787":"https://playblox-party-service.playblox-party.workers.dev");
 const $=id=>document.getElementById(id),params=new URLSearchParams(location.search),code=(params.get("party")||"").toUpperCase(),token=code?sessionStorage.getItem("playblox:"+code+":token"):null;
 let room=null,state=null,privateState=null,playerId=null,version=0,socket=null,generation=0,selectedFlags=[],mode="move",zoom=1,acting=false;
@@ -39,7 +40,7 @@ function renderBoard(){
  board.replaceChildren(...children);
 }
 function render(){
- if(!room||!state)return;lifecycle();$("room-label").textContent=(room.name||"Party")+" · "+code;$("connection-status").textContent="Connected";
+ if(!room||!state)return;lifecycle();renderGameGuide({room,code,token,apiBaseUrl:API,myPlayerId:playerId});$("room-label").textContent=(room.name||"Party")+" · "+code;$("connection-status").textContent="Connected";
  const t=team(),mine=t==="blue"?"🔵 Blue":"🔴 Red",enemy=t==="blue"?"red":"blue";
  $("team-label").textContent=mine;$("lives-label").textContent="❤️ "+(privateState?.lives?.[t]??state.lives?.[t]??2);
  $("flags-label").textContent="🚩 "+(privateState?.captured?.[t]??state.captured?.[t]??0)+" / 3";$("mines-label").textContent="💣 "+(privateState?.minesCarried??0);
