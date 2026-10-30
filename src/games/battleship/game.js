@@ -1,4 +1,5 @@
 import { renderGameGuide, renderGamePlayerPanel } from "../shared/game-shell.js";
+import { setupGameLifecycle } from "../shared/game-lifecycle.js";
 const API_BASE_URL = window.PLAYBLOX_API_BASE_URL || (["localhost","127.0.0.1"].includes(location.hostname) ? "http://localhost:8787" : "https://playblox-party-service.playblox-party.workers.dev");
 const params = new URLSearchParams(location.search), code = (params.get("party") || "").toUpperCase();
 const token = code ? sessionStorage.getItem("playblox:" + code + ":token") : null;
@@ -12,6 +13,8 @@ const player=id=>room?.players.find(p=>p.id===id);
 function setConnection(message,offline=false){$("connection-status").textContent=message;$("connection-status").classList.toggle("offline",offline)}
 function showError(message){$("game-help").textContent=message;$("game-help").classList.add("error")}
 function setBanner(message){$("turn-banner").textContent=message}
+const syncGameLifecycle = setupGameLifecycle({ root: document.querySelector("main"), getRoom: () => room, getPlayerId: () => myPlayerId, api, backToLobby: () => $("back-to-lobby").href });
+
 async function api(path,options={}){let response;try{response=await fetch(API_BASE_URL+path,{...options,headers:{...(options.body?{"Content-Type":"application/json"}:{}),...(token?{Authorization:"Bearer "+token}:{}),...(options.headers||{})}})}catch{throw new Error("Could not reach the party service.")}const data=await response.json().catch(()=>({}));if(!response.ok){const error=new Error(data.error||"The request failed.");error.stateVersion=data.stateVersion;throw error}return data}
 function sendAction(action){return api("/api/rooms/"+encodeURIComponent(code)+"/game/action",{method:"POST",body:JSON.stringify({actionId:crypto.randomUUID(),expectedStateVersion:stateVersion,action})})}
 function applyRoom(next){room=next;myPlayerId=room.players.find(p=>p.connected&&p.id===myPlayerId)?.id||myPlayerId;if(room.lifecycle==="lobby"){location.href=$("back-to-lobby").href;return}gameState=room.gameState||gameState;stateVersion=room.stateVersion??stateVersion;render()}
@@ -26,7 +29,8 @@ else {const shot=(gameState.shots?.[myPlayerId]||[]).find(s=>s.cell===cell);if(s
 b.textContent=label;board.append(b)}}
 function opponentId(){return gameState?.playerOrder?.find(id=>id!==myPlayerId)}
 function updatePlacementPreview(cell){previewCell=cell;const selected=SHIPS.find(s=>s.id===$("ship-select").value);if(!selected)return;const preview=cellsFrom(selected,cell);const valid=validPlacement(selected,cell);$("own-board").querySelectorAll(".ocean-cell").forEach(button=>{const n=Number(button.dataset.cell);button.classList.toggle("preview-cell",preview.includes(n)&&valid);button.classList.toggle("preview-invalid",preview.includes(n)&&!valid)})}
-function render(){if(!room||!gameState)return;renderGameGuide({room,code,token,apiBaseUrl:API_BASE_URL,myPlayerId});$("room-label").textContent=(room.name||"Party")+" · "+code;renderGamePlayerPanel({container:$("game-players"),room,gameState:{currentPlayerId:gameState.currentPlayerId},myPlayerId});
+function render(){if(!room||!gameState)return;
+ syncGameLifecycle();renderGameGuide({room,code,token,apiBaseUrl:API_BASE_URL,myPlayerId});$("room-label").textContent=(room.name||"Party")+" · "+code;renderGamePlayerPanel({container:$("game-players"),room,gameState:{currentPlayerId:gameState.currentPlayerId},myPlayerId});
 const me=player(myPlayerId),spectator=me?.role==="spectator",finished=room.lifecycle==="results"||Boolean(gameState.winnerId),placing=gameState.phase==="placement";
 $("placement-panel").hidden=finished||!placing||spectator;$("battle-panel").hidden=finished||placing||spectator;$("result-panel").hidden=!finished;
 $("return-lobby").textContent="End game and return everyone to lobby";$("return-lobby").hidden=!me?.isHost||finished||!["guide","playing"].includes(room.lifecycle);$("host-end-round").hidden=!me?.isHost;$("leave-game").hidden=false;$("leave-game").disabled=leaving;
