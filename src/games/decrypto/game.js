@@ -40,9 +40,10 @@ function render(){
  if(state.phase==="decode"){
   $("waiting-panel").hidden=false;
   for(const t of ["blue","red"]){const list=$(""+t+"-clues");list.replaceChildren();(state.clues?.[t]||[]).forEach(clue=>{const li=document.createElement("li");li.textContent=clue;list.append(li)})}
-  const team=mine,already=team&&state.ownGuesses?.[team]&&state.intercepts?.[team];
-  $("decode-panel").hidden=!team||Boolean(already);$("waiting-title").textContent=already?"Your team has submitted. Waiting for the other team…":"Waiting for your team's decode and interception";
-  if(team&&!already)$("waiting-panel").hidden=true;
+  const team=mine,already=team&&state.ownGuesses?.[team]&&state.intercepts?.[team],isClueGiver=team&&teamIds(team)[state.clueGiverIndex[team]]===playerId;
+  $("decode-panel").hidden=!team||Boolean(already)||Boolean(isClueGiver);
+  $("waiting-title").textContent=already?"Your team has submitted. Waiting for the other team…":isClueGiver?"You gave the clues. Your teammates are decoding and intercepting.":"Waiting for your team's decode and interception";
+  if(team&&!already&&!isClueGiver)$("waiting-panel").hidden=true;
  }
 }
 async function chooseTeam(team){try{await act({type:"choose-team",team})}catch(e){showError(e.message);if(e.stateVersion)version=e.stateVersion;try{await sync()}catch{}}}
