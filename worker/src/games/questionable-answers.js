@@ -39,6 +39,15 @@ export const questionableAnswers = {
     };
   },
 
+  // The word/question ring depends on every seat. Rebuild the current
+  // cycle for the smaller roster so stale assignments cannot leak or deadlock.
+  onPlayerLeave(context, state, playerId) {
+    const playerOrder = (state?.playerOrder || []).filter(id => id !== playerId);
+    if (playerOrder.length < this.players.min) return null;
+    return { playerOrder, phase: "assign", round: 1, assignedWords: {},
+      pendingAssignments: {}, pendingQuestions: {}, submittedPlayerIds: [], reveal: null };
+  },
+
   validateAction(context, state, action) {
     if (!state || !Array.isArray(state.playerOrder)) return { ok: false, reason: "The game state is invalid." };
     if (state.phase === "finished") return { ok: false, reason: "The game has finished." };
