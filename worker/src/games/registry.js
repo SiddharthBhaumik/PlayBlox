@@ -1,6 +1,7 @@
 /**
  * Server-side game module registry. Register game modules here; shared room
  * code calls their contract hooks and must not branch on individual game IDs.
+ * Every game must reconcile its state when an active participant leaves.
  */
 import { ticTacToe } from "./tic-tac-toe.js";
 import { bulletMatrix } from "./bullet-matrix.js";
@@ -19,6 +20,7 @@ export function registerServerGame(game) {
     throw new TypeError("Invalid player limits for " + game.id);
   }
   if (typeof game.guide !== "string" || !game.guide.trim()) throw new TypeError("Every game must provide a player guide: " + game.id);
+  if (typeof game.onPlayerLeave !== "function") throw new TypeError("Every game must implement onPlayerLeave(context, state, playerId): " + game.id);
   if (!game.spectators || typeof game.spectators.supported !== "boolean") {
     throw new TypeError("Every game must declare spectators.supported as a boolean: " + game.id);
   }
