@@ -149,6 +149,21 @@ function renderPlayers(room) {
     details.append(name,role,presence); item.append(avatar,details);
     if(player.id===activePlayerId){item.classList.add('is-you');const badge=document.createElement('span');badge.className='you-badge';badge.textContent='🙋 You';item.append(badge);}
     if(player.isHost){const badge=document.createElement('span');badge.className='host-badge';badge.textContent='👑 Host';item.append(badge);}
+    if(me?.isHost && player.id !== activePlayerId){
+      const kick=document.createElement('button');kick.type='button';kick.className='kick-player-button';kick.textContent='Kick';
+      kick.setAttribute('aria-label','Kick '+player.nickname+' from party');
+      kick.addEventListener('click',async()=>{
+        if(!window.confirm('Remove '+player.nickname+' from this party? They will not be able to rejoin with their current session.'))return;
+        kick.disabled=true;
+        try{
+          const result=await api('/api/rooms/'+encodeURIComponent(activeRoomCode)+'/kick',{
+            method:'POST',headers:{Authorization:'Bearer '+activePlayerToken},body:JSON.stringify({playerId:player.id})
+          });
+          if(result.endedGame) addLobbyActivity('🛑 '+player.nickname+' was removed; the game ended and everyone returned to the lobby.');
+        }catch(error){gameFeedback(error.message);kick.disabled=false;}
+      });
+      item.append(kick);
+    }
     list.append(item);
   });
   if(lastRoomPlayers){
