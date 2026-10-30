@@ -3,6 +3,7 @@
 - [Tic-Tac-Toe](./src/games/tic-tac-toe/index.html)
 - [Bullet Matrix](./src/games/bullet-matrix/index.html)
 - [Questionable Answers](./src/games/questionable-answers/index.html)
+- [Decrypto](./src/games/decrypto/index.html)
 
 
 ## Adding a game
