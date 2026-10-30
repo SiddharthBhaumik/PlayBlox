@@ -67,19 +67,19 @@ export function setupGameLifecycle({ root, getRoom, getPlayerId, api, backToLobb
     const room = getRoom();
     const player = room?.players?.find(entry => entry.id === getPlayerId());
     const finished = room?.lifecycle === "results";
-    panel.hidden = !room || (!finished && !player?.isHost);
+    panel.hidden = !room || (!finished && !player?.isHost && player?.role !== "player");
     panel.querySelector(".playblox-lifecycle-title").textContent = finished ? "Round complete" : "Game in progress";
     panel.querySelector(".playblox-lifecycle-replay").hidden = !finished || !(room.gameState?.playerOrder || []).includes(getPlayerId());
     panel.querySelector(".playblox-lifecycle-lobby").hidden = !finished || !(room.gameState?.playerOrder || []).includes(getPlayerId());
-    panel.querySelector(".playblox-lifecycle-end").hidden = !player?.isHost;
-    panel.querySelector(".playblox-lifecycle-leave").hidden = !finished || !room.gameState?.playerOrder?.includes(getPlayerId());
+    panel.querySelector(".playblox-lifecycle-end").hidden = !player?.isHost || finished;
+    panel.querySelector(".playblox-lifecycle-leave").hidden = !room.gameState?.playerOrder?.includes(getPlayerId());
     const votes = room?.rematchVotes || {};
     const participantIds = room?.gameState?.playerOrder || [];
     const activeIds = participantIds.filter(id => room.players.some(p => p.id === id && p.role === "player"));
     const decided = activeIds.filter(id => votes[id] === "replay").length;
     panel.querySelector(".playblox-lifecycle-status").textContent = finished
       ? decided + " of " + activeIds.length + " remaining players have voted to replay. Returning to the lobby ends the match for everyone."
-      : "Only the host can end the match early.";
+      : (player?.isHost ? "The host can end the game for everyone. Any player can leave the game and return to the party lobby." : "You can leave this game and return to the party lobby without leaving the party.");
     panel.querySelector(".playblox-lifecycle-votes").textContent = participantIds.filter(id => room.players.some(p => p.id === id && p.role === "player")).map(id => {
       const name = room.players.find(p => p.id === id)?.nickname || "Player";
       return name + ": " + (votes[id] === "replay" ? "Replay" : "Waiting");
