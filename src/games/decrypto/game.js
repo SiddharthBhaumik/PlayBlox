@@ -34,7 +34,7 @@ function render(){
  if(state.phase==="clues"){
   const team=mine,clueGiver=team?teamIds(team)[state.clueGiverIndex[team]]:null,isGiver=playerId===clueGiver&&!state.submitted?.[team];
   $("clue-panel").hidden=!isGiver;$("waiting-panel").hidden=isGiver;
-  if(isGiver){$("clue-title").textContent="You're giving clues for "+team.toUpperCase();$("private-code").textContent="Your secret code: "+(privateState?.code||"•••");$("clue-help").textContent="Clue 1 refers to digit 1–4, then clue 2, then clue 3. Only your team can see its four words."}
+  if(isGiver){$("clue-title").textContent="You're giving clues for "+team.toUpperCase();$("private-code").textContent="Your secret code: "+(privateState?.code?.join("")||"•••");$("clue-help").textContent="Clue 1 refers to digit 1–4, then clue 2, then clue 3. Only your team can see its four words."}
   else $("waiting-title").textContent="Waiting for "+(team?team.toUpperCase():"both")+" team's clue-giver";
  }
  if(state.phase==="decode"){
