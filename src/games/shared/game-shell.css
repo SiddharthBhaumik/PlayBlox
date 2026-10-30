@@ -9,3 +9,29 @@
 .playblox-guide-dialog .guide-dialog-progress{text-align:center;font-size:12px;font-weight:900;color:#647063;min-height:18px}
 .playblox-guide-dialog .guide-dialog-ready{margin-top:10px}
 .playblox-guide-dialog .guide-dialog-ready:disabled{opacity:.72;cursor:wait}
+
+/* Shared end-of-game lifecycle panel */
+.playblox-lifecycle{margin:18px auto 0;padding:20px;max-width:620px;border:2px solid var(--ink,#29352e);border-radius:22px;background:#fffdf5;box-shadow:3px 4px 0 rgba(41,53,46,.12);text-align:center}
+.playblox-lifecycle[hidden]{display:none!important}
+.playblox-lifecycle-kicker{margin:0 0 5px;font-size:10px;font-weight:1000;letter-spacing:.16em;color:#77806d}
+.playblox-lifecycle-title{margin:0 0 7px;font-size:clamp(21px,4vw,28px)}
+.playblox-lifecycle-status{margin:0 auto 12px;max-width:500px;font-size:13px;line-height:1.5}
+.playblox-lifecycle-votes{margin:0 auto 14px;font-size:12px;font-weight:800;color:#65705f;line-height:1.6}
+.playblox-lifecycle-actions{display:flex;justify-content:center;gap:9px;flex-wrap:wrap}
+.playblox-lifecycle-actions button{min-height:42px;padding:10px 16px;border:2px solid var(--ink,#29352e);border-radius:13px;background:#fff1bd;color:var(--ink,#29352e);font:inherit;font-size:13px;font-weight:900;cursor:pointer}
+.playblox-lifecycle-actions .playblox-lifecycle-lobby{background:#fff}
+.playblox-lifecycle-actions button:disabled{opacity:.55;cursor:wait}
+.playblox-lifecycle-error{min-height:18px;margin:9px 0 0;color:#b34336;font-size:12px;font-weight:800}
+.playblox-lifecycle [hidden]{display:none!important}
+/* Retire per-game copies of lifecycle actions; game-specific result content remains visible. */
+main:has(.playblox-lifecycle) #return-lobby,
+main:has(.playblox-lifecycle) #host-end-round,
+main:has(.playblox-lifecycle) #play-again,
+main:has(.playblox-lifecycle) #no-rematch,
+main:has(.playblox-lifecycle) #replay-game,
+main:has(.playblox-lifecycle) #continue-round,
+main:has(.playblox-lifecycle) #restart-game,
+main:has(.playblox-lifecycle) .rematch-prompt,
+main:has(.playblox-lifecycle) #rematch-prompt,
+main:has(.playblox-lifecycle) #replay-status{display:none!important}
+@media(max-width:520px){.playblox-lifecycle{padding:15px}.playblox-lifecycle-actions{display:grid;grid-template-columns:1fr}.playblox-lifecycle-actions button{width:100%}}
