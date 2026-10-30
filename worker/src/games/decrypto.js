@@ -120,7 +120,7 @@ export const decrypto = {
    if(winner)return {...next,phase:"finished",winner,finishReason:reason,interceptions,miscommunications};
    const round=next.round+1;
    const nextCodes={blue:newCode(),red:newCode()};
-   return {...next,phase:"clues",round,codes:nextCodes,clues:{},ownGuesses:{},intercepts:{},submitted:{blue:false,red:false},
+   return {...next,phase:"clues",round,codes:nextCodes,interceptions,miscommunications,clues:{},ownGuesses:{},intercepts:{},submitted:{blue:false,red:false},
     clueGiverIndex:{blue:(next.clueGiverIndex.blue+1)%counts.blue.length,red:(next.clueGiverIndex.red+1)%counts.red.length}};
   }
   return state;
