@@ -32,6 +32,16 @@ function randomMineReward(random){const n=random();return n<0.40?1:n<0.75?2:n<0.
 function randomPower(random){const pool=["scan","jammer","jammer","extra-life","extra-life","shield","shield","speed","speed","speed","speed"];return pool[Math.floor(random()*pool.length)]}
 function generateCode(){return Math.floor(1+Math.random()*6)}
 function teamOf(state,id){return state.teams[id]}
+function canPlaceMineAt(state,team,at){
+ if(!validTile(at)||!team||state.phase!=="playing"||state.turnPlayerId!==state.playerOrder.find(id=>state.teams[id]===team))return false;
+ if(state.minePlacedThisTurn||state.mines[team]<1)return false;
+ const [x,y]=xy(state.positions[team]),[nx,ny]=xy(at);
+ return inBounds(nx,ny)&&Math.abs(nx-x)+Math.abs(ny-y)===1
+  &&!state.walls.includes(at)&&!state.rooms[at]
+  &&!Object.values(state.positions).includes(at)&&!state.activeMines[at]
+  &&![...(state.flags.blue||[]),...(state.flags.red||[])].includes(at)
+  &&manhattan(at,state.positions.blue)>3&&manhattan(at,state.positions.red)>3;
+}
 function win(state,winner,reason){return {...state,phase:"finished",winner,finishReason:reason,turnPlayerId:null,movementRemaining:0,die:null}}
 function updateVisibility(state,team){
  const p=state.positions[team],radius=state.scanTurns[team]>0?40:2;
@@ -63,7 +73,7 @@ export const minefield={
   if(state.turnPlayerId!==id)return {ok:false,reason:"Wait for your turn."};
   if(action?.type==="roll")return !state.rolled?{ok:true}:{ok:false,reason:"You have already rolled this turn."};
   if(action?.type==="move"){if(!validTile(action.to))return {ok:false,reason:"Invalid destination. Choose a tile on the 20×20 board."};if(!state.rolled||state.movementRemaining<=0)return {ok:false,reason:"Roll first or finish your movement."};const [x,y]=xy(state.positions[team]),[nx,ny]=xy(action.to||"");if(!inBounds(nx,ny)||Math.abs(nx-x)+Math.abs(ny-y)!==1||state.walls.includes(action.to))return {ok:false,reason:"Move one adjacent tile at a time; walls block movement."};if(Object.values(state.positions).includes(action.to))return {ok:false,reason:"That tile is occupied."};return {ok:true}}
-  if(action?.type==="place-mine"){if(!validTile(action.at))return {ok:false,reason:"Invalid mine location. Choose a tile on the 20×20 board."};if(state.minePlacedThisTurn)return {ok:false,reason:"You can place only one mine per turn."};if(state.mines[team]<1)return {ok:false,reason:"You don't have a mine to place."};const [x,y]=xy(state.positions[team]),[nx,ny]=xy(action.at||"");if(!inBounds(nx,ny)||Math.abs(nx-x)+Math.abs(ny-y)!==1||state.walls.includes(action.at)||state.rooms[action.at]||Object.values(state.positions).includes(action.at)||state.activeMines[action.at]||[...(state.flags.blue||[]),...(state.flags.red||[])].includes(action.at)||state.minePlacedThisTurn||manhattan(action.at,state.positions.blue)<=3||manhattan(action.at,state.positions.red)<=3)return {ok:false,reason:"Choose an empty adjacent floor tile outside both protected bases."};return {ok:true}}
+  if(action?.type==="place-mine"){if(!validTile(action.at))return {ok:false,reason:"Invalid mine location. Choose a tile on the 20×20 board."};if(state.minePlacedThisTurn)return {ok:false,reason:"You can place only one mine per turn."};if(state.mines[team]<1)return {ok:false,reason:"You don't have a mine to place."};if(!canPlaceMineAt(state,team,action.at))return {ok:false,reason:"That tile is not a valid mine location. Choose one of the highlighted adjacent tiles."};return {ok:true}}
   if(action?.type==="activate-power"){if(!["scan","extra-life","shield","speed","jammer"].includes(action.power))return {ok:false,reason:"Unknown power-up."};if(state.powerUsedThisTurn)return {ok:false,reason:"You have already activated a power-up this turn."};if(!state.inventory[team].includes(action.power))return {ok:false,reason:"You don't have that power-up."};if(action.power==="extra-life"&&state.lives[team]>=MAX_LIVES)return {ok:false,reason:"Your lives are already at the maximum of 3."};return {ok:true}}
   if(action?.type==="end-turn")return state.rolled?{ok:true}:{ok:false,reason:"Roll the die before ending your turn."};
   return {ok:false,reason:"Unknown Minefield action."};
@@ -101,7 +111,8 @@ export const minefield={
   const visibleRooms=Object.fromEntries([...visible].filter(k=>state.rooms?.[k]).map(k=>{const r=state.rooms[k];return [k,{type:r.type,active:r.active,turnsUntilRefill:r.active?0:Math.max(0,r.respawnAt-state.turnNumber)}]}));
   const roomRefills=(state.refilledRooms||[]).filter(k=>visible.has(k)).map(k=>({at:k,type:state.rooms[k]?.type}));
   const mines=Object.entries(state.activeMines).filter(([k,m])=>m.owner===team||state.scanTurns[team]>0).map(([at,m])=>({at,owner:m.owner,turns:m.turns}));
-  return {team,position:pos,enemyPosition:visible.has(enemyPos)?enemyPos:null,flags:state.flags[team],detectedEnemyFlags,visibleRooms,roomRefills,visible:[...(state.visible[team]||[])],explored:[...(state.explored[team]||[])],trailAges:Object.fromEntries((state.explored[team]||[]).map(k=>[k,Math.max(0,state.turnNumber-(state.exploredAt?.[team]?.[k]??state.turnNumber))])),jamTurns:state.jamZones?.[team]?.turns||0,jamCenter:state.jamZones?.[team]?.center||null,mines,turnPlayerId:state.turnPlayerId,die:state.die,movementRemaining:state.movementRemaining,rolled:state.rolled,inventory:state.inventory[team],minesCarried:state.mines[team],lives:state.lives,scanTurns:state.scanTurns[team],shield:state.shield[team],captured:state.captured};
+  const minePlacementTiles=state.turnPlayerId===playerId&&!state.minePlacedThisTurn&&(state.mines[team]||0)>0?[[1,0],[-1,0],[0,1],[0,-1]].map(([dx,dy])=>{const [x,y]=xy(pos);return key(x+dx,y+dy)}).filter(at=>canPlaceMineAt(state,team,at)):[];
+  return {team,position:pos,enemyPosition:visible.has(enemyPos)?enemyPos:null,flags:state.flags[team],detectedEnemyFlags,minePlacementTiles,visibleRooms,roomRefills,visible:[...(state.visible[team]||[])],explored:[...(state.explored[team]||[])],trailAges:Object.fromEntries((state.explored[team]||[]).map(k=>[k,Math.max(0,state.turnNumber-(state.exploredAt?.[team]?.[k]??state.turnNumber))])),jamTurns:state.jamZones?.[team]?.turns||0,jamCenter:state.jamZones?.[team]?.center||null,mines,turnPlayerId:state.turnPlayerId,die:state.die,movementRemaining:state.movementRemaining,rolled:state.rolled,inventory:state.inventory[team],minesCarried:state.mines[team],lives:state.lives,scanTurns:state.scanTurns[team],shield:state.shield[team],captured:state.captured};
  },
  getPublicState(state){if(!state)return state;const rooms=Object.fromEntries(Object.entries(state.rooms||{}).map(([k,r])=>[k,{type:r.type}]));return {playerOrder:state.playerOrder,phase:state.phase,round:state.round,turnNumber:state.turnNumber,turnPlayerId:state.turnPlayerId,walls:state.walls,rooms,flagsPlaced:state.flagsPlaced,captured:state.captured,lives:state.lives,die:state.die,movementRemaining:state.movementRemaining,rolled:state.rolled,lastEvent:state.lastEvent,winner:state.winner,finishReason:state.finishReason};},
  getStatus(context,state){return state.phase==="finished"?"finished":"active"},
