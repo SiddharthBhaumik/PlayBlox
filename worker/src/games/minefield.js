@@ -44,12 +44,20 @@ function canPlaceMineAt(state,team,at){
 }
 function win(state,winner,reason){return {...state,phase:"finished",winner,finishReason:reason,turnPlayerId:null,movementRemaining:0,die:null}}
 function updateVisibility(state,team){
- const p=state.positions[team],radius=state.scanTurns[team]>0?40:2;
+ const p=state.positions[team],enemy=other(team),radius=state.scanTurns[team]>0?40:2;
  const visible=visibleFrom(p,radius,new Set(state.walls)),stamp={...(state.exploredAt?.[team]||{})};
  for(const k of visible)stamp[k]=state.turnNumber;
  const exploredAt={...(state.exploredAt||{}),[team]:stamp};
  const explored=Object.keys(stamp).filter(k=>state.turnNumber-stamp[k]<=3);
- return {...state,visible:{...state.visible,[team]:visible},exploredAt,explored:{...state.explored,[team]:explored}};
+ // Remember room stock only when the room is actually observed. The memory
+ // follows the same three-turn lifetime as explored terrain.
+ const roomKnowledge={...(state.roomKnowledge?.[team]||{})};
+ for(const k of visible){const room=state.rooms?.[k];if(room)roomKnowledge[k]={active:room.active,seenAt:state.turnNumber};}
+ for(const [k,known] of Object.entries(roomKnowledge))if(state.turnNumber-known.seenAt>3)delete roomKnowledge[k];
+ const lastSeenEnemy={...(state.lastSeenEnemy||{})};
+ if(visible.includes(state.positions[enemy]))lastSeenEnemy[team]={at:state.positions[enemy],seenAt:state.turnNumber};
+ else if(lastSeenEnemy[team]&&state.turnNumber-lastSeenEnemy[team].seenAt>3)delete lastSeenEnemy[team];
+ return {...state,visible:{...state.visible,[team]:visible},exploredAt,explored:{...state.explored,[team]:explored},roomKnowledge:{...state.roomKnowledge,[team]:roomKnowledge},lastSeenEnemy};
 }
 function respawnRooms(state,random){
  const rooms={...state.rooms},refilledRooms=[];for(const [k,r] of Object.entries(rooms)){if(!r.active&&r.respawnAt<=state.turnNumber){rooms[k]={...r,active:true,respawnAt:null};refilledRooms.push(k)}}
@@ -61,7 +69,7 @@ export const minefield={
  createInitialState(context){
   const players=context.players.filter(p=>p.role==="player"&&p.connected);const ids=players.map(p=>p.id),seed=crypto.getRandomValues(new Uint32Array(1))[0],random=rng(seed),map=makeMap(random);
   const teams={[ids[0]]:"blue",[ids[1]]:"red"};
-  const state={playerOrder:ids,teams,phase:"flags",round:1,turnNumber:0,turnPlayerId:null,positions:{blue:map.blue,red:map.red},walls:map.walls,rooms:map.rooms,flags:{blue:[],red:[]},flagsPlaced:{blue:false,red:false},captured:{blue:0,red:0},lives:{blue:2,red:2},mines:{blue:0,red:0},activeMines:{},inventory:{blue:[],red:[]},scanTurns:{blue:0,red:0},jamZones:{blue:null,red:null},shield:{blue:0,red:0},speed:{blue:0,red:0},die:null,movementRemaining:0,rolled:false,movedThisTurn:false,minePlacedThisTurn:false,powerUsedThisTurn:false,visible:{blue:[],red:[]},explored:{blue:[],red:[]},exploredAt:{blue:{},red:{}},seed:map.seed,lastEvent:"Place three secret flags anywhere on open floor, outside protected bases."};
+  const state={playerOrder:ids,teams,phase:"flags",round:1,turnNumber:0,turnPlayerId:null,positions:{blue:map.blue,red:map.red},walls:map.walls,rooms:map.rooms,flags:{blue:[],red:[]},flagsPlaced:{blue:false,red:false},captured:{blue:0,red:0},lives:{blue:2,red:2},mines:{blue:0,red:0},activeMines:{},inventory:{blue:[],red:[]},scanTurns:{blue:0,red:0},jamZones:{blue:null,red:null},shield:{blue:0,red:0},speed:{blue:0,red:0},die:null,movementRemaining:0,rolled:false,movedThisTurn:false,minePlacedThisTurn:false,powerUsedThisTurn:false,visible:{blue:[],red:[]},explored:{blue:[],red:[]},exploredAt:{blue:{},red:{}},roomKnowledge:{blue:{},red:{}},lastSeenEnemy:{},seed:map.seed,lastEvent:"Place three secret flags anywhere on open floor, outside protected bases."};
   return updateVisibility(updateVisibility(state,"blue"),"red");
  },
  onPlayerLeave(context,state,playerId){const left=state?.teams?.[playerId];const playerOrder=(state?.playerOrder||[]).filter(id=>id!==playerId);if(!left)return {...state,playerOrder};const winner=other(left);return {...win({...state,playerOrder},winner,"Your opponent left the match. You win by forfeit."),forfeit:true};},
@@ -108,11 +116,12 @@ export const minefield={
  getPrivateState(state,playerId){
   const team=state.teams?.[playerId];if(!team)return null;const enemy=other(team),pos=state.positions[team],visible=new Set(state.visible[team]||[]),enemyPos=state.positions[enemy];
   const enemyFlags=state.flags[enemy]||[],exploredSet=new Set(state.explored?.[team]||[]),detectedEnemyFlags=enemyFlags.filter(flag=>exploredSet.has(flag));
-  const visibleRooms=Object.fromEntries([...visible].filter(k=>state.rooms?.[k]).map(k=>{const r=state.rooms[k];return [k,{type:r.type,active:r.active,turnsUntilRefill:r.active?0:Math.max(0,r.respawnAt-state.turnNumber)}]}));
+  const visibleRooms=Object.fromEntries(Object.entries(state.roomKnowledge?.[team]||{}).filter(([k,known])=>exploredSet.has(k)&&state.rooms?.[k]).map(([k,known])=>{const r=state.rooms[k];return [k,{type:r.type,active:known.active,seenAt:known.seenAt,isCurrent:visible.has(k),turnsUntilRefill:known.active?0:Math.max(0,r.respawnAt-state.turnNumber)}]}));
   const roomRefills=(state.refilledRooms||[]).filter(k=>visible.has(k)).map(k=>({at:k,type:state.rooms[k]?.type}));
   const mines=Object.entries(state.activeMines).filter(([k,m])=>m.owner===team||state.scanTurns[team]>0).map(([at,m])=>({at,owner:m.owner,turns:m.turns}));
   const minePlacementTiles=state.turnPlayerId===playerId&&!state.minePlacedThisTurn&&(state.mines[team]||0)>0?[[1,0],[-1,0],[0,1],[0,-1]].map(([dx,dy])=>{const [x,y]=xy(pos);return key(x+dx,y+dy)}).filter(at=>canPlaceMineAt(state,team,at)):[];
-  return {team,position:pos,enemyPosition:visible.has(enemyPos)?enemyPos:null,flags:state.flags[team],detectedEnemyFlags,minePlacementTiles,visibleRooms,roomRefills,visible:[...(state.visible[team]||[])],explored:[...(state.explored[team]||[])],trailAges:Object.fromEntries((state.explored[team]||[]).map(k=>[k,Math.max(0,state.turnNumber-(state.exploredAt?.[team]?.[k]??state.turnNumber))])),jamTurns:state.jamZones?.[team]?.turns||0,jamCenter:state.jamZones?.[team]?.center||null,mines,turnPlayerId:state.turnPlayerId,die:state.die,movementRemaining:state.movementRemaining,rolled:state.rolled,inventory:state.inventory[team],minesCarried:state.mines[team],lives:state.lives,scanTurns:state.scanTurns[team],shield:state.shield[team],captured:state.captured};
+  const rememberedEnemy=state.lastSeenEnemy?.[team],enemyPosition=rememberedEnemy&&state.turnNumber-rememberedEnemy.seenAt<=3&&exploredSet.has(rememberedEnemy.at)?rememberedEnemy.at:null;
+  return {team,position:pos,enemyPosition,enemyPositionIsCurrent:visible.has(enemyPos),flags:state.flags[team],detectedEnemyFlags,minePlacementTiles,visibleRooms,roomRefills,visible:[...(state.visible[team]||[])],explored:[...(state.explored[team]||[])],trailAges:Object.fromEntries((state.explored[team]||[]).map(k=>[k,Math.max(0,state.turnNumber-(state.exploredAt?.[team]?.[k]??state.turnNumber))])),jamTurns:state.jamZones?.[team]?.turns||0,jamCenter:state.jamZones?.[team]?.center||null,mines,turnPlayerId:state.turnPlayerId,die:state.die,movementRemaining:state.movementRemaining,rolled:state.rolled,inventory:state.inventory[team],minesCarried:state.mines[team],lives:state.lives,scanTurns:state.scanTurns[team],shield:state.shield[team],captured:state.captured};
  },
  getPublicState(state){if(!state)return state;const rooms=Object.fromEntries(Object.entries(state.rooms||{}).map(([k,r])=>[k,{type:r.type}]));return {playerOrder:state.playerOrder,phase:state.phase,round:state.round,turnNumber:state.turnNumber,turnPlayerId:state.turnPlayerId,walls:state.walls,rooms,flagsPlaced:state.flagsPlaced,captured:state.captured,lives:state.lives,die:state.die,movementRemaining:state.movementRemaining,rolled:state.rolled,lastEvent:state.lastEvent,winner:state.winner,finishReason:state.finishReason};},
  getStatus(context,state){return state.phase==="finished"?"finished":"active"},
