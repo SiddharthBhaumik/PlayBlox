@@ -20,7 +20,7 @@ async function sync(){const d=await api("/api/rooms/"+encodeURIComponent(code));
 function cellContent(k,visible,explored){
  const walls=new Set(state.walls||[]),r=state.rooms?.[k],roomStatus=privateState?.visibleRooms?.[k],mine=(privateState?.mines||[]).find(m=>m.at===k),ownFlags=privateState?.flags||[],enemyFlags=privateState?.detectedEnemyFlags||[],myPos=privateState?.position,enemyPos=privateState?.enemyPosition;
  if(k===myPos)return "🧍";if(k===enemyPos)return "👤";if(ownFlags.includes(k))return "🚩";if(mine?.owner===team())return "💣";if(mine)return "💥";
- if(walls.has(k))return "🟫";if(r?.active)return r.type==="mine"?"⛏️":r.type==="power"?"✨":"🏥";
+ if(walls.has(k))return "🟫";if(r){if(!visible.has(k))return r.type==="mine"?"⛏️":r.type==="power"?"✨":"🏥";if(roomStatus?.active)return r.type==="mine"?"⛏️":r.type==="power"?"✨":"🏥";if(roomStatus&&!roomStatus.active)return r.type==="mine"?"▫️":r.type==="power"?"◇":"▱";return "·";}
  if(!visible.has(k)&&!explored.has(k))return "·";
  return "";
 }
@@ -57,7 +57,7 @@ function render(){
  const select=$("power-select"),old=select.value;select.replaceChildren(new Option("Choose a power-up",""));(privateState?.inventory||[]).forEach(p=>select.add(new Option(p.replace("-"," ").replace(/\b\w/g,c=>c.toUpperCase()),p)));select.value=(privateState?.inventory||[]).includes(old)?old:"";
  $("activate-power").disabled=!myTurn()||!select.value;
  $("inventory-label").textContent=(privateState?.inventory||[]).length?(privateState.inventory.join(" · ")):"No power-ups yet.";
- $("mine-hint").textContent=mode==="mine"?(privateState?.minesCarried||0)+" mine(s) ready. Highlighted tiles are valid adjacent places; click one to plant.":"No inventory or active-mine limit. Your mines are always visible. Scan reveals all enemy mines; Mine Jammer disables enemy mines in a 3×3 area.";
+ $("mine-hint").textContent=mode==="mine"?(privateState?.minesCarried||0)+" mine(s) ready. Click a highlighted adjacent tile to plant. You must be outside both protected bases; mines cannot go on walls, rooms, flags, players, or existing mines.":"No inventory or active-mine limit. Your mines are always visible. Scan reveals all enemy mines; Mine Jammer disables enemy mines in a 3×3 area.";
  $("setup-panel").hidden=state.phase!=="flags"||Boolean(state.flagsPlaced?.[t]);$("flag-count").textContent=selectedFlags.length+" / 3 selected";$("submit-flags").disabled=selectedFlags.length!==3;
  $("result-panel").hidden=state.phase!=="finished";
  if(state.phase==="finished"){$("result-title").textContent=state.winner===t?"🏆 You win!":"💥 Match over";$("result-copy").textContent=state.finishReason||"The match has ended."}
@@ -73,7 +73,7 @@ async function tileClick(k){
   $("flag-count").textContent=selectedFlags.length+" / 3 selected";$("submit-flags").disabled=selectedFlags.length!==3;return;
  }
  if(!myTurn())return;
- if(mode==="mine"){if(!canPlaceMineAt(k)){setError("Choose a highlighted empty tile directly next to your player, outside both protected bases.");return}await act({type:"place-mine",at:k});if(!document.getElementById("error-message").textContent)mode="move";render();return}
+ if(mode==="mine"){if(!canPlaceMineAt(k)){setError("No mine placed. Choose a highlighted adjacent tile outside both protected bases, away from walls, rooms, flags, players, and other mines.");return}await act({type:"place-mine",at:k});if(!document.getElementById("error-message").textContent)mode="move";render();return}
  
  if(state.rolled&&state.movementRemaining>0&&adjacent(privateState.position,k))await act({type:"move",to:k});
 }
