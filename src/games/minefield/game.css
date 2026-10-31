@@ -38,3 +38,6 @@
 .tile.room-unexplored{opacity:.62;filter:grayscale(.72) brightness(.88);border-style:dotted;border-color:#7b827b;box-shadow:none;animation:none}
 .tile.room-unexplored::after{content:"?";position:absolute;right:0;top:0;font:1000 calc(var(--cell-size,1rem)*.34)/1 Nunito,sans-serif;color:#26352b;background:rgba(255,255,255,.82);border-radius:0 0 0 4px;padding:0 1px}
 .mine-timer{max-width:100%;font-size:6px;white-space:nowrap;overflow:hidden}
+
+/* Mine placement targets use the same 💣 symbol as planted mines. */
+.tile.mine-placement-option::after{content:none!important}
