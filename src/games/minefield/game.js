@@ -18,10 +18,10 @@ async function api(path,options={}){const response=await fetch(API+path,{...opti
 async function act(action){if(acting)return;acting=true;setError("");try{const d=await api("/api/rooms/"+encodeURIComponent(code)+"/game/action",{method:"POST",body:JSON.stringify({actionId:crypto.randomUUID(),expectedStateVersion:version,action})});version=d.stateVersion??version;await sync()}catch(e){setError(e.message);if(Number.isInteger(e.stateVersion))version=e.stateVersion;try{await sync()}catch{}}finally{acting=false;render()}}
 async function sync(){const d=await api("/api/rooms/"+encodeURIComponent(code));room=d.room;state=room.gameState;version=room.stateVersion??version;render()}
 function cellContent(k,visible,explored){
- const walls=new Set(state.walls||[]),r=state.rooms?.[k],roomStatus=privateState?.visibleRooms?.[k],mine=(privateState?.mines||[]).find(m=>m.at===k),ownFlags=privateState?.flags||[],enemyFlags=privateState?.detectedEnemyFlags||[],myPos=privateState?.position,enemyPos=privateState?.enemyPosition;
+ const walls=new Set(state.walls||[]),r=state.rooms?.[k],roomStatus=privateState?.visibleRooms?.[k],mines=(privateState?.mines||[]).filter(m=>m.at===k),ownFlags=privateState?.flags||[],enemyFlags=privateState?.detectedEnemyFlags||[],myPos=privateState?.position,enemyPos=privateState?.enemyPosition;
  const ownFlag=ownFlags.includes(k),enemyFlag=enemyFlags.includes(k);
- if(k===myPos)return "🧍";if(k===enemyPos)return "👤";if(ownFlag&&enemyFlag)return "🚩⚑";if(ownFlag)return "🚩";if(enemyFlag)return "⚑";if(mine?.owner===team())return "💣";if(mine)return "💥";
- if(walls.has(k))return "🟫";if(r){if(!explored.has(k))return "";if(roomStatus?.active)return r.type==="mine"?"⛏️":r.type==="power"?"✨":"🏥";if(roomStatus&&!roomStatus.active)return r.type==="mine"?"▫️":r.type==="power"?"◇":"▱";return "·";}
+ if(k===myPos)return "🧍";if(k===enemyPos)return "👤";if(ownFlag&&enemyFlag)return "🚩⚑";if(ownFlag)return "🚩";if(enemyFlag)return "⚑";if(mines.some(m=>m.owner===team()))return "💣";if(mines.length)return "💥";
+ if(walls.has(k))return "🟫";if(r){if(!explored.has(k))return r.type==="mine"?"⛏️?":r.type==="power"?"✨?":"🏥?";if(roomStatus?.active)return r.type==="mine"?"⛏️":r.type==="power"?"✨":"🏥";if(roomStatus&&!roomStatus.active)return r.type==="mine"?"▫️":r.type==="power"?"◇":"▱";return "·";}
  if(!visible.has(k)&&!explored.has(k))return "·";
  return "";
 }
@@ -30,14 +30,14 @@ function renderBoard(){
  const visible=new Set(privateState?.visible||[]),explored=new Set(privateState?.explored||[]),walls=new Set(state?.walls||[]),mineMap=new Map((privateState?.mines||[]).map(m=>[m.at,m])),jamCenter=privateState?.jamCenter?coords(privateState.jamCenter):null;
  const children=[];
  for(let y=0;y<20;y++)for(let x=0;x<20;x++){
-  const k=key(x,y),r=state.rooms?.[k],roomStatus=privateState?.visibleRooms?.[k],isVisible=visible.has(k),isExplored=explored.has(k),button=document.createElement("button");
+  const k=key(x,y),r=state.rooms?.[k],roomStatus=privateState?.visibleRooms?.[k],isVisible=visible.has(k),isExplored=explored.has(k),tileMines=(privateState?.mines||[]).filter(m=>m.at===k),button=document.createElement("button");
   button.type="button";button.className="tile";button.setAttribute("role","gridcell");button.dataset.tile=k;
-  if(walls.has(k))button.classList.add("wall");if(r&&isExplored){button.classList.add("room",r.type);if(roomStatus&&!roomStatus.active)button.classList.add("room-inactive");if(roomStatus?.active)button.classList.add("room-active");}if(!isVisible&&!isExplored&&!walls.has(k)&&!r)button.classList.add("fog");if(!isVisible&&isExplored)button.classList.add("trail-"+(privateState?.trailAges?.[k]||0));if(state?.phase==="flags"){const [tx,ty]=coords(k),inBase=Math.abs(tx-1)+Math.abs(ty-1)<=3||Math.abs(tx-18)+Math.abs(ty-18)<=3;if(walls.has(k)||r||inBase){button.classList.add("flag-unavailable");button.disabled=true;}}
-  if(mineMap.has(k))button.classList.add(mineMap.get(k).owner===team()?"own-mine":"spotted-mine");if(!isVisible&&isExplored&&r)button.classList.add("room-unseen");if(jamCenter&&privateState?.jamTurns>0&&Math.abs(x-jamCenter[0])<=1&&Math.abs(y-jamCenter[1])<=1)button.classList.add("jam-zone");if(mode==="mine"&&canPlaceMineAt(k))button.classList.add("mine-placement-option");
+  if(walls.has(k))button.classList.add("wall");if(r){button.classList.add("room",r.type);if(!isExplored)button.classList.add("room-unexplored");else if(roomStatus&&!roomStatus.active)button.classList.add("room-inactive");else if(roomStatus?.active)button.classList.add("room-active");}if(!isVisible&&!isExplored&&!walls.has(k)&&!r)button.classList.add("fog");if(!isVisible&&isExplored)button.classList.add("trail-"+(privateState?.trailAges?.[k]||0));if(state?.phase==="flags"){const [tx,ty]=coords(k),inBase=Math.abs(tx-1)+Math.abs(ty-1)<=3||Math.abs(tx-18)+Math.abs(ty-18)<=3;if(walls.has(k)||r||inBase){button.classList.add("flag-unavailable");button.disabled=true;}}
+  if(tileMines.length)button.classList.add(tileMines.some(m=>m.owner===team())?"own-mine":"spotted-mine");if(jamCenter&&privateState?.jamTurns>0&&Math.abs(x-jamCenter[0])<=1&&Math.abs(y-jamCenter[1])<=1)button.classList.add("jam-zone");if(mode==="mine"&&canPlaceMineAt(k))button.classList.add("mine-placement-option");
   if(k===privateState?.position)button.classList.add("my-position");if(k===privateState?.enemyPosition)button.classList.add("enemy-position");
-  button.textContent=cellContent(k,visible,explored);if(mineMap.has(k)){const timer=document.createElement("span");timer.className="mine-timer";timer.textContent=String(mineMap.get(k).turns);timer.setAttribute("aria-label","Mine expires in "+mineMap.get(k).turns+" turns");button.append(timer)}
+  button.textContent=cellContent(k,visible,explored);if(tileMines.length){const timer=document.createElement("span");timer.className="mine-timer";timer.textContent=tileMines.map(m=>m.turns).join("/");timer.setAttribute("aria-label",tileMines.length+" visible mine(s), expiry turns "+tileMines.map(m=>m.turns).join(", "));button.append(timer)}
   if(privateState?.flags?.includes(k))button.classList.add("own-flag");
-  button.title="Tile "+(x+1)+", "+(y+1)+(walls.has(k)?" · Wall":r&&isExplored?" · "+r.type+" room"+(roomStatus?(roomStatus.active?" · Stocked":" · Empty"):" · Status unavailable"):"")+(mineMap.has(k)?" · Mine expires in "+mineMap.get(k).turns+" turns":"");
+  button.title="Tile "+(x+1)+", "+(y+1)+(walls.has(k)?" · Wall":r&&isExplored?" · "+r.type+" room"+(roomStatus?(roomStatus.active?" · Stocked":" · Empty"):" · Status unavailable"):"")+(tileMines.length?" · "+tileMines.length+" visible mine(s); expiry "+tileMines.map(m=>m.turns).join(", "):r&&!isExplored?" · Unexplored "+r.type+" room; stock status unknown":"");
   button.addEventListener("click",()=>tileClick(k));children.push(button);
  }
  board.replaceChildren(...children);
@@ -58,7 +58,7 @@ function render(){
  const select=$("power-select"),old=select.value;select.replaceChildren(new Option("Choose a power-up",""));(privateState?.inventory||[]).forEach(p=>select.add(new Option(p.replace("-"," ").replace(/\b\w/g,c=>c.toUpperCase()),p)));select.value=(privateState?.inventory||[]).includes(old)?old:"";
  $("activate-power").disabled=!myTurn()||!select.value;
  $("inventory-label").textContent=(privateState?.inventory||[]).length?(privateState.inventory.join(" · ")):"No power-ups yet.";
- $("mine-hint").textContent=mode==="mine"?(privateState?.minesCarried||0)+" mine(s) ready. Click a highlighted adjacent tile to plant. You must be outside both protected bases; mines cannot go on walls, rooms, flags, players, or existing mines.":"No inventory or active-mine limit. Your mines are always visible with expiry counters. Scan reveals enemy mines across the board. Mine Jammer follows you with a 3×3 field for two consecutive player turns; jammed mines still lose lifetime normally.";
+ $("mine-hint").textContent=mode==="mine"?(privateState?.minesCarried||0)+" mine(s) ready. Click a highlighted adjacent tile to plant. You must be outside both protected bases; mines cannot go on walls, rooms, flags, players, or existing mines.":"No inventory or active-mine limit. Your mines are always visible with individual expiry counters. Opposing mines can be stacked on the same tile and remain hidden unless Scan reveals them. Scan reveals enemy mines across the board. Mine Jammer follows you with a 3×3 field for two consecutive player turns; jammed mines still lose lifetime normally.";
  $("setup-panel").hidden=state.phase!=="flags"||Boolean(state.flagsPlaced?.[t]);$("flag-count").textContent=selectedFlags.length+" / 3 selected";$("submit-flags").disabled=selectedFlags.length!==3;
  $("result-panel").hidden=state.phase!=="finished";
  if(state.phase==="finished"){$("result-title").textContent=state.winner===t?"🏆 You win!":"💥 Match over";$("result-copy").textContent=state.finishReason||"The match has ended."}
@@ -74,7 +74,7 @@ async function tileClick(k){
   $("flag-count").textContent=selectedFlags.length+" / 3 selected";$("submit-flags").disabled=selectedFlags.length!==3;return;
  }
  if(!myTurn())return;
- if(mode==="mine"){if(!canPlaceMineAt(k)){setError("No mine placed. Choose a highlighted adjacent tile outside both protected bases, away from walls, rooms, flags, players, and other mines.");return}await act({type:"place-mine",at:k});if(!document.getElementById("error-message").textContent)mode="move";render();return}
+ if(mode==="mine"){if(!canPlaceMineAt(k)){setError("No mine placed. Choose a highlighted adjacent tile outside both protected bases, away from walls, rooms, flags, players, and your own mines. Enemy mines may be hidden underneath; each stacked mine expires independently.");return}await act({type:"place-mine",at:k});if(!document.getElementById("error-message").textContent)mode="move";render();return}
  
  if(state.rolled&&state.movementRemaining>0&&adjacent(privateState.position,k))await act({type:"move",to:k});
 }
