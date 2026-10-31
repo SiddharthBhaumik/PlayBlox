@@ -20,7 +20,7 @@ async function sync(){const d=await api("/api/rooms/"+encodeURIComponent(code));
 function cellContent(k,visible,explored){
  const walls=new Set(state.walls||[]),r=state.rooms?.[k],roomStatus=privateState?.visibleRooms?.[k],mines=(privateState?.mines||[]).filter(m=>m.at===k),ownFlags=privateState?.flags||[],enemyFlags=privateState?.detectedEnemyFlags||[],myPos=privateState?.position,enemyPos=privateState?.enemyPosition;
  const ownFlag=ownFlags.includes(k),enemyFlag=enemyFlags.includes(k);
- if(k===myPos)return "🧍";if(k===enemyPos)return "👤";if(ownFlag&&enemyFlag)return "🚩⚑";if(ownFlag)return "🚩";if(enemyFlag)return "⚑";if(mines.some(m=>m.owner===team()))return "💣";if(mines.length)return "💥";
+ if(k===myPos)return "🧍";if(k===enemyPos)return "👤";if(ownFlag&&enemyFlag)return "🚩⚑";if(ownFlag)return "🚩";if(enemyFlag)return "⚑";if(mines.some(m=>m.owner===team()))return "💣";if(mines.length)return "💥";if(mode==="mine"&&canPlaceMineAt(k))return "💣";
  if(walls.has(k))return "🟫";if(r){if(!explored.has(k))return r.type==="mine"?"⛏️":r.type==="power"?"✨":"🏥";if(roomStatus?.active)return r.type==="mine"?"⛏️":r.type==="power"?"✨":"🏥";if(roomStatus&&!roomStatus.active)return r.type==="mine"?"▫️":r.type==="power"?"◇":"▱";return "·";}
  if(!visible.has(k)&&!explored.has(k))return "·";
  return "";
@@ -54,11 +54,11 @@ function render(){
  $("die-face").textContent=state.die||"—";$("movement-label").textContent=state.rolled?"Movement remaining: "+state.movementRemaining:"Roll to begin moving.";
  $("roll-button").disabled=!myTurn()||state.rolled;$("end-turn").disabled=!myTurn()||!state.rolled;
  $("mine-mode").disabled=!myTurn()||(privateState?.minesCarried||0)<1;$("mine-mode").classList.toggle("selected",mode==="mine");
- $("activate-power").disabled=!myTurn()||!(privateState?.inventory||[]).length;
- const select=$("power-select"),old=select.value;select.replaceChildren(new Option("Choose a power-up",""));(privateState?.inventory||[]).forEach(p=>select.add(new Option(p.replace("-"," ").replace(/\b\w/g,c=>c.toUpperCase()),p)));select.value=(privateState?.inventory||[]).includes(old)?old:"";
- $("activate-power").disabled=!myTurn()||!select.value;
+ $("activate-power").disabled=!myTurn()||!state.rolled||!(privateState?.inventory||[]).length;
+ const select=$("power-select"),old=select.value;select.disabled=!myTurn()||!state.rolled||!(privateState?.inventory||[]).length;select.replaceChildren(new Option(state.rolled?"Choose a power-up":"Roll the die to unlock power-ups",""));(privateState?.inventory||[]).forEach(p=>select.add(new Option(p.replace("-"," ").replace(/\b\w/g,c=>c.toUpperCase()),p)));select.value=(privateState?.inventory||[]).includes(old)?old:"";
+ $("activate-power").disabled=!myTurn()||!state.rolled||!select.value;
  $("inventory-label").textContent=(privateState?.inventory||[]).length?(privateState.inventory.join(" · ")):"No power-ups yet.";
- $("mine-hint").textContent=mode==="mine"?(privateState?.minesCarried||0)+" mine(s) ready. Click a highlighted adjacent tile to plant. You must be outside both protected bases; mines cannot go on walls, rooms, flags, players, or existing mines.":"No inventory or active-mine limit. Your mines are always visible with individual expiry counters. Opposing mines can be stacked on the same tile and remain hidden unless Scan reveals them. Scan reveals enemy mines across the board. Mine Jammer follows you with a 3×3 field for two consecutive player turns; jammed mines still lose lifetime normally.";
+ const mineOptions=privateState?.minePlacementTiles||[];$("mine-hint").textContent=mode==="mine"?(mineOptions.length?mineOptions.length+" legal adjacent tile(s) highlighted. Click a 💣 tile to plant.":"No legal adjacent tile right now. Move outside both protected bases and away from walls, rooms, flags, players, and your own mines."):"Your mines are always visible with individual expiry counters. Opposing mines can be stacked on the same tile and remain hidden unless Scan reveals them. Scan reveals enemy mines across the board. Mine Jammer follows you with a 3×3 field for two consecutive player turns; it jams all mines regardless of owner, and jammed mines still lose lifetime normally.";
  $("setup-panel").hidden=state.phase!=="flags"||Boolean(state.flagsPlaced?.[t]);$("flag-count").textContent=selectedFlags.length+" / 3 selected";$("submit-flags").disabled=selectedFlags.length!==3;
  $("result-panel").hidden=state.phase!=="finished";
  if(state.phase==="finished"){$("result-title").textContent=state.winner===t?"🏆 You win!":"💥 Match over";$("result-copy").textContent=state.finishReason||"The match has ended."}
