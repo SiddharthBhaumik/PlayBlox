@@ -27,7 +27,7 @@ function cellContent(k,visible,explored){
 }
 function renderBoard(){
  const board=$("board");board.style.setProperty("--cell-size",zoom+"rem");
- const visible=new Set(privateState?.visible||[]),explored=new Set(privateState?.explored||[]),walls=new Set(state?.walls||[]),mineMap=new Map((privateState?.mines||[]).map(m=>[m.at,m])),jamCenter=privateState?.jamCenter?coords(privateState.jamCenter):null;
+ const visible=new Set(privateState?.visible||[]),explored=new Set(privateState?.explored||[]),walls=new Set(state?.walls||[]),jamCenter=privateState?.jamCenter?coords(privateState.jamCenter):null;
  const children=[];
  for(let y=0;y<20;y++)for(let x=0;x<20;x++){
   const k=key(x,y),r=state.rooms?.[k],roomStatus=privateState?.visibleRooms?.[k],isVisible=visible.has(k),isExplored=explored.has(k),tileMines=(privateState?.mines||[]).filter(m=>m.at===k),button=document.createElement("button");
