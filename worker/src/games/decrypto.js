@@ -31,7 +31,7 @@ export const decrypto = {
   const playerOrder=context.players.filter(p=>p.role==="player"&&p.connected).map(p=>p.id);
   const used=new Set();
   return {playerOrder,phase:"teams",round:1,teams:{},words:{blue:drawWords(used),red:drawWords(used)},
-   clueGiverIndex:{blue:0,red:0},codes:{blue:newCode(),red:newCode()},clues:{},ownGuesses:{},intercepts:{},
+   clueGiverIndex:{blue:0,red:0},codes:{blue:newCode(),red:newCode()},clues:{},clueHistory:[],ownGuesses:{},intercepts:{},
    interceptions:{blue:0,red:0},miscommunications:{blue:0,red:0},submitted:{blue:false,red:false},winner:null,finishReason:null};
  },
  onPlayerLeave(context,state,playerId) {
@@ -94,7 +94,7 @@ export const decrypto = {
   if(action.type==="submit-clues") {
    const clues={...state.clues,[team]:action.clues.map(c=>c.trim())};
    const submitted={...state.submitted,[team]:true};
-   return submitted.blue&&submitted.red?{...state,clues,submitted,phase:"decode"}:{...state,clues,submitted};
+   return submitted.blue&&submitted.red?{...state,clues,submitted,clueHistory:[...(state.clueHistory||[]),{round:state.round,blue:[...(clues.blue||[])],red:[...(clues.red||[])]}],phase:"decode"}:{...state,clues,submitted};
   }
   if(action.type==="submit-both"||action.type==="decode"||action.type==="intercept") {
    const ownGuesses={...state.ownGuesses},intercepts={...state.intercepts};
@@ -135,7 +135,7 @@ export const decrypto = {
  },
  getPublicState(state) {
   if(!state)return state;
-  return {playerOrder:state.playerOrder,phase:state.phase,round:state.round,teams:state.teams,clues:state.clues,
+  return {playerOrder:state.playerOrder,phase:state.phase,round:state.round,teams:state.teams,clues:state.clues,clueHistory:state.clueHistory||[],
    submitted:state.submitted,interceptions:state.interceptions,miscommunications:state.miscommunications,
    winner:state.winner,finishReason:state.finishReason,clueGiverIndex:state.clueGiverIndex};
  },
