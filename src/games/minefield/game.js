@@ -21,7 +21,7 @@ function cellContent(k,visible,explored){
  const walls=new Set(state.walls||[]),r=state.rooms?.[k],roomStatus=privateState?.visibleRooms?.[k],mines=(privateState?.mines||[]).filter(m=>m.at===k),ownFlags=privateState?.flags||[],enemyFlags=privateState?.detectedEnemyFlags||[],myPos=privateState?.position,enemyPos=privateState?.enemyPosition;
  const ownFlag=ownFlags.includes(k),enemyFlag=enemyFlags.includes(k);
  if(k===myPos)return "🧍";if(k===enemyPos)return "👤";if(ownFlag&&enemyFlag)return "🚩⚑";if(ownFlag)return "🚩";if(enemyFlag)return "⚑";if(mines.some(m=>m.owner===team()))return "💣";if(mines.length)return "💥";
- if(walls.has(k))return "🟫";if(r){if(!explored.has(k))return r.type==="mine"?"⛏️?":r.type==="power"?"✨?":"🏥?";if(roomStatus?.active)return r.type==="mine"?"⛏️":r.type==="power"?"✨":"🏥";if(roomStatus&&!roomStatus.active)return r.type==="mine"?"▫️":r.type==="power"?"◇":"▱";return "·";}
+ if(walls.has(k))return "🟫";if(r){if(!explored.has(k))return r.type==="mine"?"⛏️":r.type==="power"?"✨":"🏥";if(roomStatus?.active)return r.type==="mine"?"⛏️":r.type==="power"?"✨":"🏥";if(roomStatus&&!roomStatus.active)return r.type==="mine"?"▫️":r.type==="power"?"◇":"▱";return "·";}
  if(!visible.has(k)&&!explored.has(k))return "·";
  return "";
 }
