@@ -6,3 +6,5 @@
 .tile.mine-placement-option{position:relative;background:#d9f0c9!important;border:2px solid #32834b!important;outline:2px dashed #32834b;outline-offset:-3px;box-shadow:inset 0 0 0 2px rgba(255,255,255,.55);cursor:crosshair}.tile.mine-placement-option::after{content:"+";font-size:calc(var(--cell-size,1rem)*.8);font-weight:1000;color:#246b3a}.tile.mine-placement-option.fog{background:#d9f0c9!important;color:#246b3a}
 
 .tile.trail-1{opacity:.78;filter:saturate(.78)}.tile.trail-2{opacity:.52;filter:saturate(.48)}.tile.trail-3{opacity:.28;filter:saturate(.2)}
+
+.tile.room-inactive{background:#d4d0c5!important;border-style:dashed;border-color:#8e897d;color:#777}.tile.room-active{box-shadow:inset 0 0 0 2px rgba(255,255,255,.65),0 0 7px rgba(232,177,73,.65);animation:room-ready-pulse 2.2s ease-in-out infinite}@keyframes room-ready-pulse{0%,100%{filter:brightness(1)}50%{filter:brightness(1.13)}}
