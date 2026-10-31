@@ -9,7 +9,7 @@ function member(id){return room?.players.find(p=>p.id===id)}
 function teamIds(t){return (state?.playerOrder||[]).filter(id=>state.teams?.[id]===t)}
 function myTeam(){return state?.teams?.[playerId]}
 function showError(message){$("game-error").textContent=message||""}
-async function act(action){const result=await api("/api/rooms/"+encodeURIComponent(code)+"/game/action",{method:"POST",body:JSON.stringify({actionId:crypto.randomUUID(),expectedStateVersion:version,action})});version=result.stateVersion;await sync()}
+async function act(action){const roundAction=state?.phase==="teams"?action:{...action,round:state?.round};const result=await api("/api/rooms/"+encodeURIComponent(code)+"/game/action",{method:"POST",body:JSON.stringify({actionId:crypto.randomUUID(),expectedStateVersion:version,action:roundAction})});version=result.stateVersion;await sync()}
 async function sync(){const d=await api("/api/rooms/"+encodeURIComponent(code));room=d.room;state=room.gameState;version=room.stateVersion||0;render()}
 function renderClueHistory(){
  const host=$("clue-history");if(!host)return;
