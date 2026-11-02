@@ -43,6 +43,12 @@
             <p class="panel-kicker">YOU'RE THE QUESTION MASTER</p>
             <h2>Set the dilemma</h2>
             <p class="panel-copy">Write a question with two choices, then predict the percentage of other players who will choose Option A.</p>
+            <div class="question-source-row">
+              <label class="question-category-label" for="question-category">Question library</label>
+              <select id="question-category" class="question-category"><option value="all">All categories · 500 questions</option></select>
+              <button id="random-question" class="wyr-secondary" type="button">🎲 Pick random</button>
+            </div>
+            <p class="library-hint" id="library-hint">Pick a random question or write your own. You can edit a library pick before sharing.</p>
             <label class="field-label" for="question-input">Your question</label>
             <textarea id="question-input" maxlength="240" rows="2" placeholder="Would you rather…"></textarea>
             <div class="option-fields">
