@@ -232,7 +232,11 @@ export const wouldYouRather = {
       totalTurns: state.playerOrder.length,
       completedMasterIds: state.completedMasterIds,
       currentMasterId: state.currentMasterId,
-      currentQuestion: state.currentQuestion,
+      currentQuestion: state.currentQuestion ? {
+        question: state.currentQuestion.question,
+        optionA: state.currentQuestion.optionA,
+        optionB: state.currentQuestion.optionB,
+      } : null,
       submittedPlayerIds: state.submittedPlayerIds,
       scores: state.scores,
       history: state.history,
