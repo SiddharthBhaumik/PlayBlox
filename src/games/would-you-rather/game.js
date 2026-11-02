@@ -130,7 +130,7 @@ function renderHistory() {
     card.className = "history-item";
     const header = document.createElement("div");
     header.className = "history-item-header";
-    appendText(header, "strong", "", "Turn " + result.turnNumber + " · " + (player(result.masterId)?.nickname || "Question Master"));
+    appendText(header, "strong", "", "Round " + (result.round || 1) + " · Turn " + result.turnNumber + " · " + (player(result.masterId)?.nickname || "Question Master"));
     appendText(header, "b", "history-master-points", "+" + result.masterPoints + " master pts");
     card.append(header);
     appendText(card, "p", "history-question", result.question);
@@ -233,8 +233,8 @@ function render() {
   renderGamePlayerPanel({ container: $("player-roster"), room, gameState: { currentPlayerId: currentMasterId() }, myPlayerId });
   const finished = isFinished();
   $("turn-pill").textContent = finished
-    ? "All " + gameState.totalTurns + " turns complete"
-    : "Turn " + gameState.turnNumber + " of " + gameState.totalTurns;
+    ? "Round " + (gameState.round || 1) + " complete"
+    : "Round " + (gameState.round || 1) + " · Turn " + gameState.turnNumber + " of " + gameState.totalTurns;
   $("your-score").textContent = String(gameState.scores?.[myPlayerId] || 0);
   renderLeaderboard();
   const isMaster = myPlayerId === currentMasterId();
