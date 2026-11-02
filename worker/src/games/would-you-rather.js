@@ -32,6 +32,7 @@ function resolveTurn(state) {
   }
 
   const result = {
+    round: state.round || 1,
     turnNumber: state.turnNumber,
     masterId,
     question: state.currentQuestion.question,
@@ -98,6 +99,7 @@ export const wouldYouRather = {
     const playerOrder = context.players.filter(player => player.role === "player" && player.connected).map(player => player.id);
     return {
       playerOrder,
+      round: 1,
       phase: "question",
       turnNumber: 1,
       completedMasterIds: [],
@@ -223,10 +225,35 @@ export const wouldYouRather = {
     return submittedPlayerIds.length === answererIds(state).length ? resolveTurn(nextState) : nextState;
   },
 
+  startNextRound(context, state) {
+    const playerOrder = context.players
+      .filter(player => player.role === "player" && player.connected)
+      .map(player => player.id);
+    if (playerOrder.length < this.players.min) return null;
+
+    return {
+      ...state,
+      playerOrder,
+      round: (state.round || 1) + 1,
+      phase: "question",
+      turnNumber: 1,
+      completedMasterIds: [],
+      currentMasterId: playerOrder[0],
+      currentQuestion: null,
+      answers: {},
+      submittedPlayerIds: [],
+      scores: Object.fromEntries(playerOrder.map(id => [id, state.scores?.[id] || 0])),
+      // Keep the complete match history so it grows across continued rounds.
+      history: state.history || [],
+      lastTurn: null,
+    };
+  },
+
   getPublicState(state) {
     if (!state) return state;
     return {
       playerOrder: state.playerOrder,
+      round: state.round || 1,
       phase: state.phase,
       turnNumber: state.turnNumber,
       totalTurns: state.playerOrder.length,
@@ -248,6 +275,7 @@ export const wouldYouRather = {
   getResults(context, state) {
     return {
       outcome: state.phase === "finished" ? "complete" : "unfinished",
+      round: state.round || 1,
       scores: state.scores,
       playerOrder: state.playerOrder,
       history: state.history,
