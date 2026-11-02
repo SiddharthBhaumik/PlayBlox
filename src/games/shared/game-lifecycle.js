@@ -70,7 +70,7 @@ export function setupGameLifecycle({ root, getRoom, getPlayerId, api, backToLobb
       try {
         const room = getRoom();
         await api("/api/rooms/" + encodeURIComponent(room.code) + "/game/reset", { method: "POST", body: "{}" });
-        if (backToLobby) location.href = backToLobby;
+        location.assign(lobbyDestination(room.code, backToLobby?.()));
       } catch (e) { error.textContent = e.message || "Could not end the game."; end.disabled = false; }
     });
   }
