@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#fff8e9">
+  <title>Would You Rather — PlayBlox</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Nunito:wght@500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../../styles.css">
+  <link rel="stylesheet" href="./game.css">
+  <script type="module" src="./game.js"></script>
+</head>
+<body>
+  <div class="page-shell game-shell wyr-shell">
+    <header class="topbar">
+      <a class="brand" href="../../../" aria-label="PlayBlox home"><span class="brand-mark" aria-hidden="true">🧸</span><span class="brand-name">Play<span>Blox</span></span></a>
+      <a class="back-link" id="back-to-lobby" href="../../../" hidden aria-hidden="true" tabindex="-1">Back to party</a>
+    </header>
+    <div class="game-layout wyr-layout">
+      <aside class="game-roster" aria-label="Players in this game">
+        <h2>Playing together</h2>
+        <ul id="player-roster"><li>Connecting to party…</li></ul>
+      </aside>
+      <main class="wyr-game">
+        <div class="eyebrow">✦ PLAYBLOX PARTY GAME ✦</div>
+        <div class="wyr-title-row"><span aria-hidden="true">🤷</span><h1>Would You <span>Rather?</span></h1></div>
+        <p class="wyr-intro">Predict the room. Find out who knows everyone best.</p>
+        <div class="wyr-meta"><span id="room-label">Connecting to party…</span><span id="connection-status">Connecting…</span></div>
+        <section class="wyr-card">
+          <div class="wyr-topline">
+            <span class="turn-pill" id="turn-pill">Turn 1 of 2</span>
+            <div class="your-score"><small>YOUR SCORE</small><strong id="your-score">0</strong></div>
+          </div>
+          <section class="wyr-panel leaderboard-panel">
+            <p class="panel-kicker">SCOREBOARD</p>
+            <div id="leaderboard" class="leaderboard-list"></div>
+            <p class="panel-copy">Every player gets one turn as Question Master.</p>
+          </section>
+
+          <section id="master-panel" class="wyr-panel master-panel" hidden>
+            <p class="panel-kicker">YOU'RE THE QUESTION MASTER</p>
+            <h2>Set the dilemma</h2>
+            <p class="panel-copy">Write a question with two choices, then predict the percentage of other players who will choose Option A.</p>
+            <label class="field-label" for="question-input">Your question</label>
+            <textarea id="question-input" maxlength="240" rows="2" placeholder="Would you rather…"></textarea>
+            <div class="option-fields">
+              <label><span>OPTION A</span><input id="option-a-input" maxlength="100" placeholder="First choice"></label>
+              <label><span>OPTION B</span><input id="option-b-input" maxlength="100" placeholder="Second choice"></label>
+            </div>
+            <div class="prediction-heading"><span class="panel-kicker">PREDICT THE GROUP</span><strong><span id="master-percent">50</span>% choose A</strong></div>
+            <div class="split-meter" aria-hidden="true"><span id="master-meter-a"></span><span id="master-meter-b"></span></div>
+            <input id="master-percent-slider" class="percent-slider" type="range" min="0" max="100" step="1" value="50">
+            <div class="slider-labels"><span>0% choose A</span><span>100% choose A</span></div>
+            <p class="meter-caption">Your prediction for Option B is automatically <strong id="master-percent-b">50%</strong>.</p>
+            <button id="publish-question" class="wyr-primary" type="button">Share question with everyone</button>
+          </section>
+
+          <section id="question-panel" class="wyr-panel question-panel" hidden>
+            <p class="panel-kicker">THE QUESTION</p>
+            <h2 id="question-text"></h2>
+            <div class="choice-grid">
+              <article class="choice-card choice-a"><span>OPTION A</span><strong id="question-option-a"></strong></article>
+              <article class="choice-card choice-b"><span>OPTION B</span><strong id="question-option-b"></strong></article>
+            </div>
+            <p class="panel-copy" id="master-prediction-copy"></p>
+          </section>
+
+          <section id="answer-panel" class="wyr-panel answer-panel" hidden>
+            <p class="panel-kicker">MAKE YOUR CHOICE</p>
+            <h2>What would you rather?</h2>
+            <div class="answer-grid">
+              <button class="answer-choice answer-a" data-choice="A" type="button"><span>OPTION A</span><strong id="answer-option-a"></strong></button>
+              <button class="answer-choice answer-b" data-choice="B" type="button"><span>OPTION B</span><strong id="answer-option-b"></strong></button>
+            </div>
+            <div class="optional-prediction">
+              <div><p class="panel-kicker">BONUS: PREDICT SOMEONE</p><p class="panel-copy">Optional — earn 3 points if another player's choice matches your prediction.</p></div>
+              <label for="prediction-target">Who do you think will choose?</label>
+              <select id="prediction-target"><option value="">Skip prediction</option></select>
+              <div id="prediction-choice-wrap" class="prediction-choice-wrap">
+                <span>What will they choose?</span>
+                <div class="prediction-choice-buttons">
+                  <button id="predict-a" class="prediction-choice selected" type="button">A</button>
+                  <button id="predict-b" class="prediction-choice" type="button">B</button>
+                </div>
+              </div>
+              <p id="prediction-unavailable" class="meter-caption" hidden>With only two players, there is nobody else to predict.</p>
+            </div>
+            <button id="submit-answer" class="wyr-primary" type="button" disabled>Lock in my choice</button>
+          </section>
+
+          <section id="waiting-panel" class="wyr-panel waiting-panel" hidden>
+            <div class="waiting-orb">✦</div>
+            <h2 id="waiting-title">Waiting for the group…</h2>
+            <p id="waiting-copy">Your answer is locked. The reveal comes when everyone has chosen.</p>
+            <div class="waiting-track"><span id="submitted-count">0 / 0 answers locked</span><div class="track"><i id="submitted-bar"></i></div></div>
+          </section>
+
+          <section id="turn-reveal" class="wyr-panel turn-reveal" hidden>
+            <p class="panel-kicker">TURN REVEAL</p>
+            <h2 id="reveal-heading">How well did the Question Master read the room?</h2>
+            <p id="reveal-question" class="reveal-question"></p>
+            <div class="reveal-meter">
+              <div class="reveal-meter-labels"><span id="reveal-a-label">Option A</span><strong id="reveal-a-values"></strong></div>
+              <div class="split-meter"><span id="reveal-meter-a"></span><span id="reveal-meter-b"></span></div>
+              <div class="reveal-meter-labels"><span id="reveal-b-label">Option B</span><strong id="reveal-b-values"></strong></div>
+            </div>
+            <p id="reveal-score-summary" class="reveal-score-summary"></p>
+          </section>
+
+          <section class="history-section">
+            <div class="history-heading"><div><p class="panel-kicker">THE TABLE REMEMBERS</p><h2>Turn history</h2></div><span id="history-count">0 turns</span></div>
+            <div id="history-list" class="history-list" aria-live="polite"><p class="history-empty">Completed turns will appear here.</p></div>
+          </section>
+          <p id="game-help" class="game-help" role="status">Choices and predictions stay hidden until everyone has answered.</p>
+        </section>
+      </main>
+    </div>
+  </div>
+</body>
+</html>
