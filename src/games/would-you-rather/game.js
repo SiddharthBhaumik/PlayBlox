@@ -156,7 +156,7 @@ function renderQuestion() {
   $("question-text").textContent = question.question;
   $("question-option-a").textContent = question.optionA;
   $("question-option-b").textContent = question.optionB;
-  $("master-prediction-copy").textContent = "The Question Master predicts " + question.predictedPercentA + "% choose A and " + (100 - question.predictedPercentA) + "% choose B.";
+  $("master-prediction-copy").textContent = "The Question Master has made a secret percentage prediction. It will be revealed after everyone locks in.";
 }
 function renderAnswerPanel() {
   const answerers = (gameState.playerOrder || []).filter(id => id !== currentMasterId());
