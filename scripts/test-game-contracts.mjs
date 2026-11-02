@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { gameRegistry } from "../src/games/registry.js";
 import { listServerGames, getServerGame } from "../worker/src/games/registry.js";
 import { SPECTRUMS } from "../worker/src/games/wavelength-spectrums.js";
+import { wouldYouRather } from "../worker/src/games/would-you-rather.js";
 
 assert.ok(SPECTRUMS.length >= 500, "Wavelength must provide at least 500 spectrum pairs");
 assert.equal(new Set(SPECTRUMS.map(pair => `${pair.left}|${pair.right}`)).size, SPECTRUMS.length, "Wavelength spectrum pairs must be unique");
@@ -43,3 +44,39 @@ assert.equal(serverGames.length, gameRegistry.filter(game => game.status === "re
   "Every ready frontend game must have exactly one server game module");
 
 console.log(`Game smoke tests passed for ${serverGames.length} server-authoritative games.`);
+
+const wyrPlayers = [player("p1"), player("p2"), player("p3")];
+const wyrContext = (currentPlayer) => ({
+  room: { code: "ABC234", name: "Test Party", gameId: "would-you-rather", lifecycle: "playing" },
+  player: currentPlayer,
+  players: wyrPlayers,
+  game: { id: "would-you-rather", interactionModel: "simultaneous", lateJoinPolicy: "spectate" },
+});
+assert.equal((await wouldYouRather.canStart(wyrContext(wyrPlayers[0]))).ok, true);
+let wyrState = wouldYouRather.createInitialState(wyrContext(wyrPlayers[0]));
+assert.equal(wyrState.currentMasterId, "p1");
+assert.equal((await wouldYouRather.validateAction(wyrContext(wyrPlayers[0]), wyrState, {
+  type: "set-question", turnNumber: 1, question: "Test?", optionA: "A", optionB: "B", predictedPercentA: 50,
+})).ok, true);
+wyrState = wouldYouRather.reduceAction(wyrContext(wyrPlayers[0]), wyrState, {
+  type: "set-question", question: "Test?", optionA: "A", optionB: "B", predictedPercentA: 50,
+});
+assert.equal(wyrState.phase, "answers");
+assert.equal("predictedPercentA" in wouldYouRather.getPublicState(wyrState).currentQuestion, false,
+  "The master's percentage prediction must remain hidden until reveal");
+wyrState = wouldYouRather.reduceAction(wyrContext(wyrPlayers[1]), wyrState, {
+  type: "submit-answer", choice: "A", targetId: "p3", predictedChoice: "B",
+});
+assert.equal(wyrState.phase, "answers", "Answers should remain private until every answerer submits");
+wyrState = wouldYouRather.reduceAction(wyrContext(wyrPlayers[2]), wyrState, {
+  type: "submit-answer", choice: "B", targetId: "p2", predictedChoice: "A",
+});
+assert.equal(wyrState.history.length, 1);
+assert.equal(wyrState.history[0].masterPoints, 10);
+assert.equal(wyrState.scores.p1, 10);
+assert.equal(wyrState.scores.p2, 3);
+assert.equal(wyrState.scores.p3, 3);
+assert.equal(wyrState.currentMasterId, "p2");
+const twoPlayerContext = { ...wyrContext(wyrPlayers[0]), players: wyrPlayers.slice(0, 2) };
+assert.equal((await wouldYouRather.canStart(twoPlayerContext)).ok, true,
+  "Would You Rather must support the minimum two-player game");
