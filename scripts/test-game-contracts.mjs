@@ -77,6 +77,39 @@ assert.equal(wyrState.scores.p1, 10);
 assert.equal(wyrState.scores.p2, 3);
 assert.equal(wyrState.scores.p3, 3);
 assert.equal(wyrState.currentMasterId, "p2");
+
+wyrState = wouldYouRather.reduceAction(wyrContext(wyrPlayers[1]), wyrState, {
+  type: "set-question", question: "Round one, turn two?", optionA: "A", optionB: "B", predictedPercentA: 50,
+});
+wyrState = wouldYouRather.reduceAction(wyrContext(wyrPlayers[0]), wyrState, {
+  type: "submit-answer", choice: "A", targetId: "p3", predictedChoice: "B",
+});
+wyrState = wouldYouRather.reduceAction(wyrContext(wyrPlayers[2]), wyrState, {
+  type: "submit-answer", choice: "B", targetId: "p1", predictedChoice: "A",
+});
+assert.equal(wyrState.phase, "question");
+assert.equal(wyrState.turnNumber, 3);
+wyrState = wouldYouRather.reduceAction(wyrContext(wyrPlayers[2]), wyrState, {
+  type: "set-question", question: "Round one, turn three?", optionA: "A", optionB: "B", predictedPercentA: 50,
+});
+wyrState = wouldYouRather.reduceAction(wyrContext(wyrPlayers[0]), wyrState, {
+  type: "submit-answer", choice: "A", targetId: "p2", predictedChoice: "B",
+});
+wyrState = wouldYouRather.reduceAction(wyrContext(wyrPlayers[1]), wyrState, {
+  type: "submit-answer", choice: "B", targetId: "p1", predictedChoice: "A",
+});
+assert.equal(wyrState.phase, "finished", "A round should finish after every player has been Question Master once");
+
+const scoresBeforeContinue = { ...wyrState.scores };
+const historyBeforeContinue = wyrState.history.length;
+const nextWyrState = wouldYouRather.startNextRound(wyrContext(wyrPlayers[0]), wyrState, "continue");
+assert.equal(nextWyrState.round, 2);
+assert.equal(nextWyrState.phase, "question");
+assert.equal(nextWyrState.turnNumber, 1);
+assert.equal(nextWyrState.currentMasterId, "p1");
+assert.deepEqual(nextWyrState.scores, scoresBeforeContinue, "Continue must preserve every player's cumulative score");
+assert.equal(nextWyrState.history.length, historyBeforeContinue, "Continue must preserve the previous round history");
+assert.deepEqual(nextWyrState.completedMasterIds, [], "Every player gets a fresh Question Master turn in the next round");
 const twoPlayerContext = { ...wyrContext(wyrPlayers[0]), players: wyrPlayers.slice(0, 2) };
 assert.equal((await wouldYouRather.canStart(twoPlayerContext)).ok, true,
   "Would You Rather must support the minimum two-player game");
