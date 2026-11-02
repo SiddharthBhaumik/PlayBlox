@@ -1,5 +1,6 @@
 import { renderGameGuide, renderGamePlayerPanel } from "../shared/game-shell.js";
 import { setupGameLifecycle } from "../shared/game-lifecycle.js";
+import { WOULD_YOU_RATHER_CATEGORIES, WOULD_YOU_RATHER_QUESTIONS } from "./questions.js";
 
 const API_BASE_URL = window.PLAYBLOX_API_BASE_URL || (["localhost", "127.0.0.1"].includes(location.hostname)
   ? "http://localhost:8787"
@@ -16,6 +17,37 @@ $("back-to-lobby").href = "../../../" + (code ? "?party=" + encodeURIComponent(c
 const player = id => room?.players.find(entry => entry.id === id);
 const currentMasterId = () => gameState?.currentMasterId || null;
 const isFinished = () => room?.lifecycle === "results" || gameState?.phase === "finished";
+const usedLibraryQuestionIds = new Set();
+for (const category of WOULD_YOU_RATHER_CATEGORIES) {
+  const option = document.createElement("option");
+  option.value = category.id;
+  option.textContent = category.name;
+  $("question-category").append(option);
+}
+function pickLibraryQuestion() {
+  const category = $("question-category").value;
+  const pool = WOULD_YOU_RATHER_QUESTIONS.filter(item =>
+    (category === "all" || item.category === category) && !usedLibraryQuestionIds.has(item.id)
+  );
+  const available = pool.length ? pool : WOULD_YOU_RATHER_QUESTIONS.filter(item =>
+    category === "all" || item.category === category
+  );
+  if (!available.length) return;
+  const picked = available[Math.floor(Math.random() * available.length)];
+  usedLibraryQuestionIds.add(picked.id);
+  $("question-input").value = picked.question;
+  $("option-a-input").value = picked.optionA;
+  $("option-b-input").value = picked.optionB;
+  $("library-hint").textContent = "Picked from " + WOULD_YOU_RATHER_CATEGORIES.find(item => item.id === picked.category).name + ". Edit it freely before sharing.";
+  help("Random question selected. You can edit it before sharing.");
+}
+$("random-question").addEventListener("click", pickLibraryQuestion);
+$("question-category").addEventListener("change", () => {
+  const category = $("question-category").value;
+  $("library-hint").textContent = category === "all"
+    ? "500 original questions across 10 categories. You can edit any library pick."
+    : "Random picks will come from " + WOULD_YOU_RATHER_CATEGORIES.find(item => item.id === category).name + ".";
+});
 function help(message, error = false) {
   $("game-help").textContent = message;
   $("game-help").classList.toggle("error", error);
