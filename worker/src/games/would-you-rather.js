@@ -77,7 +77,7 @@ function resolveTurn(state) {
 export const wouldYouRather = {
   id: "would-you-rather",
   name: "Would You Rather",
-  description: "Read the room, predict the group, and see who knows everyone best.",
+  description: "Predict the group split, read your friends, and earn points for knowing the room.",
   guide: "GOAL: Earn the most points by predicting how the group thinks. There are 2–8 players, and the game lasts exactly one turn per player. Every player becomes Question Master once.\n\nQUESTION MASTER: Write one Would You Rather question and two distinct options. Use the percentage meter to predict what percentage of the other players will choose Option A. Option B is the remaining percentage. The Question Master does not answer the question.\n\nEVERYONE ELSE: Secretly choose Option A or B. You may also make one optional prediction about which option another answering player will choose. You cannot predict yourself or the Question Master. In a 2-player game there is nobody else eligible to predict, so this part is skipped.\n\nREVEAL & SCORING: Choices and individual predictions stay hidden until every answering player has locked in. The Question Master earns up to 10 points: 10 minus the percentage-point difference between the predicted and actual Option A share, divided by 10 and rounded to the nearest whole point (minimum 0). Each other player earns 3 points for a correct optional prediction, otherwise 0. Skipping a prediction has no penalty.\n\nAfter the reveal, the next player becomes Question Master. The game ends after everyone has been Question Master once. A scrollable history keeps every question, choice, prediction, and turn score.",
   emoji: "🤷",
   color: "#f7dfb5",
