@@ -45,10 +45,12 @@ function beginTurn(s){
 }
 function finishTurn(s,id){
  if(s.bookmarks[id]&&s.bookmarks[id].created<s.turnNumber){delete s.bookmarks[id];emit(s,"bookmark-expired",s.names[id]+"'s unused Bookmark expired.",{ownerId:id});}
+ const actionEvent=["total-changed","cards-refilled","delayed-resolved","bookmark-restored"].includes(s.lastEvent?.type)?s.lastEvent:null;
  s.completedTurnsThisRound.push(id);
  const roundComplete=s.playerOrder.every(pid=>s.completedTurnsThisRound.includes(pid));
  if(roundComplete){s.completedTurnsThisRound=[];s.roundNumber++;s.roundHistory=[];}
  s.turnNumber++;s.turnIndex=(s.turnIndex+1)%s.playerOrder.length;beginTurn(s);
+ if(actionEvent)s.lastEvent=actionEvent;
 }
 function activate(s,id,action){
  const card=s.hands[id].special;s.hands[id].special=null;s.specialUsed=true;const name=s.names[id];
