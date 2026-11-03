@@ -127,6 +127,21 @@ export const gameRegistry = [
     spectators: { supported: true },
   },
   {
+    id: '67',
+    name: '67 Beta',
+    description: 'Change the shared total, outplay your friends, and land exactly on 67.',
+    guide: "GOAL: Be the player who ends their turn with the shared total exactly at 67. The game supports 2–8 players. The total starts at 13 and is always kept between 1 and 85.\n\nDICE: Every turn uses two dice: a D6 (1–6) and a D7 (1–7). Normally, choose one die for your action. Set Total uses both dice: D6 is the tens digit and D7 is the ones digit. If Chain Reaction is active, use its recorded pair instead of rolling.\n\nACTION CARDS: Addition adds the chosen die; Subtraction subtracts it; Multiplication multiplies by it; Division divides and drops any remainder; Switch replaces the tens or ones digit with the chosen die; Set Total makes a two-digit number from both dice; Reverse swaps the two digits (single-digit totals are treated as 0X). Values below 1 become 1 and values above 85 become 85.\n\nYOUR HAND: You start with six different action cards and one special card. Use one action card and, if you wish, one special card per turn. Your cards are private. When all six action cards have been used, you receive a fresh set of six action cards and one special card; any unused special card is discarded.\n\nSPECIAL CARDS: Delayed Fate stores your selected action and applies it just before your next turn. Bookmark saves the current total so you can restore it on a later turn. Chain Reaction makes everyone else use your two dice on their next turns. Equalizer gives every player a completely fresh hand. Blind Spot hides one randomly chosen die from each other player; overlapping Blind Spots can hide both. Glitch swaps two action-card identities until your next turn, including their rules and dice requirements. Special-card effects survive an Equalizer. Chain Reaction, Blind Spot and Equalizer are announced immediately; Delayed Fate, Bookmark and Glitch remain secret until their effects are revealed.\n\nWIN: After your action and any effects resolve, if the shared total is exactly 67, you win. The winning avatar celebrates with the 6–7 gesture!",
+    emoji: '🎲',
+    color: '#f6d8b9',
+    status: 'beta',
+    path: './src/games/67/index.html',
+    entryMode: 'party',
+    players: { min: 2, max: 8 },
+    interactionModel: 'turn-based',
+    lateJoinPolicy: 'wait',
+    spectators: { supported: true },
+  },
+  {
     id: 'minefield',
     name: 'Minefield (Beta)',
     description: 'A tactical 20×20 treasure hunt: plant mines, find hidden flags, and outsmart your rival.',
@@ -154,7 +169,7 @@ export const gameRegistry = [
 ];
 
 export function renderGameCards(container, games) {
-  const availableGames = games.filter((game) => game.status === 'ready' || game.status === 'coming-soon');
+  const availableGames = games.filter((game) => game.status === 'ready' || game.status === 'beta' || game.status === 'coming-soon');
   if (availableGames.length === 0) {
     container.innerHTML = `
       <div class="empty-toybox">
@@ -168,7 +183,7 @@ export function renderGameCards(container, games) {
   container.replaceChildren(...availableGames.map((game) => {
     const partyCode = new URLSearchParams(location.search).get('party');
     const hasSavedSession = partyCode && sessionStorage.getItem('playblox:' + partyCode.toUpperCase() + ':token');
-    const canOpen = game.status === 'ready' && game.path && hasSavedSession && game.entryMode !== 'party';
+    const canOpen = (game.status === 'ready' || game.status === 'beta') && game.path && hasSavedSession && game.entryMode !== 'party';
     const card = document.createElement(canOpen ? 'a' : 'article');
     card.className = 'game-card';
     card.style.setProperty('--game-color', game.color || '#e8e0ff');
@@ -195,7 +210,7 @@ export function renderGameCards(container, games) {
     description.textContent = game.description || 'A new game for your party.';
     const status = document.createElement('span');
     status.className = 'game-tag';
-    status.textContent = game.status === 'ready' && game.path ? (canOpen ? '▶ Play game' : '✦ Start from a party lobby') : '✦ Coming soon';
+    status.textContent = game.status === 'beta' ? '🧪 Beta · testing stage' : game.status === 'ready' && game.path ? (canOpen ? '▶ Play game' : '✦ Start from a party lobby') : '✦ Coming soon';
     card.append(icon, title, description, status);
     return card;
   }));
