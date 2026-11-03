@@ -9,7 +9,8 @@ const roll=()=>[rand(6)+1,rand(7)+1];
 const current=s=>s.playerOrder[s.turnIndex];
 const priority=t=>({division:0,multiplication:1,addition:2,subtraction:3,"set-total":4,switch:5,reverse:6}[t]??7);
 function emit(s,type,message,extra={}){const e={id:s.eventSeq++,type,message,...extra};if(extra.privateTo){s.privateEvents[extra.privateTo]=e;return;}s.lastEvent=e;}
-function transformed(s,card){let type=card;for(const g of s.effects.glitches){if(type===g.a)type=g.b;else if(type===g.b)type=g.a;}return type;}
+function transformDetails(s,card){let type=card;const owners=[];for(const g of s.effects.glitches){if(type===g.a){type=g.b;if(!owners.includes(g.owner))owners.push(g.owner);}else if(type===g.b){type=g.a;if(!owners.includes(g.owner))owners.push(g.owner);}}return{type,owners};}
+function transformed(s,card){return transformDetails(s,card).type;}
 function apply(total,type,dice,index,digit){
  const d=dice[index??0],p=String(total).padStart(2,"0");let n=total,formula="";
  if(type==="addition"){n=total+d;formula=`${total} + ${d}`;}
@@ -63,7 +64,7 @@ function activate(s,id,action){
  else if(card==="equalizer"){for(const pid of s.playerOrder)draw(s,pid);emit(s,"special-public",`${name} activated Equalizer! Everyone received a fresh hand.`,{special:card,ownerId:id});}
  else if(card==="glitch"){
   const [a,b]=action.swap;s.effects.glitches=s.effects.glitches.filter(g=>!([g.a,g.b].includes(a)&&[g.a,g.b].includes(b)));
-  s.effects.glitches.push({owner:id,a,b});if(s.selection)s.selection.effective=transformed(s,s.selection.original);
+  s.effects.glitches.push({owner:id,a,b});if(s.selection){const details=transformDetails(s,s.selection.original);s.selection.effective=details.type;s.selection.glitchOwners=details.owners;}
   emit(s,"private-special",`Glitch activated: ${a} and ${b} are secretly swapped until your next turn.`,{privateTo:id});
  }
 }
@@ -72,8 +73,10 @@ function resolve(s,id){
  if(x.delayed)s.privateEvents[id]={id:s.eventSeq++,type:"delayed-queued",message:"Your action is queued until before your next turn."};
  else{
   const r=apply(s.total,x.effective,s.dice,x.index,x.digit);s.total=r.total;
-  const changed=x.original!==x.effective;
-  emit(s,"total-changed",changed?`${s.names[id]}'s ${x.original} was changed to ${x.effective} by Glitch.`:`${s.names[id]} used ${x.original}.`,{playerId:id,originalType:x.original,effectiveType:x.effective,formula:r.formula,calculated:r.calculated,total:r.total,capped:r.capped,dice:s.dice.slice(),revealedDice:s.dice.slice()});
+  const changed=x.original!==x.effective,owners=(x.glitchOwners||[]).map(owner=>s.names[owner]||"another player").join(", ");
+  const message=changed?(s.names[id]+" used "+x.effective+" instead of "+x.original+" because Glitch was activated by "+owners+"."):(s.names[id]+" used "+x.original+".");
+  const revealed=x.effective==="set-total"?s.dice.slice():x.effective==="reverse"?[]:[s.dice[x.index??0]];
+  emit(s,"total-changed",message,{playerId:id,originalType:x.original,effectiveType:x.effective,formula:r.formula,calculated:r.calculated,total:r.total,capped:r.capped,revealedDice:revealed});
  }
  if(s.handVersions[id]===x.handVersion)s.hands[id].actions=s.hands[id].actions.filter(c=>c!==x.original);
  if(!s.hands[id].actions.length){draw(s,id);if(s.lastEvent?.type==="total-changed"){s.lastEvent.message+=" They received a fresh hand.";s.lastEvent.refilled=true;}else emit(s,"cards-refilled",s.names[id]+" received a fresh hand.",{playerId:id});}
@@ -92,7 +95,7 @@ export const sixtySeven={
  if(a?.type==="confirm-action")return s.selection?{ok:true}:{ok:false,reason:"Choose an action first."};
  if(a?.type==="restore-bookmark")return s.bookmarks[id]&&s.bookmarks[id].created<s.turnNumber&&!s.restored?{ok:true}:{ok:false,reason:"Your Bookmark can be restored on your next turn before it expires."};
  return{ok:false,reason:"Unknown game action."};},
- reduceAction(ctx,state,a){const id=ctx.player.id,s=clone(state);if(a.type==="select-action"){s.selection={original:a.card,effective:transformed(s,a.card),index:a.dieIndex??null,digit:a.digit||null,delayed:false,handVersion:s.handVersions[id]};}
+ reduceAction(ctx,state,a){const id=ctx.player.id,s=clone(state);if(a.type==="select-action"){const details=transformDetails(s,a.card);s.selection={original:a.card,effective:details.type,glitchOwners:details.owners,index:a.dieIndex??null,digit:a.digit||null,delayed:false,handVersion:s.handVersions[id]};}
  else if(a.type==="activate-special")activate(s,id,a);
  else if(a.type==="restore-bookmark"){s.total=s.bookmarks[id].total;delete s.bookmarks[id];s.restored=true;emit(s,"bookmark-restored",`${s.names[id]} restored the total using Bookmark.`,{ownerId:id,total:s.total});}
  else if(a.type==="confirm-action")resolve(s,id);
