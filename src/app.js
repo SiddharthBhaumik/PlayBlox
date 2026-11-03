@@ -34,7 +34,17 @@ function renderGameChoices(room = latestLobbyRoom) {
     card.disabled = !hostView || needsMorePlayers;
     card.setAttribute('aria-pressed', String(selectedGameId === game.id));
     card.style.setProperty('--game-color', game.color || '#e8e0ff');
-    const emoji = document.createElement('span'); emoji.className = 'lobby-game-choice-emoji'; emoji.textContent = game.emoji || '🎮';
+    const emoji = document.createElement('span'); emoji.className = 'lobby-game-choice-emoji';
+    if (game.icon) {
+      const image = document.createElement('img');
+      image.src = game.icon;
+      image.alt = '';
+      image.loading = 'lazy';
+      image.onerror = () => { emoji.textContent = game.emoji || '🎮'; };
+      emoji.append(image);
+    } else {
+      emoji.textContent = game.emoji || '🎮';
+    }
     const title = document.createElement('strong'); title.textContent = game.name;
     const desc = document.createElement('small'); desc.textContent = game.description || 'A party game';
     const limits = document.createElement('small'); limits.className = 'game-choice-limits'; limits.textContent = game.players.min === game.players.max ? game.players.min + ' players' : game.players.min + '–' + game.players.max + ' players';
