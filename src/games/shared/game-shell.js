@@ -65,6 +65,36 @@ export function setupHostEndRound(button, { getRoom, getPlayerId, onEnd }) {
 }
 
 
+function appendGuideInline(parent, line) {
+  const parts = line.split("**");
+  parts.forEach((part, index) => {
+    if (!part) return;
+    if (index % 2) { const strong = document.createElement("strong"); strong.textContent = part; parent.append(strong); }
+    else parent.append(document.createTextNode(part));
+  });
+}
+function renderGuideMarkup(container, source) {
+  container.replaceChildren();
+  const lines = String(source || "").split("\n");
+  let paragraph = [], list = null, listType = null;
+  const flushParagraph = () => { if (!paragraph.length) return; const p = document.createElement("p"); appendGuideInline(p, paragraph.join(" ")); container.append(p); paragraph = []; };
+  const flushList = () => { list = null; listType = null; };
+  for (const raw of lines) {
+    const line = raw.trim();
+    if (!line) { flushParagraph(); flushList(); continue; }
+    const heading = line.match(/^(#{1,3})\s+(.+)$/);
+    if (heading) { flushParagraph(); flushList(); const h = document.createElement(heading[1].length === 1 ? "h3" : heading[1].length === 2 ? "h4" : "h5"); appendGuideInline(h, heading[2]); container.append(h); continue; }
+    const bullet = line.match(/^[-*]\s+(.+)$/);
+    const numbered = line.match(/^\d+\.\s+(.+)$/);
+    if (bullet || numbered) {
+      flushParagraph(); const type = bullet ? "ul" : "ol";
+      if (!list || listType !== type) { flushList(); list = document.createElement(type); listType = type; container.append(list); }
+      const li = document.createElement("li"); appendGuideInline(li, (bullet || numbered)[1]); list.append(li); continue;
+    }
+    flushList(); paragraph.push(line);
+  }
+  flushParagraph();
+}
 const guideDialogs = new Map();
 export function renderGameGuide({ room, code, token, apiBaseUrl, myPlayerId }) {
   if (!room || room.lifecycle === "lobby" || !room.game?.guide) return;
@@ -74,7 +104,7 @@ export function renderGameGuide({ room, code, token, apiBaseUrl, myPlayerId }) {
   if (!dialog) {
     dialog = document.createElement("dialog");
     dialog.className = "playblox-guide-dialog";
-    dialog.innerHTML = '<div class="guide-dialog-emoji" aria-hidden="true">📖</div><p class="section-kicker">BEFORE YOU PLAY</p><h2 class="guide-dialog-title"></h2><p class="guide-dialog-copy"></p><p class="guide-dialog-progress" role="status"></p><button class="primary-button guide-dialog-ready" type="button">I’ve read the guide — start when everyone is ready</button>';
+    dialog.innerHTML = '<div class="guide-dialog-emoji" aria-hidden="true">📖</div><p class="section-kicker">BEFORE YOU PLAY</p><h2 class="guide-dialog-title"></h2><div class="guide-dialog-copy"></div><p class="guide-dialog-progress" role="status"></p><button class="primary-button guide-dialog-ready" type="button">I’ve read the guide — start when everyone is ready</button>';
     document.body.append(dialog);
     guideDialogs.set(code, dialog);
     dialog.querySelector(".guide-dialog-ready").addEventListener("click", async () => {
@@ -95,7 +125,9 @@ export function renderGameGuide({ room, code, token, apiBaseUrl, myPlayerId }) {
     });
   }
   dialog.querySelector(".guide-dialog-title").textContent = room.game.name + " — how to play";
-  dialog.querySelector(".guide-dialog-copy").textContent = room.game.guide;
+  const guideCopy = dialog.querySelector(".guide-dialog-copy");
+  if (room.game.id === "67") renderGuideMarkup(guideCopy, room.game.guide);
+  else guideCopy.textContent = room.game.guide;
   const readyIds = room.guideReadyPlayerIds || [];
   const readyCount = readyIds.length, requiredCount = (room.guidePlayerIds || []).length;
   const button = dialog.querySelector(".guide-dialog-ready");
