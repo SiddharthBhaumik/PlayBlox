@@ -12,7 +12,7 @@ $("back-to-lobby").href=back;
 const lifecycle=setupGameLifecycle({root:document.querySelector("main"),getRoom:()=>room,getPlayerId:()=>myId,api,backToLobby:()=>back});
 async function api(path,options={}){const r=await fetch(API+path,{...options,headers:{...(options.body?{"Content-Type":"application/json"}:{}),...(token?{Authorization:"Bearer "+token}:{}),...(options.headers||{})}});const d=await r.json().catch(()=>({}));if(!r.ok){const e=Error(d.error||"The request failed.");e.stateVersion=d.stateVersion;throw e;}return d;}
 const myTurn=()=>Boolean(state&&state.currentPlayerId===myId&&room?.lifecycle==="playing");
-const canInterrupt=()=>Boolean(state?.actionPending&&state.currentPlayerId!==myId&&room?.lifecycle==="playing");
+const canInterrupt=()=>Boolean(state&&state.currentPlayerId!==myId&&room?.lifecycle==="playing");
 const effective=card=>{let t=card;for(const g of privateState?.glitchMappings||[]){if(t===g.a)t=g.b;else if(t===g.b)t=g.a;}return privateState?.selection?.original===card?privateState.selection.effective:t;};
 const needsDie=t=>t!=="set-total"&&t!=="reverse";
 function error(message){$("error-message").textContent=message||"";}
@@ -47,7 +47,7 @@ function renderHand(){
  $("glitch-controls").hidden=special!=="glitch";
  for(const id of ["glitch-a","glitch-b"]){const old=$(id).value;$(id).replaceChildren(...ACTIONS.map(t=>new Option(INFO[t][1],t)));$(id).value=ACTIONS.includes(old)?old:(id==="glitch-a"?"addition":"multiplication");}
  if($("glitch-a").value===$("glitch-b").value)$("glitch-b").value=ACTIONS.find(t=>t!==$("glitch-a").value);
- $("special-hint").textContent=special==="delayed-fate"?"Select an action first. You can trigger the stored move during another player’s unconfirmed action.":special==="bookmark"?"Save this total, then restore it during another player’s unconfirmed action.":special==="glitch"?"Choose two different action cards to swap secretly.":special?"This does not consume your action card. You can still make a normal move.":"Your next special card arrives when your action hand refills.";
+ $("special-hint").textContent=special==="delayed-fate"?"Select an action first. You can trigger the stored move during another player’s turn, before they confirm their action.":special==="bookmark"?"Save this total, then restore it during another player’s turn, before they confirm their action.":special==="glitch"?"Choose two different action cards to swap secretly.":special?"This does not consume your action card. You can still make a normal move.":"Your next special card arrives when your action hand refills.";
  const mark=privateState?.bookmark;$("bookmark-row").hidden=!mark;$("bookmark-copy").textContent=mark?"🔖 Saved total: "+mark.total+" · usable before another player confirms":"";$("restore-bookmark").disabled=!privateState?.canRestoreBookmark||acting;$("delayed-row").hidden=!privateState?.canUseDelayedFate;$("delayed-copy").textContent=privateState?.pendingDelayed?"⏳ Stored Delayed Fate × "+privateState.pendingDelayed:"";$("use-delayed-fate").disabled=!privateState?.canUseDelayedFate||acting;
  $("digit-choice").hidden=!selectedCard||effective(selectedCard)!=="switch";document.querySelectorAll("[data-digit]").forEach(b=>b.classList.toggle("selected",b.dataset.digit===digit));
  const selection=privateState?.selection,t=selection?.effective|| (selectedCard?effective(selectedCard):null);
