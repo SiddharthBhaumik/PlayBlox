@@ -12,3 +12,25 @@
 .result-panel{position:relative;overflow:hidden}.result-panel:before{content:"";position:absolute;inset:-20%;pointer-events:none;opacity:.75;background-image:radial-gradient(circle,#e6a63d 0 3px,transparent 4px),radial-gradient(circle,#e57c70 0 3px,transparent 4px),radial-gradient(circle,#80b7a0 0 3px,transparent 4px),radial-gradient(circle,#8da9d2 0 3px,transparent 4px);background-size:65px 75px,90px 95px,110px 85px,75px 105px;background-position:0 0,30px 20px,50px 40px,15px 60px;animation:confetti-fall 2.5s linear infinite}.result-panel>*{position:relative;z-index:1}
 @keyframes confetti-fall{to{background-position:65px 150px,120px 210px,160px 210px,90px 270px}}@keyframes cheer-pop{to{transform:translateY(-7px) rotate(12deg)}}@keyframes avatar-cheer{to{transform:translateY(-4px) rotate(-4deg)}}
 @media(prefers-reduced-motion:reduce){.player-seats.has-winner .player-seat:not(.is-winner) .seat-avatar,.player-seats.has-winner .player-seat:not(.is-winner) .seat-avatar:after,.result-panel:before{animation:none}}
+
+
+/* 6–7 celebration: articulated upper arms, elbow joints, forearms and hands. */
+.player-seat.is-winner .seat-avatar:before,.player-seat.is-winner .seat-avatar:after{content:none!important;display:none!important}
+.player-seat.is-winner .avatar-initial{position:relative;z-index:1}
+.winner-arm{position:absolute;z-index:3;top:9px;width:39px;height:43px;pointer-events:none;transform-origin:50% 8px}
+.winner-arm.arm-left{left:-23px;animation:gesture-left .62s ease-in-out infinite alternate}
+.winner-arm.arm-right{right:-23px;animation:gesture-right .62s ease-in-out infinite alternate}
+.winner-arm .arm-part{position:absolute;display:block;background:#e1ad78;border:2px solid #815c43;box-shadow:0 1px 1px #3b2b2230}
+.winner-arm .upper-arm{width:19px;height:9px;top:3px;right:13px;border-radius:8px;transform:rotate(-24deg);transform-origin:right center}
+.winner-arm .elbow{width:11px;height:11px;top:10px;right:7px;border-radius:50%;z-index:2}
+.winner-arm .forearm{width:23px;height:9px;top:13px;right:-10px;border-radius:8px;transform:rotate(-58deg);transform-origin:5px center;animation:elbow-flex-left .62s ease-in-out infinite alternate}
+.winner-arm .hand{width:12px;height:13px;top:0;right:-11px;border-radius:7px 7px 5px 5px;transform:rotate(-18deg);background:#f0c79c}
+.arm-right .upper-arm{left:13px;right:auto;transform:rotate(24deg)}
+.arm-right .elbow{left:7px;right:auto}
+.arm-right .forearm{left:-10px;right:auto;transform-origin:18px center;transform:rotate(58deg);animation-name:elbow-flex-right}
+.arm-right .hand{left:-11px;right:auto;transform:rotate(18deg)}
+@keyframes gesture-left{from{transform:translateY(8px) rotate(22deg)}to{transform:translateY(-15px) rotate(-26deg)}}
+@keyframes gesture-right{from{transform:translateY(-15px) rotate(26deg)}to{transform:translateY(8px) rotate(-22deg)}}
+@keyframes elbow-flex-left{from{transform:rotate(-65deg)}to{transform:rotate(-112deg)}}
+@keyframes elbow-flex-right{from{transform:rotate(65deg)}to{transform:rotate(112deg)}}
+@media(prefers-reduced-motion:reduce){.winner-arm,.winner-arm .forearm{animation:none!important}}
