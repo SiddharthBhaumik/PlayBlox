@@ -10,6 +10,7 @@ import { wavelength } from "./wavelength.js";
 import { battleship } from "./battleship.js";
 import { decrypto } from "./decrypto.js";
 import { minefield } from "./minefield.js";
+import { sixtySeven } from "./67.js";
 import { wouldYouRather } from "./would-you-rather.js";
 
 const serverGames = new Map();
@@ -37,6 +38,7 @@ registerServerGame(wavelength);
 registerServerGame(battleship);
 registerServerGame(decrypto);
 registerServerGame(minefield);
+registerServerGame(sixtySeven);
 registerServerGame(wouldYouRather);
 
 export function getServerGame(id) { return serverGames.get(id) || null; }
