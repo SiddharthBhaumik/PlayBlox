@@ -12,6 +12,7 @@ $("back-to-lobby").href=back;
 const lifecycle=setupGameLifecycle({root:document.querySelector("main"),getRoom:()=>room,getPlayerId:()=>myId,api,backToLobby:()=>back});
 async function api(path,options={}){const r=await fetch(API+path,{...options,headers:{...(options.body?{"Content-Type":"application/json"}:{}),...(token?{Authorization:"Bearer "+token}:{}),...(options.headers||{})}});const d=await r.json().catch(()=>({}));if(!r.ok){const e=Error(d.error||"The request failed.");e.stateVersion=d.stateVersion;throw e;}return d;}
 const myTurn=()=>Boolean(state&&state.currentPlayerId===myId&&room?.lifecycle==="playing");
+const canInterrupt=()=>Boolean(state?.actionPending&&state.currentPlayerId!==myId&&room?.lifecycle==="playing");
 const effective=card=>{let t=card;for(const g of privateState?.glitchMappings||[]){if(t===g.a)t=g.b;else if(t===g.b)t=g.a;}return privateState?.selection?.original===card?privateState.selection.effective:t;};
 const needsDie=t=>t!=="set-total"&&t!=="reverse";
 function error(message){$("error-message").textContent=message||"";}
@@ -46,8 +47,8 @@ function renderHand(){
  $("glitch-controls").hidden=special!=="glitch";
  for(const id of ["glitch-a","glitch-b"]){const old=$(id).value;$(id).replaceChildren(...ACTIONS.map(t=>new Option(INFO[t][1],t)));$(id).value=ACTIONS.includes(old)?old:(id==="glitch-a"?"addition":"multiplication");}
  if($("glitch-a").value===$("glitch-b").value)$("glitch-b").value=ACTIONS.find(t=>t!==$("glitch-a").value);
- $("special-hint").textContent=special==="delayed-fate"?"Select an action first. It will resolve just before your next turn.":special==="bookmark"?"Save this total, then restore it on your next turn before it expires.":special==="glitch"?"Choose two different action cards to swap secretly.":special?"This does not consume your action card. You can still make a normal move.":"Your next special card arrives when your action hand refills.";
- const mark=privateState?.bookmark;$("bookmark-row").hidden=!mark;$("bookmark-copy").textContent=mark?"🔖 Saved total: "+mark.total:"";$("restore-bookmark").disabled=!myTurn()||!privateState?.canRestoreBookmark||acting;
+ $("special-hint").textContent=special==="delayed-fate"?"Select an action first. You can trigger the stored move during another player’s unconfirmed action.":special==="bookmark"?"Save this total, then restore it during another player’s unconfirmed action.":special==="glitch"?"Choose two different action cards to swap secretly.":special?"This does not consume your action card. You can still make a normal move.":"Your next special card arrives when your action hand refills.";
+ const mark=privateState?.bookmark;$("bookmark-row").hidden=!mark;$("bookmark-copy").textContent=mark?"🔖 Saved total: "+mark.total+" · usable before another player confirms":"";$("restore-bookmark").disabled=!privateState?.canRestoreBookmark||acting;$("delayed-row").hidden=!privateState?.canUseDelayedFate;$("delayed-copy").textContent=privateState?.pendingDelayed?"⏳ Stored Delayed Fate × "+privateState.pendingDelayed:"";$("use-delayed-fate").disabled=!privateState?.canUseDelayedFate||acting;
  $("digit-choice").hidden=!selectedCard||effective(selectedCard)!=="switch";document.querySelectorAll("[data-digit]").forEach(b=>b.classList.toggle("selected",b.dataset.digit===digit));
  const selection=privateState?.selection,t=selection?.effective|| (selectedCard?effective(selectedCard):null);
  let preview="Select an action card to prepare your move.";
@@ -61,13 +62,14 @@ function renderHand(){
  const ready=Boolean(selection)||(selectedCard&&(t==="set-total"||t==="reverse"||(selectedDie!==null&&(t!=="switch"||digit))));
  $("confirm-action").textContent=selection?"Confirm action":"Lock in action";$("confirm-action").disabled=!myTurn()||!ready||acting;
 }
+function renderHistory(){const root=$("event-history");if(!root||!state)return;const events=state.roundHistory||[];root.replaceChildren(...events.map(event=>{const li=document.createElement("li");li.textContent=event.message||"An action took place.";if(event.formula)li.textContent+=" · "+event.formula+" → "+event.total;return li;}));$("history-round").textContent="Round "+(state.roundNumber||1)+" · "+events.length+" events";}
 function render(){
  if(!room||!state)return;lifecycle();renderGameGuide({room,code,token,apiBaseUrl:API,myPlayerId:myId});
  $("room-label").textContent=(room.name||"Party")+" · "+code;$("connection-status").textContent="Connected";
  $("shared-total").textContent=state.total;$("total-caption").textContent=state.total===67?"SIX SEVEN!":"Target: exactly 67";
  const who=room.players?.find(p=>p.id===state.currentPlayerId)?.nickname||state.playerNames?.[state.currentPlayerId]||"A player";
  $("turn-banner").textContent=state.winnerId?"🏆 "+(state.playerNames?.[state.winnerId]||"A player")+" landed on 67!":myTurn()?"It's your turn. Make your move.":who+" is changing the total…";
- $("total-core").classList.toggle("is-winning",Boolean(state.winnerId));renderSeats();renderEffects();renderDice();renderHand();
+ $("total-core").classList.toggle("is-winning",Boolean(state.winnerId));renderSeats();renderEffects();renderDice();renderHand();renderHistory();
  if(state.lastEvent&&state.lastEvent.id!==lastEvent){lastEvent=state.lastEvent.id;let msg=state.lastEvent.message||"The total changed.";if(state.lastEvent.formula)msg+=" · "+state.lastEvent.formula+" → "+(state.lastEvent.calculated??state.lastEvent.total)+(state.lastEvent.capped?" → "+state.lastEvent.total+(state.lastEvent.calculated>85?" (MAXIMUM)":" (MINIMUM)"):"");$("event-message").textContent=msg;
   if(["total-changed","delayed-resolved","bookmark-restored"].includes(state.lastEvent.type)){const core=$("total-core");core.classList.remove("is-changing","action-addition","action-subtraction","action-multiplication","action-division","action-switch","action-set-total","action-reverse");if(state.lastEvent.effectiveType)core.classList.add("action-"+state.lastEvent.effectiveType);void core.offsetWidth;core.classList.add("is-changing");}
   if(state.lastEvent.type==="special-public"&&state.lastEvent.special==="equalizer"&&!privateState?.selection){selectedCard=null;selectedDie=null;}
@@ -78,7 +80,7 @@ function render(){
  $("result-panel").hidden=room.lifecycle!=="results";
  if(room.lifecycle==="results"){const winner=room.players?.find(p=>p.id===state.winnerId)?.nickname||state.playerNames?.[state.winnerId]||"The winner";$("result-copy").textContent=winner+" wins by landing exactly on 67. Watch their avatar do the 6–7!";}
 }
-async function act(action){if(acting||!myTurn())return;acting=true;error("");$("action-status").textContent="Sending move…";render();try{const r=await api("/api/rooms/"+encodeURIComponent(code)+"/game/action",{method:"POST",body:JSON.stringify({actionId:crypto.randomUUID(),expectedStateVersion:version,action})});version=r.stateVersion??version;$("action-status").textContent="Move confirmed.";}catch(e){error(e.message);if(Number.isInteger(e.stateVersion))version=e.stateVersion;}finally{acting=false;render();}}
+async function act(action){const interrupt=["use-delayed-fate","restore-bookmark"].includes(action?.type);if(acting||(!myTurn()&&!(interrupt&&canInterrupt())))return;acting=true;error("");$("action-status").textContent="Sending move…";render();try{const r=await api("/api/rooms/"+encodeURIComponent(code)+"/game/action",{method:"POST",body:JSON.stringify({actionId:crypto.randomUUID(),expectedStateVersion:version,action})});version=r.stateVersion??version;$("action-status").textContent="Move confirmed.";}catch(e){error(e.message);if(Number.isInteger(e.stateVersion))version=e.stateVersion;}finally{acting=false;render();}}
 function actionPayload(){const t=effective(selectedCard);return{type:"select-action",card:selectedCard,dieIndex:selectedDie??0,digit};}
 $("confirm-action").addEventListener("click",async()=>{if(privateState?.selection){await act({type:"confirm-action"});selectedCard=null;selectedDie=null;return;}if(!selectedCard)return;await act(actionPayload());selectedCard=null;selectedDie=null;});
 document.querySelectorAll(".die").forEach(b=>b.addEventListener("click",()=>{if(!myTurn()||privateState?.selection)return;selectedDie=Number(b.dataset.die);render();}));
@@ -89,6 +91,7 @@ $("play-special").addEventListener("click",async()=>{
  const a={type:"activate-special"};if(special==="glitch")a.swap=[$("glitch-a").value,$("glitch-b").value];await act(a);
 });
 $("restore-bookmark").addEventListener("click",()=>act({type:"restore-bookmark"}));
+$("use-delayed-fate").addEventListener("click",()=>act({type:"use-delayed-fate"}));
 function connect(){
  const gen=++generation;if(socket)try{socket.close();}catch{}
  if(!code||!token){error("Party session not found. Return to the lobby and join again.");$("connection-status").textContent="Session missing";return;}
