@@ -34,3 +34,6 @@
 @keyframes elbow-flex-left{from{transform:rotate(-65deg)}to{transform:rotate(-112deg)}}
 @keyframes elbow-flex-right{from{transform:rotate(65deg)}to{transform:rotate(112deg)}}
 @media(prefers-reduced-motion:reduce){.winner-arm,.winner-arm .forearm{animation:none!important}}
+
+/* Interrupt controls and the public, round-scoped action history. */
+.history-heading{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-top:20px}.history-heading h3{margin:0;font-size:1rem}.history-heading span{font-size:.78rem;color:var(--muted,#777)}.event-history{display:grid;gap:7px;margin:10px 0 0;padding-left:22px;max-height:260px;overflow:auto}.event-history li{padding:7px 10px;border-radius:10px;background:#fff8ef;color:#514437;font-size:.88rem;line-height:1.4}.bookmark-row{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
