@@ -178,16 +178,18 @@ delayed67 = sixtySeven.reduceAction(ctx67, delayed67, { type: "activate-special"
 assert.equal(delayed67.pending[0].type, "addition");
 assert.equal(sixtySeven.getPublicState(delayed67).lastEvent.type, "turn-started");
 
-// Bookmark can be restored on the owner's following turn.
+// Bookmark can interrupt another player's selected but unconfirmed action.
 let bookmark67 = sixtySeven.createInitialState(ctx67);
 bookmark67.hands.p1.special = "bookmark";
 bookmark67 = sixtySeven.reduceAction(ctx67, bookmark67, { type: "activate-special" });
 bookmark67.total = 44;
-bookmark67.turnNumber = 2;
-assert.equal((await sixtySeven.validateAction(ctx67, bookmark67, { type: "restore-bookmark" })).ok, true);
-bookmark67 = sixtySeven.reduceAction(ctx67, bookmark67, { type: "restore-bookmark" });
+bookmark67.turnIndex = 1;
+bookmark67.selection = { original: "addition", effective: "addition", index: 0, digit: null, delayed: false, handVersion: bookmark67.handVersions.p2 };
+assert.equal((await sixtySeven.validateAction({ ...ctx67, player: p67[0] }, bookmark67, { type: "restore-bookmark" })).ok, true);
+bookmark67 = sixtySeven.reduceAction({ ...ctx67, player: p67[0] }, bookmark67, { type: "restore-bookmark" });
 assert.equal(bookmark67.total, 13);
 assert.equal(bookmark67.bookmarks.p1, undefined);
+assert.equal(bookmark67.turnIndex, 1, "Bookmark must not advance the active player's turn.");
 
 // Two overlapping Blind Spots hide both dice from a player affected by both.
 const p67three = [...p67, player("p3")];
@@ -223,7 +225,7 @@ assert.match(sixtySeven.getPublicState(glitchUse67).lastEvent.message, /Glitch w
 assert.deepEqual(sixtySeven.getPublicState(glitchUse67).lastEvent.revealedDice, [3]);
 assert.equal("dice" in sixtySeven.getPublicState(glitchUse67).lastEvent, false);
 
-// Delayed Fate reveals only the die used when its original action resolves.
+// Delayed Fate stays stored until its owner triggers it during another player's unconfirmed action.
 let delayedResolve67 = sixtySeven.createInitialState(ctx67);
 delayedResolve67.total = 10;
 delayedResolve67.turnIndex = 1;
@@ -231,10 +233,41 @@ delayedResolve67.pending = [{ owner: "p1", name: "Player p1", type: "addition", 
 delayedResolve67.hands.p2.actions = ["addition"];
 delayedResolve67.dice = [1, 1];
 delayedResolve67 = sixtySeven.reduceAction({ ...ctx67, player: p67[1] }, delayedResolve67, { type: "select-action", card: "addition", dieIndex: 0 });
-delayedResolve67 = sixtySeven.reduceAction({ ...ctx67, player: p67[1] }, delayedResolve67, { type: "confirm-action" });
-assert.equal(delayedResolve67.total, 13);
+assert.equal(delayedResolve67.total, 10, "Delayed Fate must not resolve automatically.");
+assert.equal((await sixtySeven.validateAction({ ...ctx67, player: p67[0] }, delayedResolve67, { type: "use-delayed-fate" })).ok, true);
+delayedResolve67 = sixtySeven.reduceAction({ ...ctx67, player: p67[0] }, delayedResolve67, { type: "use-delayed-fate" });
+assert.equal(delayedResolve67.total, 12, "Delayed Fate applies to the current shared total when triggered.");
+assert.equal(delayedResolve67.turnIndex, 1, "Delayed Fate must not advance the active player's turn.");
 assert.equal(sixtySeven.getPublicState(delayedResolve67).lastEvent.type, "delayed-resolved");
 assert.deepEqual(sixtySeven.getPublicState(delayedResolve67).lastEvent.revealedDice, [2]);
 assert.equal("dice" in sixtySeven.getPublicState(delayedResolve67).lastEvent, false);
 
-console.log("67 Beta Glitch and dice privacy checks passed.");
+// An interrupt that changes the total before confirmation prevents a false 67 win.
+let interruptedWin67 = sixtySeven.createInitialState(ctx67);
+interruptedWin67.total = 64;
+interruptedWin67.hands.p1.actions = ["addition"];
+interruptedWin67.dice = [3, 2];
+interruptedWin67.bookmarks.p2 = { total: 50, created: 0 };
+interruptedWin67 = sixtySeven.reduceAction(ctx67, interruptedWin67, { type: "select-action", card: "addition", dieIndex: 0 });
+assert.equal((await sixtySeven.validateAction({ ...ctx67, player: p67[1] }, interruptedWin67, { type: "restore-bookmark" })).ok, true);
+interruptedWin67 = sixtySeven.reduceAction({ ...ctx67, player: p67[1] }, interruptedWin67, { type: "restore-bookmark" });
+interruptedWin67 = sixtySeven.reduceAction(ctx67, interruptedWin67, { type: "confirm-action" });
+assert.equal(interruptedWin67.total, 53);
+assert.equal(interruptedWin67.winnerId, null, "A move must not win from a stale pre-interrupt total.");
+
+// Public history spans one complete turn from every player, then resets for the next round.
+let roundHistory67 = sixtySeven.createInitialState(ctx67);
+roundHistory67.hands.p1.actions = ["addition"];
+roundHistory67.dice = [1, 1];
+roundHistory67 = sixtySeven.reduceAction(ctx67, roundHistory67, { type: "select-action", card: "addition", dieIndex: 0 });
+roundHistory67 = sixtySeven.reduceAction(ctx67, roundHistory67, { type: "confirm-action" });
+assert.ok(roundHistory67.roundHistory.some(event => event.type === "total-changed"), "The first player's action must remain in round history.");
+roundHistory67.hands.p2.actions = ["addition"];
+roundHistory67.dice = [1, 1];
+roundHistory67 = sixtySeven.reduceAction({ ...ctx67, player: p67[1] }, roundHistory67, { type: "select-action", card: "addition", dieIndex: 0 });
+roundHistory67 = sixtySeven.reduceAction({ ...ctx67, player: p67[1] }, roundHistory67, { type: "confirm-action" });
+assert.equal(roundHistory67.roundNumber, 2);
+assert.deepEqual(roundHistory67.completedTurnsThisRound, []);
+assert.deepEqual(roundHistory67.roundHistory.map(event => event.type), ["turn-started"], "A new round begins with a clean public history.");
+
+console.log("67 Beta interrupt, victory and round-history checks passed.");
