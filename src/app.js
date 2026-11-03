@@ -185,7 +185,7 @@ function renderParticipantPicker(room) {
   const hostView = Boolean(me?.isHost) && room.lifecycle === 'lobby';
   panel.hidden = !hostView;
   if (!hostView) return;
-  const game = gameRegistry.find(entry => entry.id === (room.selectedGameId || selectedGameId) && entry.status === 'ready');
+  const game = gameRegistry.find(entry => entry.id === (room.selectedGameId || selectedGameId) && (entry.status === 'ready' || entry.status === 'beta'));
   if (!game?.players) { panel.hidden = true; list.replaceChildren(); $('start-game').disabled = true; return; }
   const max = Math.min(game.players.max, room.playerCap || 8);
   const min = game.players.min;
