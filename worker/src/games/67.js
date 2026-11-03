@@ -45,7 +45,7 @@ function beginTurn(s){
 }
 function finishTurn(s,id){
  if(s.bookmarks[id]&&s.bookmarks[id].created<s.turnNumber){delete s.bookmarks[id];emit(s,"bookmark-expired",`${s.names[id]}'s unused Bookmark expired.`,{ownerId:id});}
- const actionEvent=s.lastEvent?.type==="total-changed"?s.lastEvent:null;
+ const actionEvent=["total-changed","cards-refilled"].includes(s.lastEvent?.type)?s.lastEvent:null;
  s.turnNumber++;s.turnIndex=(s.turnIndex+1)%s.playerOrder.length;beginTurn(s);
  if(actionEvent&&s.lastEvent?.type==="turn-started")s.lastEvent=actionEvent;
 }
@@ -76,7 +76,7 @@ function resolve(s,id){
   emit(s,"total-changed",changed?`${s.names[id]}'s ${x.original} was changed to ${x.effective} by Glitch.`:`${s.names[id]} used ${x.original}.`,{playerId:id,originalType:x.original,effectiveType:x.effective,formula:r.formula,calculated:r.calculated,total:r.total,capped:r.capped,dice:s.dice.slice(),revealedDice:s.dice.slice()});
  }
  if(s.handVersions[id]===x.handVersion)s.hands[id].actions=s.hands[id].actions.filter(c=>c!==x.original);
- if(!s.hands[id].actions.length){draw(s,id);if(s.lastEvent?.type==="total-changed"){s.lastEvent.message+=" They received a fresh hand.";s.lastEvent.refilled=true;}}
+ if(!s.hands[id].actions.length){draw(s,id);if(s.lastEvent?.type==="total-changed"){s.lastEvent.message+=" They received a fresh hand.";s.lastEvent.refilled=true;}else emit(s,"cards-refilled",s.names[id]+" received a fresh hand.",{playerId:id});}
  if(s.total===67)s.winnerId=id;
  if(!s.winnerId)finishTurn(s,id);
 }
