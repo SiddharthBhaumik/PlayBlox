@@ -20,8 +20,8 @@
 .winner-arm{position:absolute;z-index:3;top:23px;width:28px;height:3px;border-radius:99px;background:#815c43;pointer-events:none;transform-origin:50% 50%}
 .winner-arm.arm-left{left:-22px;animation:dance-left 1.05s ease-in-out infinite alternate}
 .winner-arm.arm-right{right:-22px;animation:dance-right 1.05s ease-in-out infinite alternate}
-@keyframes seat-gesture-left{from{transform:rotate(-27deg)}to{transform:rotate(27deg)}}
-@keyframes seat-gesture-right{from{transform:rotate(27deg)}to{transform:rotate(-27deg)}}
+@keyframes seat-gesture-left{from{transform:rotate(-48deg)}to{transform:rotate(48deg)}}
+@keyframes seat-gesture-right{from{transform:rotate(48deg)}to{transform:rotate(-48deg)}}
 
 /* Full 6–7 dance shown only in the results panel. The digits counter-rotate
    against their arms so both symbols stay upright throughout the swing. */
@@ -35,10 +35,10 @@
 .dance-digit-six{transform-origin:61px 90px;animation:dance-digit-left 1.05s ease-in-out infinite alternate}
 .dance-digit-seven{transform-origin:299px 90px;animation:dance-digit-right 1.05s ease-in-out infinite alternate}
 @keyframes dance-bounce{0%,100%{transform:translateY(2px)}50%{transform:translateY(-5px)}}
-@keyframes dance-left{from{transform:rotate(-27deg)}to{transform:rotate(27deg)}}
-@keyframes dance-right{from{transform:rotate(27deg)}to{transform:rotate(-27deg)}}
-@keyframes dance-digit-left{from{transform:rotate(27deg)}to{transform:rotate(-27deg)}}
-@keyframes dance-digit-right{from{transform:rotate(-27deg)}to{transform:rotate(27deg)}}
+@keyframes dance-left{from{transform:rotate(-48deg)}to{transform:rotate(48deg)}}
+@keyframes dance-right{from{transform:rotate(48deg)}to{transform:rotate(-48deg)}}
+@keyframes dance-digit-left{from{transform:rotate(48deg)}to{transform:rotate(-48deg)}}
+@keyframes dance-digit-right{from{transform:rotate(-48deg)}to{transform:rotate(48deg)}}
 @media(prefers-reduced-motion:reduce){.winner-arm,.dance-figure,.dance-arm,.dance-digit,.result-panel:before{animation:none!important}}
 /* Interrupt controls and the public, round-scoped action history. */
 .history-heading{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-top:20px}.history-heading h3{margin:0;font-size:1rem}.history-heading span{font-size:.78rem;color:var(--muted,#777)}.event-history{display:grid;gap:7px;margin:10px 0 0;padding-left:22px;max-height:260px;overflow:auto}.event-history li{padding:7px 10px;border-radius:10px;background:#fff8ef;color:#514437;font-size:.88rem;line-height:1.4}.bookmark-row{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
