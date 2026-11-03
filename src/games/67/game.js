@@ -22,7 +22,7 @@ function renderSeats(){
  root.classList.toggle("has-winner",Boolean(state?.winnerId));
  root.replaceChildren(...ids.map((id,i)=>{const p=room.players?.find(x=>x.id===id),a=-Math.PI/2+i*Math.PI*2/n,x=50+Math.cos(a)*(n<=3?39:43),y=50+Math.sin(a)*(n<=3?39:42),el=document.createElement("div");el.className="player-seat"+(id===state.currentPlayerId?" is-current":"")+(id===myId?" is-you":"")+(id===state.winnerId?" is-winner":"");el.style.left=x+"%";el.style.top=y+"%";const avatar=document.createElement("div");avatar.className="seat-avatar";avatar.style.setProperty("--seat-color",colors[i%8]);
   const initial=document.createElement("span");initial.className="avatar-initial";initial.textContent=[...(p?.nickname||state.playerNames?.[id]||"?")][0]?.toUpperCase()||"?";avatar.append(initial);
-  if(id===state.winnerId){for(const side of ["left","right"]){const arm=document.createElement("span");arm.className="winner-arm arm-"+side;for(const part of ["upper-arm","elbow","forearm","hand"]){const segment=document.createElement("span");segment.className="arm-part "+part;arm.append(segment);}avatar.append(arm);}}
+  if(id===state.winnerId){for(const side of ["left","right"]){const arm=document.createElement("span");arm.className="winner-arm arm-"+side;avatar.append(arm);}}
   const name=document.createElement("strong");name.className="seat-name";name.textContent=p?.nickname||state.playerNames?.[id]||"Player";const status=document.createElement("small");status.className="seat-state";status.textContent=id===state.winnerId?"WINNER!":id===state.currentPlayerId?"Playing now":"At the table";el.append(avatar,name,status);return el;}));
 }
 function renderEffects(){
