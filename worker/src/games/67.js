@@ -74,6 +74,7 @@ function activate(s,id,action){
  }
 }
 function resolve(s,id){
+ if(!Array.isArray(s.scheduledDelayed))s.scheduledDelayed=[];
  const x=s.selection;
  if(x.delayed)s.privateEvents[id]={id:s.eventSeq++,type:"delayed-queued",message:"Your action is stored. Use Delayed Fate during another player’s unconfirmed action."};
  else{
@@ -110,7 +111,7 @@ export const sixtySeven={
  if(a?.type==="activate-special"){if(s.specialUsed||!h.special)return{ok:false,reason:"No special card is available this turn."};if(h.special==="delayed-fate"&&!s.selection)return{ok:false,reason:"Select an action before Delayed Fate."};if(h.special==="glitch"&&(!Array.isArray(a.swap)||a.swap.length!==2||a.swap[0]===a.swap[1]||a.swap.some(x=>!ACTIONS.includes(x))))return{ok:false,reason:"Choose two different action types."};return{ok:true};}
  if(a?.type==="confirm-action")return s.selection?{ok:true}:{ok:false,reason:"Choose an action first."};
  return{ok:false,reason:"Unknown game action."};},
- reduceAction(ctx,state,a){const id=ctx.player.id,s=clone(state);
+ reduceAction(ctx,state,a){const id=ctx.player.id,s=clone(state);if(!Array.isArray(s.scheduledDelayed))s.scheduledDelayed=[];
  if(a.type==="select-action"){const details=transformDetails(s,a.card);s.selection={original:a.card,effective:details.type,glitchOwners:details.owners,index:a.dieIndex??null,digit:a.digit||null,delayed:false,handVersion:s.handVersions[id]};}
  else if(a.type==="activate-special")activate(s,id,a);
  else if(a.type==="use-delayed-fate"){const index=s.pending.findIndex(x=>x.owner===id);const item=s.pending[index];s.pending.splice(index,1);s.scheduledDelayed.push(item);emit(s,"delayed-queued",item.name+" queued Delayed Fate. It will resolve after the current player finishes their action.",{ownerId:id,special:"delayed-fate"});}
