@@ -192,3 +192,32 @@ chain67 = sixtySeven.reduceAction(ctx67, chain67, { type: "confirm-action" });
 assert.deepEqual(sixtySeven.getPrivateState(chain67, "p2").dice, [5, 6]);
 
 console.log("67 Beta rule checks passed.");
+
+
+// Glitch reveals the activating player only when the changed action resolves.
+let glitchUse67 = sixtySeven.createInitialState(ctx67);
+glitchUse67.hands.p1.special = "glitch";
+glitchUse67.hands.p1.actions = ["addition"];
+glitchUse67.dice = [3, 6];
+glitchUse67 = sixtySeven.reduceAction(ctx67, glitchUse67, { type: "activate-special", swap: ["addition", "multiplication"] });
+glitchUse67 = sixtySeven.reduceAction(ctx67, glitchUse67, { type: "select-action", card: "addition", dieIndex: 0 });
+glitchUse67 = sixtySeven.reduceAction(ctx67, glitchUse67, { type: "confirm-action" });
+assert.match(sixtySeven.getPublicState(glitchUse67).lastEvent.message, /Glitch was activated by Player p1/);
+assert.deepEqual(sixtySeven.getPublicState(glitchUse67).lastEvent.revealedDice, [3]);
+assert.equal("dice" in sixtySeven.getPublicState(glitchUse67).lastEvent, false);
+
+// Delayed Fate reveals only the die used when its original action resolves.
+let delayedResolve67 = sixtySeven.createInitialState(ctx67);
+delayedResolve67.total = 10;
+delayedResolve67.turnIndex = 1;
+delayedResolve67.pending = [{ owner: "p1", name: "Player p1", type: "addition", dice: [2, 6], index: 0, digit: null, created: 1 }];
+delayedResolve67.hands.p2.actions = ["addition"];
+delayedResolve67.dice = [1, 1];
+delayedResolve67 = sixtySeven.reduceAction({ ...ctx67, player: p67[1] }, delayedResolve67, { type: "select-action", card: "addition", dieIndex: 0 });
+delayedResolve67 = sixtySeven.reduceAction({ ...ctx67, player: p67[1] }, delayedResolve67, { type: "confirm-action" });
+assert.equal(delayedResolve67.total, 13);
+assert.equal(sixtySeven.getPublicState(delayedResolve67).lastEvent.type, "delayed-resolved");
+assert.deepEqual(sixtySeven.getPublicState(delayedResolve67).lastEvent.revealedDice, [2]);
+assert.equal("dice" in sixtySeven.getPublicState(delayedResolve67).lastEvent, false);
+
+console.log("67 Beta Glitch and dice privacy checks passed.");
