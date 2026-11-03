@@ -124,7 +124,7 @@ export function renderGameGuide({ room, code, token, apiBaseUrl, myPlayerId }) {
       }
     });
   }
-  dialog.querySelector(".guide-dialog-title").textContent = room.game.name + " — how to play";
+  dialog.querySelector(".guide-dialog-title").textContent = (room.game.id === "67" ? "67" : room.game.name.replace(/\s*[-–—]?\s*Beta\s*$/i, "")) + " — how to play";
   const guideCopy = dialog.querySelector(".guide-dialog-copy");
   if (room.game.id === "67") renderGuideMarkup(guideCopy, room.game.guide);
   else guideCopy.textContent = room.game.guide;
