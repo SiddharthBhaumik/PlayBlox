@@ -20,7 +20,7 @@ function selectedGame() { return gameRegistry.find(game => game.id === selectedG
 function renderGameChoices(room = latestLobbyRoom) {
   const container = $('lobby-game-select');
   if (!container) return;
-  const playable = gameRegistry.filter(game => game.status === 'ready' && game.players && game.guide);
+  const playable = gameRegistry.filter(game => (game.status === 'ready' || game.status === 'beta') && game.players && game.guide);
   const me = room?.players?.find(player => player.id === activePlayerId);
   const hostView = Boolean(me?.isHost) && room?.lifecycle === 'lobby';
   const connectedPlayers = (room?.players || []).filter(player =>
