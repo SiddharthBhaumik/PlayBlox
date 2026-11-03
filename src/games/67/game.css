@@ -18,10 +18,10 @@
 .player-seat.is-winner .seat-avatar:before,.player-seat.is-winner .seat-avatar:after{content:none!important;display:none!important}
 .player-seat.is-winner .avatar-initial{position:relative;z-index:1}
 .winner-arm{position:absolute;z-index:3;top:23px;width:28px;height:3px;border-radius:99px;background:#815c43;pointer-events:none;transform-origin:50% 50%}
-.winner-arm.arm-left{left:-22px;animation:seat-gesture-left .62s ease-in-out infinite alternate}
-.winner-arm.arm-right{right:-22px;animation:seat-gesture-right .62s ease-in-out infinite alternate}
-@keyframes seat-gesture-left{from{transform:rotate(-38deg) translateY(2px)}to{transform:rotate(38deg) translateY(-5px)}}
-@keyframes seat-gesture-right{from{transform:rotate(38deg) translateY(-5px)}to{transform:rotate(-38deg) translateY(2px)}}
+.winner-arm.arm-left{left:-22px;animation:dance-left 1.05s ease-in-out infinite alternate}
+.winner-arm.arm-right{right:-22px;animation:dance-right 1.05s ease-in-out infinite alternate}
+@keyframes seat-gesture-left{from{transform:rotate(-27deg)}to{transform:rotate(27deg)}}
+@keyframes seat-gesture-right{from{transform:rotate(27deg)}to{transform:rotate(-27deg)}}
 
 /* Full 6–7 dance shown only in the results panel. The digits counter-rotate
    against their arms so both symbols stay upright throughout the swing. */
