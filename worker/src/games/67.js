@@ -33,14 +33,14 @@ function rollTurn(s,id){
 function beginTurn(s){
  const id=current(s);
  const pending=s.pending.filter(x=>x.owner===id).sort((a,b)=>priority(a.type)-priority(b.type)||a.created-b.created);
- for(const item of pending){const r=apply(s.total,item.type,item.dice,item.index,item.digit);s.total=r.total;emit(s,"delayed-resolved",`${item.name} used Delayed Fate; their delayed action has now been applied.`,{ownerId:id,special:"delayed-fate",formula:r.formula,calculated:r.calculated,total:r.total,capped:r.capped});}
+ for(const item of pending){const r=apply(s.total,item.type,item.dice,item.index,item.digit);s.total=r.total;const revealed=item.type==="set-total"?item.dice.slice():item.type==="reverse"?[]:[item.dice[item.index??0]];emit(s,"delayed-resolved",item.name+" used Delayed Fate; their delayed action has now been applied.",{ownerId:id,special:"delayed-fate",formula:r.formula,calculated:r.calculated,total:r.total,capped:r.capped,revealedDice:revealed});}
  s.pending=s.pending.filter(x=>x.owner!==id);
  if(s.effects.chain?.owner===id)s.effects.chain=null;
  const expiredBlind=s.effects.blinds.some(x=>x.owner===id),expiredGlitch=s.effects.glitches.some(x=>x.owner===id);
  s.effects.blinds=s.effects.blinds.filter(x=>x.owner!==id);s.effects.glitches=s.effects.glitches.filter(x=>x.owner!==id);
- if(expiredBlind||expiredGlitch)emit(s,"effects-expired","Temporary effects have expired.");
+ if((expiredBlind||expiredGlitch)&&!pending.length)emit(s,"effects-expired","Temporary effects have expired.");
  s.selection=null;s.specialUsed=false;s.restored=false;rollTurn(s,id);s.phase="select";
- emit(s,"turn-started",`${s.names[id]}'s turn.`,{playerId:id});
+ if(!pending.length)emit(s,"turn-started","Turn begins: "+s.names[id],{playerId:id});
  if(s.total===67)s.winnerId=id;
 }
 function finishTurn(s,id){
