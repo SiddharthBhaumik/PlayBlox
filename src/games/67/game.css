@@ -90,3 +90,8 @@
   .victory-dance .dance-arm,
   .victory-dance .dance-digit { animation: none !important; }
 }
+
+
+/* 67 title icon */
+.sixtyseven-main h1.game-title{display:flex;align-items:center;gap:.75rem}
+.game-title-icon{display:block;width:clamp(48px,7vw,68px);height:clamp(48px,7vw,68px);object-fit:contain;border-radius:16px;flex:0 0 auto}
