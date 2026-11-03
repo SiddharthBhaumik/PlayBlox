@@ -17,9 +17,9 @@ function apply(total,type,dice,index,digit){
  else if(type==="subtraction"){n=total-d;formula=`${total} − ${d}`;}
  else if(type==="multiplication"){n=total*d;formula=`${total} × ${d}`;}
  else if(type==="division"){n=Math.floor(total/d);formula=`${total} ÷ ${d}`;}
- else if(type==="set-total"){n=dice[0]*10+dice[1];formula=`Set ${dice[0]}${dice[1]}`;}
- else if(type==="switch"){const a=p.split("");a[digit==="ones"?1:0]=String(d);n=Number(a.join(""));formula=`Switch ${digit} to ${d}`;}
- else if(type==="reverse"){n=Number(p[1]+p[0]);formula=`Reverse ${p} → ${p[1]}${p[0]}`;}
+ else if(type==="set-total"){n=dice[0]*10+dice[1];formula=`Set Total: D6 ${dice[0]}, D7 ${dice[1]}`;}
+ else if(type==="switch"){const a=p.split("");a[digit==="ones"?1:0]=String(d);n=Number(a.join(""));formula=`Switch ${p} ${digit} to ${d}`;}
+ else if(type==="reverse"){n=Number(p[1]+p[0]);formula=`Reverse ${p}`;}
  else throw Error("Unknown action");
  return {total:clamp(n),calculated:n,formula,capped:clamp(n)!==n};
 }
