@@ -14,26 +14,31 @@
 @media(prefers-reduced-motion:reduce){.player-seats.has-winner .player-seat:not(.is-winner) .seat-avatar,.player-seats.has-winner .player-seat:not(.is-winner) .seat-avatar:after,.result-panel:before{animation:none}}
 
 
-/* 6–7 celebration: articulated upper arms, elbow joints, forearms and hands. */
+/* Simple 6–7 arm lines around the winner's seat avatar. */
 .player-seat.is-winner .seat-avatar:before,.player-seat.is-winner .seat-avatar:after{content:none!important;display:none!important}
 .player-seat.is-winner .avatar-initial{position:relative;z-index:1}
-.winner-arm{position:absolute;z-index:3;top:9px;width:39px;height:43px;pointer-events:none;transform-origin:50% 8px}
-.winner-arm.arm-left{left:-23px;animation:gesture-left .62s ease-in-out infinite alternate}
-.winner-arm.arm-right{right:-23px;animation:gesture-right .62s ease-in-out infinite alternate}
-.winner-arm .arm-part{position:absolute;display:block;background:#e1ad78;border:2px solid #815c43;box-shadow:0 1px 1px #3b2b2230}
-.winner-arm .upper-arm{width:19px;height:9px;top:3px;right:13px;border-radius:8px;transform:rotate(-24deg);transform-origin:right center}
-.winner-arm .elbow{width:11px;height:11px;top:10px;right:7px;border-radius:50%;z-index:2}
-.winner-arm .forearm{width:23px;height:9px;top:13px;right:-10px;border-radius:8px;transform:rotate(-58deg);transform-origin:5px center;animation:elbow-flex-left .62s ease-in-out infinite alternate}
-.winner-arm .hand{width:12px;height:13px;top:0;right:-11px;border-radius:7px 7px 5px 5px;transform:rotate(-18deg);background:#f0c79c}
-.arm-right .upper-arm{left:13px;right:auto;transform:rotate(24deg)}
-.arm-right .elbow{left:7px;right:auto}
-.arm-right .forearm{left:-10px;right:auto;transform-origin:18px center;transform:rotate(58deg);animation-name:elbow-flex-right}
-.arm-right .hand{left:-11px;right:auto;transform:rotate(18deg)}
-@keyframes gesture-left{from{transform:translateY(8px) rotate(22deg)}to{transform:translateY(-15px) rotate(-26deg)}}
-@keyframes gesture-right{from{transform:translateY(-15px) rotate(26deg)}to{transform:translateY(8px) rotate(-22deg)}}
-@keyframes elbow-flex-left{from{transform:rotate(-65deg)}to{transform:rotate(-112deg)}}
-@keyframes elbow-flex-right{from{transform:rotate(65deg)}to{transform:rotate(112deg)}}
-@media(prefers-reduced-motion:reduce){.winner-arm,.winner-arm .forearm{animation:none!important}}
+.winner-arm{position:absolute;z-index:3;top:23px;width:28px;height:3px;border-radius:99px;background:#815c43;pointer-events:none;transform-origin:50% 50%}
+.winner-arm.arm-left{left:-22px;animation:seat-gesture-left .62s ease-in-out infinite alternate}
+.winner-arm.arm-right{right:-22px;animation:seat-gesture-right .62s ease-in-out infinite alternate}
+@keyframes seat-gesture-left{from{transform:rotate(-38deg) translateY(2px)}to{transform:rotate(38deg) translateY(-5px)}}
+@keyframes seat-gesture-right{from{transform:rotate(38deg) translateY(-5px)}to{transform:rotate(-38deg) translateY(2px)}}
 
+/* Full 6–7 dance shown only in the results panel. The digits counter-rotate
+   against their arms so both symbols stay upright throughout the swing. */
+.victory-dance{width:min(100%,390px);margin:8px auto 12px;position:relative;z-index:1}
+.victory-dance svg{display:block;width:100%;height:auto;overflow:visible}
+.dance-figure{transform-box:view-box;transform-origin:180px 160px;animation:dance-bounce 1.05s ease-in-out infinite}
+.dance-arm{transform-box:view-box}
+.dance-arm-left{transform-origin:143px 137px;animation:dance-left 1.05s ease-in-out infinite alternate}
+.dance-arm-right{transform-origin:217px 137px;animation:dance-right 1.05s ease-in-out infinite alternate}
+.dance-digit{transform-box:view-box}
+.dance-digit-six{transform-origin:61px 90px;animation:dance-digit-left 1.05s ease-in-out infinite alternate}
+.dance-digit-seven{transform-origin:299px 90px;animation:dance-digit-right 1.05s ease-in-out infinite alternate}
+@keyframes dance-bounce{0%,100%{transform:translateY(2px)}50%{transform:translateY(-5px)}}
+@keyframes dance-left{from{transform:rotate(-27deg)}to{transform:rotate(27deg)}}
+@keyframes dance-right{from{transform:rotate(27deg)}to{transform:rotate(-27deg)}}
+@keyframes dance-digit-left{from{transform:rotate(27deg)}to{transform:rotate(-27deg)}}
+@keyframes dance-digit-right{from{transform:rotate(-27deg)}to{transform:rotate(27deg)}}
+@media(prefers-reduced-motion:reduce){.winner-arm,.dance-figure,.dance-arm,.dance-digit,.result-panel:before{animation:none!important}}
 /* Interrupt controls and the public, round-scoped action history. */
 .history-heading{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-top:20px}.history-heading h3{margin:0;font-size:1rem}.history-heading span{font-size:.78rem;color:var(--muted,#777)}.event-history{display:grid;gap:7px;margin:10px 0 0;padding-left:22px;max-height:260px;overflow:auto}.event-history li{padding:7px 10px;border-radius:10px;background:#fff8ef;color:#514437;font-size:.88rem;line-height:1.4}.bookmark-row{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
