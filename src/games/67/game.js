@@ -6,7 +6,7 @@ const $=id=>document.getElementById(id);
 const ACTIONS=["addition","subtraction","multiplication","division","switch","set-total","reverse"];
 const INFO={addition:["➕","Addition"],subtraction:["➖","Subtraction"],multiplication:["✖️","Multiply"],division:["➗","Division"],switch:["🔀","Switch"],"set-total":["🎯","Set Total"],reverse:["🔁","Reverse"]};
 const SPECIAL={ "delayed-fate":["⏳","Delayed Fate"],bookmark:["🔖","Bookmark"],"chain-reaction":["⛓️","Chain Reaction"],equalizer:["⚖️","Equalizer"],"blind-spot":["🙈","Blind Spot"],glitch:["🌀","Glitch"]};
-let room=null,state=null,privateState=null,myId=null,version=0,socket=null,generation=0,reconnectTimer=null,heartbeat=null,reconnectDelay=1000,acting=false,selectedCard=null,selectedDie=null,digit="tens",lastEvent=0,lastPrivateEvent=0,popupTimer=null;
+let room=null,state=null,privateState=null,myId=null,version=0,socket=null,generation=0,reconnectTimer=null,heartbeat=null,reconnectDelay=1000,acting=false,selectedCard=null,selectedDie=null,digit="tens",lastEvent=0,lastPrivateEvent=0,popupTimer=null,lastDiceSignature="";
 const back="../../../?party="+encodeURIComponent(code)+"&lobby=1";
 $("back-to-lobby").href=back;
 const lifecycle=setupGameLifecycle({root:document.querySelector("main"),getRoom:()=>room,getPlayerId:()=>myId,api,backToLobby:()=>back});
@@ -18,7 +18,7 @@ function error(message){$("error-message").textContent=message||"";}
 function notify(message,major=false){const node=$("event-popup");node.textContent=message;node.classList.toggle("major",major);node.hidden=false;if(popupTimer)clearTimeout(popupTimer);popupTimer=setTimeout(()=>{node.hidden=true;},major?2600:1800);}
 function renderSeats(){
  const root=$("player-seats"),ids=state?.playerOrder||[],n=ids.length||1,colors=["#f4c77f","#a8c9dd","#d8b0a2","#b6cba3","#c5b5df","#e4b9cb","#a9c8b9","#e5d39a"];
- root.replaceChildren(...ids.map((id,i)=>{const p=room.players?.find(x=>x.id===id),a=-Math.PI/2+i*Math.PI*2/n,x=50+Math.cos(a)*(n<=3?39:43),y=50+Math.sin(a)*(n<=3?39:42),el=document.createElement("div");el.className="player-seat"+(id===state.currentPlayerId?" is-current":"")+(id===myId?" is-you":"")+(id===state.winnerId?" is-winner":"");el.style.left=x+"%";el.style.top=y+"%";const avatar=document.createElement("div");avatar.className="seat-avatar";avatar.style.setProperty("--seat-color",colors[i%8]);avatar.textContent=[...(p?.nickname||state.playerNames?.[id]||"?")][0]?.toUpperCase()||"?";const name=document.createElement("strong");name.className="seat-name";name.textContent=p?.nickname||state.playerNames?.[id]||"Player";const status=document.createElement("small");status.className="seat-state";status.textContent=id===state.winnerId?"WINNER!":id===state.currentPlayerId?"Playing now":"At the table";el.append(avatar,name,status);return el;}));
+ root.classList.toggle("has-winner",Boolean(state?.winnerId));\n root.replaceChildren(...ids.map((id,i)=>{const p=room.players?.find(x=>x.id===id),a=-Math.PI/2+i*Math.PI*2/n,x=50+Math.cos(a)*(n<=3?39:43),y=50+Math.sin(a)*(n<=3?39:42),el=document.createElement("div");el.className="player-seat"+(id===state.currentPlayerId?" is-current":"")+(id===myId?" is-you":"")+(id===state.winnerId?" is-winner":"");el.style.left=x+"%";el.style.top=y+"%";const avatar=document.createElement("div");avatar.className="seat-avatar";avatar.style.setProperty("--seat-color",colors[i%8]);avatar.textContent=[...(p?.nickname||state.playerNames?.[id]||"?")][0]?.toUpperCase()||"?";const name=document.createElement("strong");name.className="seat-name";name.textContent=p?.nickname||state.playerNames?.[id]||"Player";const status=document.createElement("small");status.className="seat-state";status.textContent=id===state.winnerId?"WINNER!":id===state.currentPlayerId?"Playing now":"At the table";el.append(avatar,name,status);return el;}));
 }
 function renderEffects(){
  const e=state.effects||{},labels=[];if(e.chainReaction)labels.push("⛓️ Chain Reaction · "+(e.chainReaction.dice?e.chainReaction.dice.join(" + "):"dice obscured"));if(e.blindSpotCount)labels.push("🙈 Blind Spot × "+e.blindSpotCount);
@@ -26,14 +26,14 @@ function renderEffects(){
 }
 function renderDice(){
  const dice=privateState?.dice||[];
- document.querySelectorAll(".die").forEach((b,i)=>{const v=dice[i];b.querySelector("strong").textContent=v==null?"?":v;b.classList.toggle("hidden-die",v==null);b.classList.toggle("selected",selectedDie===i);b.disabled=!myTurn()||!selectedCard||!needsDie(effective(selectedCard))||acting;});
- $("dice-source").textContent=privateState?.diceSource==="chain-reaction"?"CHAIN DICE":"D6 + D7";
+ document.querySelectorAll(".die").forEach((b,i)=>{const v=dice[i];b.querySelector("strong").textContent=v==null?"?":v;b.classList.toggle("hidden-die",v==null);b.classList.toggle("selected",selectedDie===i);b.disabled=!myTurn()||Boolean(privateState?.selection)||acting;});
+ const signature=JSON.stringify([dice,privateState?.hiddenDice,privateState?.diceSource]);if(signature!==lastDiceSignature){lastDiceSignature=signature;document.querySelectorAll(".die").forEach(b=>{b.classList.remove("rolling");void b.offsetWidth;b.classList.add("rolling");});}\n $("dice-source").textContent=privateState?.diceSource==="chain-reaction"?"CHAIN DICE":"D6 + D7";
  const hidden=privateState?.hiddenDice?.length||0;
  $("dice-hint").textContent=hidden===2?"Both dice are hidden. Choose one without seeing it, or use both with Set Total.":hidden===1?"One die is hidden. You may still choose it; it is revealed when your move resolves.":"Choose a die for most actions. Set Total uses both dice; Reverse needs no die.";
 }
 function renderHand(){
  const cards=privateState?.hand?.actions||[];
- $("action-hand").replaceChildren(...cards.map(type=>{const b=document.createElement("button");b.type="button";b.className="action-card";b.classList.toggle("selected",selectedCard===type);b.disabled=!myTurn()||Boolean(privateState?.selection)||acting;const icon=document.createElement("span");icon.textContent=INFO[type][0];const label=document.createElement("small");label.textContent=INFO[type][1];b.append(icon,label);b.addEventListener("click",()=>{selectedCard=type;selectedDie=null;render();});return b;}));
+ $("action-hand").replaceChildren(...cards.map(type=>{const b=document.createElement("button");b.type="button";b.className="action-card";b.classList.toggle("selected",selectedCard===type);b.disabled=!myTurn()||Boolean(privateState?.selection)||acting;const icon=document.createElement("span");icon.textContent=INFO[type][0];const label=document.createElement("small");label.textContent=INFO[type][1];b.append(icon,label);b.addEventListener("click",()=>{selectedCard=type;render();});return b;}));
  const special=privateState?.hand?.special;
  $("special-card").textContent=special?SPECIAL[special][0]+" "+SPECIAL[special][1]:"No special card";
  $("play-special").textContent=special?"Play "+SPECIAL[special][1]:"No special card";
@@ -65,7 +65,7 @@ function render(){
  $("total-core").classList.toggle("is-winning",Boolean(state.winnerId));renderSeats();renderEffects();renderDice();renderHand();
  if(state.lastEvent&&state.lastEvent.id!==lastEvent){lastEvent=state.lastEvent.id;let msg=state.lastEvent.message||"The total changed.";if(state.lastEvent.formula)msg+=" · "+state.lastEvent.formula+" → "+(state.lastEvent.calculated??state.lastEvent.total)+(state.lastEvent.capped?" → "+state.lastEvent.total+(state.lastEvent.calculated>85?" (MAXIMUM)":" (MINIMUM)"):"");$("event-message").textContent=msg;
   if(["total-changed","delayed-resolved","bookmark-restored"].includes(state.lastEvent.type)){const core=$("total-core");core.classList.remove("is-changing","action-addition","action-subtraction","action-multiplication","action-division","action-switch","action-set-total","action-reverse");if(state.lastEvent.effectiveType)core.classList.add("action-"+state.lastEvent.effectiveType);void core.offsetWidth;core.classList.add("is-changing");}
-  if(state.lastEvent.type==="special-public"&&["chain-reaction","blind-spot","equalizer"].includes(state.lastEvent.special)){notify(msg,true);const panel=document.querySelector(".table-panel");panel.classList.remove("special-flash");void panel.offsetWidth;panel.classList.add("special-flash");}
+  if(state.lastEvent.type==="special-public"&&state.lastEvent.special==="equalizer"&&!privateState?.selection){selectedCard=null;selectedDie=null;}\n  if(state.lastEvent.type==="special-public"&&["chain-reaction","blind-spot","equalizer"].includes(state.lastEvent.special)){notify(msg,true);const panel=document.querySelector(".table-panel");panel.classList.remove("special-flash");void panel.offsetWidth;panel.classList.add("special-flash");}
   else if(state.lastEvent.type==="delayed-resolved"||state.lastEvent.type==="bookmark-restored"||(state.lastEvent.type==="total-changed"&&state.lastEvent.originalType!==state.lastEvent.effectiveType))notify(msg,false);
  }
  const pe=privateState?.privateEvent;if(pe&&pe.id!==lastPrivateEvent){lastPrivateEvent=pe.id;$("action-status").textContent=pe.message||"Your special card was activated.";}
@@ -75,7 +75,7 @@ function render(){
 async function act(action){if(acting||!myTurn())return;acting=true;error("");$("action-status").textContent="Sending move…";render();try{const r=await api("/api/rooms/"+encodeURIComponent(code)+"/game/action",{method:"POST",body:JSON.stringify({actionId:crypto.randomUUID(),expectedStateVersion:version,action})});version=r.stateVersion??version;$("action-status").textContent="Move confirmed.";}catch(e){error(e.message);if(Number.isInteger(e.stateVersion))version=e.stateVersion;}finally{acting=false;render();}}
 function actionPayload(){const t=effective(selectedCard);return{type:"select-action",card:selectedCard,dieIndex:selectedDie??0,digit};}
 $("confirm-action").addEventListener("click",async()=>{if(privateState?.selection){await act({type:"confirm-action"});selectedCard=null;selectedDie=null;return;}if(!selectedCard)return;await act(actionPayload());selectedCard=null;selectedDie=null;});
-document.querySelectorAll(".die").forEach(b=>b.addEventListener("click",()=>{if(!selectedCard||!needsDie(effective(selectedCard)))return;selectedDie=Number(b.dataset.die);render();}));
+document.querySelectorAll(".die").forEach(b=>b.addEventListener("click",()=>{if(!myTurn()||privateState?.selection)return;selectedDie=Number(b.dataset.die);render();}));
 document.querySelectorAll("[data-digit]").forEach(b=>b.addEventListener("click",()=>{digit=b.dataset.digit;render();}));
 $("play-special").addEventListener("click",async()=>{
  const special=privateState?.hand?.special;if(!special)return;
