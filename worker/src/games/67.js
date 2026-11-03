@@ -3,7 +3,10 @@ const SPECIALS=["delayed-fate","bookmark","chain-reaction","equalizer","blind-sp
 const clone=value=>JSON.parse(JSON.stringify(value));
 const rand=max=>Math.floor(Math.random()*max);
 const shuffle=items=>{const a=items.slice();for(let i=a.length-1;i>0;i--){const j=rand(i+1);[a[i],a[j]]=[a[j],a[i]];}return a;};
-const hand=()=>({actions:shuffle(ACTIONS).slice(0,6),special:SPECIALS[rand(SPECIALS.length)]});
+// Independent weighted draws allow duplicate action cards. Weights: common 4, medium 2, rare 1.
+const ACTION_WEIGHTS=[["addition",4],["subtraction",4],["multiplication",2],["division",2],["switch",1],["set-total",1],["reverse",1]];
+const drawAction=()=>{const total=ACTION_WEIGHTS.reduce((n,[,w])=>n+w,0);let pick=rand(total);for(const [card,weight] of ACTION_WEIGHTS){if(pick<weight)return card;pick-=weight;}return "addition";};
+const hand=()=>({actions:Array.from({length:6},drawAction),special:SPECIALS[rand(SPECIALS.length)]});
 const clamp=n=>Math.max(1,Math.min(85,Math.trunc(n)));
 const roll=()=>[rand(6)+1,rand(7)+1];
 const current=s=>s.playerOrder[s.turnIndex];
@@ -78,7 +81,7 @@ function resolve(s,id){
   const revealed=x.effective==="set-total"?s.dice.slice():x.effective==="reverse"?[]:[s.dice[x.index??0]];
   emit(s,"total-changed",message,{playerId:id,originalType:x.original,effectiveType:x.effective,formula:r.formula,calculated:r.calculated,total:r.total,capped:r.capped,revealedDice:revealed});
  }
- if(s.handVersions[id]===x.handVersion)s.hands[id].actions=s.hands[id].actions.filter(c=>c!==x.original);
+ if(s.handVersions[id]===x.handVersion){const usedIndex=s.hands[id].actions.indexOf(x.original);if(usedIndex>=0)s.hands[id].actions.splice(usedIndex,1);}
  if(!s.hands[id].actions.length){draw(s,id);if(s.lastEvent?.type==="total-changed"){s.lastEvent.message+=" They received a fresh hand.";s.lastEvent.refilled=true;}else emit(s,"cards-refilled",s.names[id]+" received a fresh hand.",{playerId:id});}
  if(s.total===67)s.winnerId=id;
  if(!s.winnerId)finishTurn(s,id);
