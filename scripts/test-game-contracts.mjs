@@ -149,6 +149,30 @@ assert.equal("hands" in sixtySeven.getPrivateState(s67, "p2"), false);
  duplicateUse67 = sixtySeven.reduceAction(ctx67, duplicateUse67, { type: "confirm-action" });
  assert.equal(duplicateUse67.hands.p1.actions.filter(card => card === "addition").length, 1);
 
+
+ // Action-card refills preserve an unused special card and only draw a new one if empty.
+ let keepSpecial67 = sixtySeven.createInitialState(ctx67);
+ keepSpecial67.hands.p1.actions = ["addition"];
+ keepSpecial67.hands.p1.special = "bookmark";
+ keepSpecial67.dice = [1, 1];
+ keepSpecial67 = sixtySeven.reduceAction(ctx67, keepSpecial67, { type: "select-action", card: "addition", dieIndex: 0 });
+ keepSpecial67 = sixtySeven.reduceAction(ctx67, keepSpecial67, { type: "confirm-action" });
+ assert.equal(keepSpecial67.hands.p1.actions.length, 6);
+ assert.equal(keepSpecial67.hands.p1.special, "bookmark", "An unused special card must survive an action-card refill.");
+
+ let drawSpecial67 = sixtySeven.createInitialState(ctx67);
+ drawSpecial67.hands.p1.actions = ["addition"];
+ drawSpecial67.hands.p1.special = null;
+ drawSpecial67.dice = [1, 1];
+ const randomBeforeRefill = Math.random;
+ try {
+   Math.random = () => 0;
+   drawSpecial67 = sixtySeven.reduceAction(ctx67, drawSpecial67, { type: "select-action", card: "addition", dieIndex: 0 });
+   drawSpecial67 = sixtySeven.reduceAction(ctx67, drawSpecial67, { type: "confirm-action" });
+ } finally { Math.random = randomBeforeRefill; }
+ assert.equal(drawSpecial67.hands.p1.actions.length, 6);
+ assert.equal(drawSpecial67.hands.p1.special, "delayed-fate", "A random special card must be drawn when the slot is empty at action refill.");
+
 // Set Total uses D6 as tens and D7 as ones, and wins on exactly 67.
 s67.hands.p1.actions = ["set-total"];
 s67.dice = [6, 7];
@@ -190,6 +214,23 @@ bookmark67 = sixtySeven.reduceAction({ ...ctx67, player: p67[0] }, bookmark67, {
 assert.equal(bookmark67.total, 13);
 assert.equal(bookmark67.bookmarks.p1, undefined);
 assert.equal(bookmark67.turnIndex, 1, "Bookmark must not advance the active player's turn.");
+
+
+ // Unused Delayed Fate and Bookmark expire immediately before their owner's next turn begins.
+ let expiring67 = sixtySeven.createInitialState(ctx67);
+ expiring67.turnIndex = 1;
+ expiring67.turnNumber = 2;
+ expiring67.pending = [{ owner: "p1", name: "Player p1", type: "addition", dice: [2, 3], index: 0, digit: null, created: 1 }];
+ expiring67.bookmarks.p1 = { total: 25, created: 1 };
+ expiring67.hands.p2.actions = ["addition"];
+ expiring67.dice = [1, 1];
+ expiring67 = sixtySeven.reduceAction({ ...ctx67, player: p67[1] }, expiring67, { type: "select-action", card: "addition", dieIndex: 0 });
+ expiring67 = sixtySeven.reduceAction({ ...ctx67, player: p67[1] }, expiring67, { type: "confirm-action" });
+ assert.equal(expiring67.turnIndex, 0, "The next turn belongs to the original owner.");
+ assert.equal(expiring67.pending.some(item => item.owner === "p1"), false, "Unused Delayed Fate expires before its owner starts the next turn.");
+ assert.equal(expiring67.bookmarks.p1, undefined, "Unused Bookmark expires before its owner starts the next turn.");
+ assert.ok(expiring67.roundHistory.some(event => event.type === "delayed-expired"));
+ assert.ok(expiring67.roundHistory.some(event => event.type === "bookmark-expired"));
 
 // Two overlapping Blind Spots hide both dice from a player affected by both.
 const p67three = [...p67, player("p3")];
