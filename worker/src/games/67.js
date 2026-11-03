@@ -84,7 +84,7 @@ function resolve(s,id){
   emit(s,"total-changed",message,{playerId:id,originalType:x.original,effectiveType:x.effective,formula:r.formula,calculated:r.calculated,total:r.total,capped:r.capped,revealedDice:revealed});
  }
  if(s.handVersions[id]===x.handVersion){const usedIndex=s.hands[id].actions.indexOf(x.original);if(usedIndex>=0)s.hands[id].actions.splice(usedIndex,1);}
- if(!s.hands[id].actions.length){refillActions(s,id);}if(s.lastEvent?.type==="total-changed"){s.lastEvent.message+=" They received a fresh hand.";s.lastEvent.refilled=true;}else emit(s,"cards-refilled",s.names[id]+" received a fresh hand.",{playerId:id});}
+ if(!s.hands[id].actions.length){refillActions(s,id);if(s.lastEvent?.type==="total-changed"){s.lastEvent.message+=" They received a fresh hand.";s.lastEvent.refilled=true;}else emit(s,"cards-refilled",s.names[id]+" received a fresh hand.",{playerId:id});}
  if(s.total===67)s.winnerId=id;
  if(!s.winnerId)finishTurn(s,id);
 }
