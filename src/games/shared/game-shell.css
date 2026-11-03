@@ -5,7 +5,15 @@
 .playblox-guide-dialog .guide-dialog-emoji{font-size:42px;text-align:center}
 .playblox-guide-dialog .section-kicker{text-align:center}
 .playblox-guide-dialog h2{text-align:center;font-family:'Baloo 2',cursive;font-size:clamp(24px,5vw,34px);margin:6px 0 14px}
-.playblox-guide-dialog .guide-dialog-copy{white-space:pre-line;font-size:15px;font-weight:800;line-height:1.7;background:#fffdf5;border:1px solid #e1dac6;border-radius:16px;padding:18px}
+.playblox-guide-dialog .guide-dialog-copy{font-size:14px;font-weight:700;line-height:1.65;background:#fffdf5;border:1px solid #e1dac6;border-radius:16px;padding:clamp(15px,3vw,22px);text-align:left;overflow-wrap:anywhere}
+.playblox-guide-dialog .guide-dialog-copy p{margin:0 0 12px}
+.playblox-guide-dialog .guide-dialog-copy p:last-child{margin-bottom:0}
+.playblox-guide-dialog .guide-dialog-copy h3{font:900 19px 'Baloo 2',cursive;color:#76552b;margin:20px 0 8px;padding-bottom:5px;border-bottom:1px solid #e8dcc7}
+.playblox-guide-dialog .guide-dialog-copy h3:first-child{margin-top:0}
+.playblox-guide-dialog .guide-dialog-copy h4{font:900 15px 'Baloo 2',cursive;color:#53624d;margin:13px 0 6px}
+.playblox-guide-dialog .guide-dialog-copy ul,.playblox-guide-dialog .guide-dialog-copy ol{margin:5px 0 14px;padding-left:22px}
+.playblox-guide-dialog .guide-dialog-copy li{padding-left:3px;margin:4px 0}
+.playblox-guide-dialog .guide-dialog-copy strong{color:#584326}
 .playblox-guide-dialog .guide-dialog-progress{text-align:center;font-size:12px;font-weight:900;color:#647063;min-height:18px}
 .playblox-guide-dialog .guide-dialog-ready{margin-top:10px}
 .playblox-guide-dialog .guide-dialog-ready:disabled{opacity:.72;cursor:wait}
