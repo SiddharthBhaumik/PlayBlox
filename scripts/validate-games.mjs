@@ -14,15 +14,15 @@ const unique = (items, label) => {
 };
 
 unique(gameRegistry.map(game => game.id), "frontend game id");
-const readyGames = gameRegistry.filter(game => game.status === "ready");
+const readyGames = gameRegistry.filter(game => game.status === "ready" || game.status === "beta");
 assert.ok(readyGames.length > 0, "At least one game must be ready");
 
 for (const game of gameRegistry) {
   assert.match(game.id, /^[a-z0-9-]+$/, `Invalid frontend id: ${game.id}`);
   assert.ok(game.name?.trim(), `Missing name for ${game.id}`);
   assert.ok(game.description?.trim(), `Missing description for ${game.id}`);
-  assert.ok(["ready", "coming-soon"].includes(game.status), `Invalid status for ${game.id}`);
-  if (game.status !== "ready") continue;
+  assert.ok(["ready", "beta", "coming-soon"].includes(game.status), `Invalid status for ${game.id}`);
+  if (game.status !== "ready" && game.status !== "beta") continue;
   assert.ok(game.path, `Ready game ${game.id} has no frontend entry path`);
   assert.ok(game.guide?.trim(), `Ready game ${game.id} has no player guide`);
   assert.ok(game.players && Number.isInteger(game.players.min) && Number.isInteger(game.players.max)
