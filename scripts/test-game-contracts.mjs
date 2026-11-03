@@ -123,7 +123,7 @@ assert.equal((await sixtySeven.canStart(ctx67)).ok, true);
 let s67 = sixtySeven.createInitialState(ctx67);
 assert.equal(s67.total, 13);
 assert.equal(s67.hands.p1.actions.length, 6);
-assert.equal(new Set(s67.hands.p1.actions).size, 6);
+assert.equal(s67.hands.p1.actions.every(card => ["addition","subtraction","multiplication","division","switch","set-total","reverse"].includes(card)), true);
 const public67 = sixtySeven.getPublicState(s67);
 assert.equal("hands" in public67, false);
 assert.equal("dice" in public67, false);
@@ -131,6 +131,23 @@ assert.equal("hidden" in public67, false);
 assert.equal("glitches" in public67.effects, false);
 assert.equal(sixtySeven.getPrivateState(s67, "p1").hand.actions.length, 6);
 assert.equal("hands" in sixtySeven.getPrivateState(s67, "p2"), false);
+
+
+ // Weighted independent draws permit duplicates and preserve the intended rarity tiers.
+ const originalRandom = Math.random;
+ try {
+   Math.random = () => 0;
+   const duplicateDeal = sixtySeven.createInitialState(ctx67);
+   assert.deepEqual(duplicateDeal.hands.p1.actions, Array(6).fill("addition"));
+ } finally { Math.random = originalRandom; }
+
+ // Consuming one copy must leave other copies of the same action in the hand.
+ let duplicateUse67 = sixtySeven.createInitialState(ctx67);
+ duplicateUse67.hands.p1.actions = ["addition", "addition", "subtraction"];
+ duplicateUse67.dice = [2, 3];
+ duplicateUse67 = sixtySeven.reduceAction(ctx67, duplicateUse67, { type: "select-action", card: "addition", dieIndex: 0 });
+ duplicateUse67 = sixtySeven.reduceAction(ctx67, duplicateUse67, { type: "confirm-action" });
+ assert.equal(duplicateUse67.hands.p1.actions.filter(card => card === "addition").length, 1);
 
 // Set Total uses D6 as tens and D7 as ones, and wins on exactly 67.
 s67.hands.p1.actions = ["set-total"];
