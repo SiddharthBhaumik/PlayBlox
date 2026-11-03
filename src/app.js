@@ -16,7 +16,7 @@ let explicitlyReturningToLobby = new URLSearchParams(location.search).get('lobby
 $('year').textContent = new Date().getFullYear();
 renderGameCards($('games-grid'), gameRegistry);
 let selectedGameId = null;
-function selectedGame() { return gameRegistry.find(game => game.id === selectedGameId && game.status === 'ready' && game.players); }
+function selectedGame() { return gameRegistry.find(game => game.id === selectedGameId && (game.status === 'ready' || game.status === 'beta') && game.players); }
 function renderGameChoices(room = latestLobbyRoom) {
   const container = $('lobby-game-select');
   if (!container) return;
@@ -109,7 +109,7 @@ function gameFeedback(message, success = false) {
   node.classList.toggle('success', success);
 }
 function openActiveGame(gameId) {
-  const game = gameRegistry.find(entry => entry.id === gameId && entry.status === 'ready');
+  const game = gameRegistry.find(entry => entry.id === gameId && (entry.status === 'ready' || entry.status === 'beta'));
   if (!game?.path || !activeRoomCode) return;
   const url = new URL(game.path, location.href);
   url.searchParams.set('party', activeRoomCode);
