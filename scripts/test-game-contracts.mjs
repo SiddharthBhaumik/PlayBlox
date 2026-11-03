@@ -10,7 +10,7 @@ assert.equal(new Set(SPECTRUMS.map(pair => `${pair.left}|${pair.right}`)).size, 
 const serverGames = listServerGames();
 const player = (id) => ({ id, nickname: `Player ${id}`, isHost: id === "p1", connected: true, role: "player" });
 
-for (const frontend of gameRegistry.filter(game => game.status === "ready")) {
+for (const frontend of gameRegistry.filter(game => game.status === "ready" || game.status === "beta")) {
   const game = getServerGame(frontend.id);
   assert.ok(game, `Missing server module for ${frontend.id}`);
 
@@ -40,7 +40,7 @@ for (const frontend of gameRegistry.filter(game => game.status === "ready")) {
   }
 }
 
-assert.equal(serverGames.length, gameRegistry.filter(game => game.status === "ready").length,
+assert.equal(serverGames.length, gameRegistry.filter(game => game.status === "ready" || game.status === "beta").length,
   "Every ready frontend game must have exactly one server game module");
 
 console.log(`Game smoke tests passed for ${serverGames.length} server-authoritative games.`);
