@@ -3,8 +3,10 @@
 - [Tic-Tac-Toe](./src/games/tic-tac-toe/index.html)
 - [Bullet Matrix](./src/games/bullet-matrix/index.html)
 - [Questionable Answers](./src/games/questionable-answers/index.html)
-- [Decrypto](./src/games/decrypto/index.html)\n- [Minefield (Beta)](./src/games/minefield/index.html) — experimental 20×20 tactical game
+- [Decrypto](./src/games/decrypto/index.html)
+- [Minefield (Beta)](./src/games/minefield/index.html) — experimental 20×20 tactical game
 - [Hand Cricket](./src/games/hand-cricket/index.html) — simultaneous number-pick cricket for 2–8 players
+- [Genie's Guess](./src/games/genie/index.html) — think of anyone and try to stump the genie
 
 
 ## Adding a game
