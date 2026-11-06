@@ -41,7 +41,6 @@ export function buildHandCricketAnalytics(state) {
     overall.runs += d.runs; overall.balls++;
     if (d.out) {
       batter.dismissals++; bowler.wickets++; overall.wickets++;
-      overall.dismissedRuns += inn.batters.get(d.batterId).runs;
       overall.dismissedBatters++;
     }
     let inn = inningsMap.get(d.inningsKey);
@@ -55,6 +54,7 @@ export function buildHandCricketAnalytics(state) {
     if (!inn.batters.has(d.batterId)) inn.batters.set(d.batterId,{runs:0,balls:0,dismissed:false});
     const battingLine=inn.batters.get(d.batterId);
     battingLine.runs += d.runs; battingLine.balls++;
+    if (d.out) overall.dismissedRuns += battingLine.runs;
     if (teamMode) {
       const team=d.battingTeam;
       if (team && teamScore[team] !== undefined) {
