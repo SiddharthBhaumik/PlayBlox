@@ -458,4 +458,26 @@ const individualResults=handCricket.getResults(context("p1",soPlayers),ranked);
 assert.equal(individualResults.ranking[0].playerId,"p4","Runs remain the primary ranking criterion");
 assert.equal(individualResults.ranking[1].playerId,"p3","Bowling wickets break equal-run ties before highest score");
 
+// A one-wicket-per-player Super Over ends after one wicket when a team
+// has only one eligible batter, rather than waiting for a nonexistent second wicket.
+let onePlayerSuperOver=structuredClone(oneEach);
+onePlayerSuperOver=action(pair,onePlayerSuperOver,"p1",{type:"vote-super-over",vote:"yes"});
+onePlayerSuperOver=action(pair,onePlayerSuperOver,"p2",{type:"vote-super-over",vote:"yes"});
+assert.equal(onePlayerSuperOver.superOverWicketLimit,1,"A one-player team receives a one-wicket Super Over limit");
+onePlayerSuperOver=playBall(pair,onePlayerSuperOver,2,2);
+assert.equal(onePlayerSuperOver.innings,2,"One wicket ends a one-player Super Over innings immediately");
+
+// With two batters and one wicket per player, the dismissed batter cannot
+// return; the other batter gets the only remaining batting opportunity.
+let twoPerTeamSuperOver=structuredClone(so);
+twoPerTeamSuperOver.config.wickets=1;
+twoPerTeamSuperOver=action(soPlayers,twoPerTeamSuperOver,"p1",{type:"vote-super-over",vote:"yes"});
+twoPerTeamSuperOver=action(soPlayers,twoPerTeamSuperOver,"p3",{type:"vote-super-over",vote:"yes"});
+assert.equal(twoPerTeamSuperOver.superOverWicketLimit,2,"Two eligible batters receive two Super Over wickets");
+const firstSuperOverBatter=twoPerTeamSuperOver.currentBatterId;
+twoPerTeamSuperOver=playBall(soPlayers,twoPerTeamSuperOver,1,1);
+assert.notEqual(twoPerTeamSuperOver.currentBatterId,firstSuperOverBatter,"The second player bats after the first player's dismissal");
+twoPerTeamSuperOver=playBall(soPlayers,twoPerTeamSuperOver,2,2);
+assert.equal(twoPerTeamSuperOver.innings,2,"The innings ends immediately after the second player's dismissal");
+
 console.log("Hand Cricket extended rules tests passed.");
