@@ -292,7 +292,7 @@ export const handCricket={
     }
     if(a.type==="vote-captain"){
       const team=teamOf(s,id),candidates=s.runoff[team]?.length?s.runoff[team]:s.playerOrder.filter(pid=>teamOf(s,pid)===team);
-      return s.phase==="captains"&&team&&!s.teamVotes[team]?.[id]&&candidates.includes(a.candidateId)?{ok:true}:{ok:false,reason:"Choose one captain vote from your own team."};
+      return s.phase==="captains"&&TEAMS.includes(team)&&!s.teamVotes[team]?.[id]&&candidates.includes(a.candidateId)?{ok:true}:{ok:false,reason:"Choose one captain vote from your own team."};
     }
     if(a.type==="select-batter"){
       return s.config.mode==="team"&&s.phase==="playing"&&id===s.captains[s.battingTeam]&&eligibleBatters(s,s.battingTeam).includes(a.playerId)&&!Object.keys(s.pending).length&&s.batterSelectionOpen?{ok:true}:{ok:false,reason:"The batting captain can choose one eligible batter at the start or after a wicket."};
