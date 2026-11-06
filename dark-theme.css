@@ -490,3 +490,29 @@ dialog.playblox-guide-dialog::backdrop{background:#020510d9!important;backdrop-f
   border-color:#596b91!important;box-shadow:none!important;
 }
 :root[data-theme="dark"] .hc-game .playblox-lifecycle-error{color:#ff9cab!important}
+
+
+/* 67: round-history entries must remain readable against the midnight panels. */
+:root[data-theme="dark"] .sixtyseven-main .event-panel{
+  background:linear-gradient(145deg,#172442,#101a33)!important;
+  border-color:#7182aa!important;color:#f7f0e5!important;
+}
+:root[data-theme="dark"] .sixtyseven-main .event-panel h2,
+:root[data-theme="dark"] .sixtyseven-main .event-panel h3{
+  color:#fff1d8!important;
+}
+:root[data-theme="dark"] .sixtyseven-main .event-panel .history-heading span{
+  color:#bfcbe5!important;
+}
+:root[data-theme="dark"] .sixtyseven-main .event-panel #event-message{
+  color:#dce5f7!important;
+}
+:root[data-theme="dark"] .sixtyseven-main .event-history{
+  color:#f2f5ff!important;
+}
+:root[data-theme="dark"] .sixtyseven-main .event-history li{
+  background:linear-gradient(135deg,#243453,#1a2947)!important;
+  color:#edf2ff!important;
+  border:1px solid #7182aa66!important;
+  box-shadow:0 2px 8px #0003!important;
+}
