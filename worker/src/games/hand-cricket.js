@@ -80,10 +80,14 @@ function requestSuperOverVote(s){
   s.currentBatterId=null;s.currentBowlerId=null;s.pending={};s.overBalls=[];
 }
 function startSuperOver(s){
+  // The team that batted second in the previous innings bats first now.
+  // This also reverses the order again after every tied Super Over.
+  const firstBattingTeam=s.battingTeam;
   s.superOverRound=(s.superOverRound||0)+1;s.superOverActive=true;s.superOverVote={red:null,blue:null};
   s.teamScores={red:{runs:0,wickets:0,balls:0},blue:{runs:0,wickets:0,balls:0}};
   s.wicketLosses={red:{},blue:{}};
-  startTeamInnings(s,"red",1);
+  s.wildcardBowlerReplacementRequired=false;
+  startTeamInnings(s,firstBattingTeam,1);
 }
 const economyOf=x=>x.ballsBowled?x.runsConceded/(x.ballsBowled/6):Infinity;
 const strikeRateOf=x=>x.balls?x.runs/x.balls*100:0;
@@ -190,7 +194,7 @@ function resolveDelivery(s,ctx){
   if(team){
     if(out){refreshHighest(s,batter);s.currentBatterId=nextBatter(s,team,batter);}
     const score=s.teamScores[team],limit=s.superOverActive?6:s.config.unlimited?Infinity:s.config.limit*6;
-    const inningsDone=score.balls>=limit||!eligibleBatters(s,team).length;
+    const inningsDone=score.balls>=limit||(s.superOverActive?score.wickets>=2:!eligibleBatters(s,team).length);
     if(inningsDone){
       for(const id of s.playerOrder)refreshHighest(s,id);
       if(s.overBalls.length)saveOver(s,s.overBalls.length===6);
@@ -235,7 +239,7 @@ export const handCricket={
       wicketLosses:{red:{},blue:{}},battingQueue:{red:[],blue:[]},history:[],completedOvers:[],overBalls:[],
       milestones:[],pending:{},innings:1,individualIndex:0,individualBalls:0,individualWickets:0,individualQueue:[],
       currentInningsRuns:{},bowlingRound:{},roundOrder:[],lastBowlerId:null,overBowlerId:null,
-      currentBatterId:null,currentBowlerId:null,batterSelectionOpen:false,bowlerSelectionOpen:false,winnerTeam:null,lastDelivery:null,lastEvents:[]};
+      currentBatterId:null,currentBowlerId:null,batterSelectionOpen:false,bowlerSelectionOpen:false,wildcardBowlerReplacementRequired:false,wildcardBattingPriorityNoticeAt:0,winnerTeam:null,lastDelivery:null,lastEvents:[]};
   },
   getPublicState(s){
     if(!s)return null;
@@ -313,13 +317,14 @@ export const handCricket={
       return s.phase==="captains"&&TEAMS.includes(team)&&!s.teamVotes[team]?.[id]&&candidates.includes(a.candidateId)?{ok:true}:{ok:false,reason:"Choose one captain vote from your own team."};
     }
     if(a.type==="select-batter"){
-      const eligible=eligibleBatters(s,s.battingTeam).filter(pid=>s.bowlerSelectionOpen||pid!==s.currentBowlerId);
+      const eligible=eligibleBatters(s,s.battingTeam).filter(pid=>pid===s.wildcardId||pid!==s.currentBowlerId);
       return s.config.mode==="team"&&s.phase==="playing"&&id===s.captains[s.battingTeam]&&eligible.includes(a.playerId)&&!Object.keys(s.pending).length&&s.batterSelectionOpen?{ok:true}:{ok:false,reason:"The batting captain must choose an eligible batter who is not the confirmed bowler."};
     }
     if(a.type==="select-bowler"){
-      const batterId=s.batterSelectionOpen?null:s.currentBatterId;
+      const batterId=s.currentBatterId;
       const candidates=eligibleBowlers(s,s.bowlingTeam,batterId),alternatives=candidates.filter(pid=>pid!==s.lastBowlerId);
-      return s.config.mode==="team"&&s.phase==="playing"&&id===s.captains[s.bowlingTeam]&&candidates.includes(a.playerId)&&(!alternatives.length||a.playerId!==s.lastBowlerId)&&s.overBalls.length===0&&s.bowlerSelectionOpen&&!Object.keys(s.pending).length?{ok:true}:{ok:false,reason:"Only your bowling captain can choose one eligible bowler before an over begins."};
+      const replacement=s.wildcardBowlerReplacementRequired===true;
+      return s.config.mode==="team"&&s.phase==="playing"&&id===s.captains[s.bowlingTeam]&&candidates.includes(a.playerId)&&(!alternatives.length||a.playerId!==s.lastBowlerId)&&(s.overBalls.length===0||replacement)&&s.bowlerSelectionOpen&&!Object.keys(s.pending).length?{ok:true}:{ok:false,reason:"Only your bowling captain can choose an eligible bowler at the start of an over or replace a wildcard who has been selected to bat."};
     }
     if(a.type==="submit-ball"){
       if(s.phase!=="playing"||![s.currentBatterId,s.currentBowlerId].includes(id))return {ok:false,reason:"You are not batting or bowling this ball."};
@@ -378,8 +383,23 @@ export const handCricket={
       }
       return n;
     }
-    if(a.type==="select-batter"){n.currentBatterId=a.playerId;n.batterSelectionOpen=false;return n;}
-    if(a.type==="select-bowler"){n.currentBowlerId=a.playerId;n.overBowlerId=a.playerId;n.bowlerSelectionOpen=false;return n;}
+    if(a.type==="select-batter"){
+      n.currentBatterId=a.playerId;n.batterSelectionOpen=false;
+      if(a.playerId===n.wildcardId&&n.currentBowlerId===a.playerId){
+        // Batting has priority when the wildcard is selected for both roles.
+        n.currentBowlerId=nextTeamBowler(n,a.playerId,n.bowlingTeam);
+        n.overBowlerId=n.currentBowlerId;
+        n.bowlerSelectionOpen=true;
+        n.wildcardBowlerReplacementRequired=true;
+        n.wildcardBattingPriorityNoticeAt=Date.now();
+      }
+      return n;
+    }
+    if(a.type==="select-bowler"){
+      n.currentBowlerId=a.playerId;n.overBowlerId=a.playerId;n.bowlerSelectionOpen=false;
+      n.wildcardBowlerReplacementRequired=false;
+      return n;
+    }
     if(a.type==="submit-ball"){
       n.pending[id]=a.choice;
       if(n.pending[n.currentBatterId]!==undefined&&n.pending[n.currentBowlerId]!==undefined){
