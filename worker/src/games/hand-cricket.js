@@ -69,8 +69,28 @@ function refreshHighest(s,id){
 function finish(s,winnerTeam=null){
   for(const id of s.playerOrder)refreshHighest(s,id);
   s.phase="finished";s.winnerTeam=winnerTeam;s.currentBatterId=null;s.currentBowlerId=null;s.pending={};
-  s.completedAt=Date.now();
+  s.superOverActive=false;s.completedAt=Date.now();
 }
+function requestSuperOverVote(s){
+  s.superOverRounds=s.superOverRounds||[];
+  s.superOverRounds.push({round:s.superOverRound||0,scores:clone(s.teamScores)});
+  s.phase="super-over-vote";s.superOverActive=false;s.superOverVote={red:null,blue:null};
+  s.currentBatterId=null;s.currentBowlerId=null;s.pending={};s.overBalls=[];
+}
+function startSuperOver(s){
+  s.superOverRound=(s.superOverRound||0)+1;s.superOverActive=true;s.superOverVote={red:null,blue:null};
+  s.teamScores={red:{runs:0,wickets:0,balls:0},blue:{runs:0,wickets:0,balls:0}};
+  s.wicketLosses={red:{},blue:{}};
+  startTeamInnings(s,"red",1);
+}
+const economyOf=x=>x.ballsBowled?x.runsConceded/(x.ballsBowled/6):Infinity;
+const strikeRateOf=x=>x.balls?x.runs/x.balls*100:0;
+const cmpDesc=(a,b)=>a===b?0:b-a;
+const cmpAsc=(a,b)=>a===b?0:a-b;
+const compareBestBatter=(a,b)=>cmpDesc(a.runs,b.runs)||cmpDesc(a.highestScore,b.highestScore)||cmpDesc(strikeRateOf(a),strikeRateOf(b));
+const compareBestBowler=(a,b)=>cmpDesc(a.wicketsTaken,b.wicketsTaken)||cmpAsc(economyOf(a),economyOf(b))||cmpAsc(a.runsConceded,b.runsConceded);
+const compareIndividual=(a,b)=>cmpDesc(a.runs,b.runs)||cmpDesc(a.wicketsTaken,b.wicketsTaken)||cmpDesc(a.highestScore,b.highestScore)||cmpAsc(economyOf(a),economyOf(b))||cmpDesc(strikeRateOf(a),strikeRateOf(b))||cmpAsc(a.runsConceded,b.runsConceded);
+const allTied=(rows,compare)=>rows.length?rows.filter(row=>compare(row,rows[0])===0):[];
 function saveOver(s,complete=true){
   if(!s.overBalls.length)return;
   s.completedOvers.push({innings:s.innings||null,battingTeam:s.battingTeam||null,balls:s.overBalls.slice(),runs:s.overBalls.reduce((n,d)=>n+d.runs,0),wickets:s.overBalls.filter(d=>d.out).length,bowlerId:s.overBowlerId,complete});
@@ -153,13 +173,16 @@ function resolveDelivery(s,ctx){
   s.history.push(delivery);s.overBalls.push(delivery);s.lastDelivery=delivery;s.pending={};
   if(team){
     if(out){refreshHighest(s,batter);s.currentBatterId=nextBatter(s,team,batter);}
-    const score=s.teamScores[team],limit=s.config.unlimited?Infinity:s.config.limit*6;
+    const score=s.teamScores[team],limit=s.superOverActive?6:s.config.unlimited?Infinity:s.config.limit*6;
     const inningsDone=score.balls>=limit||!eligibleBatters(s,team).length;
     if(inningsDone){
       for(const id of s.playerOrder)refreshHighest(s,id);
       if(s.overBalls.length)saveOver(s,s.overBalls.length===6);
       if(s.innings===1)startTeamInnings(s,s.bowlingTeam,2);
-      else finish(s,score.runs>s.teamScores[s.bowlingTeam].runs?team:score.runs===s.teamScores[s.bowlingTeam].runs?null:s.bowlingTeam);
+      else{
+        const winner=score.runs>s.teamScores[s.bowlingTeam].runs?team:score.runs===s.teamScores[s.bowlingTeam].runs?null:s.bowlingTeam;
+        if(s.superOverActive&&!winner)requestSuperOverVote(s);else finish(s,winner);
+      }
     }else{
       if(!s.currentBatterId)s.currentBatterId=nextBatter(s,team);
       if(s.innings===2&&score.runs>s.teamScores[s.bowlingTeam].runs){if(s.overBalls.length)saveOver(s,false);finish(s,team);}
@@ -185,14 +208,14 @@ function resolveDelivery(s,ctx){
 export const handCricket={
   id:"hand-cricket",name:"Hand Cricket",
   description:"A simultaneous number-pick cricket match: bat smart, bowl smart, and build the score.",
-  guide:"🏏 HAND CRICKET — COMPLETE PLAY GUIDE\n\nTHE AIM\nTeam match: score more runs than the opposing team. Individual tournament: finish with the highest total runs. Every ball is a simultaneous contest between one batter and one bowler.\n\nONE BALL, TWO HAND CHOICES\n1. The batter and bowler each secretly choose a number from 1 to 6.\n2. Neither player sees the other's choice before locking in.\n3. Once both choices are locked, the server reveals them together with animated hand gestures.\n4. Every delivery counts as one ball, including a wicket.\nOnly numbers 1–6 can be selected; zero is not part of the game.\n\nHOW RUNS AND WICKETS WORK\n• Different numbers: the batter scores the number they chose.\n• Matching numbers: the batter is OUT.\n• If Fist is enabled, either player may choose ✊ Fist.\n• Fist vs Fist: the batter is OUT.\n• Only one player chooses Fist: the other player's number is scored.\nThere are no separate four- or six-run boundary bonuses.\n\nMATCH SETTINGS\nThe host configures the match before continuing. Other players can see the settings but cannot change them.\n• Match format: Team-wise or Individual tournament.\n• Wickets per player: how many dismissals a player can take before they are eliminated from batting.\n• Allow Fist: enables or disables the Fist choice.\n• Team-wise duration: choose overs per innings or Unlimited. One over is six balls.\n• Individual duration: choose balls per player or Unlimited.\n• Unlimited: an innings continues until its eligible batters have used all their wickets. A chase can still end immediately when the target is passed.\n• After a dismissal, a player with wickets remaining returns to the back of the batting queue.\n\nSAVE SETTINGS AND CONTINUE\n• Save settings stores the current choices and shares them with everyone. It does not begin the match; the host can still change the settings.\n• Continue saves the current choices and moves the game into the next setup stage (team selection for a team match, or the first innings for an individual tournament). After continuing, settings are locked.\n\nTEAM-WISE MATCH\n1. Everyone chooses Red or Blue. Teams are balanced as evenly as possible.\n2. Each team elects a captain. Every teammate gets one private vote. A tie among the top candidates triggers a runoff vote.\n3. Red bats first. The batting captain chooses the next eligible batter; the bowling captain chooses a bowler at the start of each over.\n4. An over is six balls. The same bowler completes all six balls, even if a wicket falls. The previous bowler cannot bowl the next over, except in a two-player match.\n5. Batters rotate after each dismissal. A player with wickets remaining can return later in the queue.\n6. Teams swap roles for the second innings. The chasing team wins as soon as it passes the target; otherwise the completed scores decide the result.\n\nODD PLAYER — THE WILDCARD\nWith an odd number of players, one player from the larger team is the wildcard. The host chooses the wildcard's role:\n• Bat only: may bat for either team, but cannot bowl.\n• Bowl only: may bowl for either team, but cannot bat.\n• Bat and bowl: may bat or bowl for either team.\nThe wildcard can never bat and bowl in the same delivery. If the wildcard is batting for a team, they cannot bowl against themselves. Their wicket allowance is tracked separately for each team, and runs count for the team they are batting for.\n\nINDIVIDUAL TOURNAMENT\nEveryone bats one innings with the same ball allocation (or Unlimited), subject to their wicket allowance. Other players rotate as bowlers; nobody bowls in their own innings. A fair bowling round gives every eligible bowler one over before anyone gets a second. If an innings ends part-way through an over, the next batter takes the crease and the current bowler finishes that over unless doing so would make them bowl against themselves.\n\nSCORECARD, HIGH SCORE AND HISTORY\n• The live scoreboard shows team scores or individual standings.\n• The scorecard is shown in both formats. HS (Highest Score) is each player's best single-innings score; it is not limited to individual tournaments and is not dependent on choosing one wicket. The wicket setting only controls how many dismissals a player can take.\n• Batting figures include runs, balls, highest score, wickets lost and strike rate. Bowling figures include overs, runs conceded, wickets taken and economy.\n• Overs use overs.balls notation: 8.2 means 8 overs and 2 balls (50 balls).\n• RR is the batting run rate. During a limited chase, the board also shows balls remaining and required run rate (RRR).\n• The chase panel shows how many more wickets the bowling team needs to win.\n• Completed overs show each delivery and the over total.\n• Ball-by-ball history records every delivery in the current match, including batter, bowler, both choices and the outcome. It is not capped at a fixed number of balls; scroll the history panel to see earlier deliveries. Reconnecting restores the full history.\n• Personal milestones are 50, 100, 150 and 200 runs; team milestones are 50, 100 and 150 runs.\n\nTHE RESULT\nThe result screen shows the winner or tie and winning margin, final scores, top scorer, best bowler and milestones. Best Bowler is ranked by most wickets, then lowest economy, then fewest runs conceded.\n\nRECONNECTING\nThe server is the source of truth. If you reconnect, the current innings, locked-choice status, scorecard, completed overs and full ball history are restored.",
+  guide:"🏏 HAND CRICKET — COMPLETE PLAY GUIDE\n\nTHE AIM\nTeam match: score more runs than the opposing team. Individual tournament: finish with the highest total runs. Every ball is a simultaneous contest between one batter and one bowler.\n\nONE BALL, TWO HAND CHOICES\n1. The batter and bowler each secretly choose a number from 1 to 6.\n2. Neither player sees the other's choice before locking in.\n3. Once both choices are locked, the server reveals them together with animated hand gestures.\n4. Every delivery counts as one ball, including a wicket.\nOnly numbers 1–6 can be selected; zero is not part of the game.\n\nHOW RUNS AND WICKETS WORK\n• Different numbers: the batter scores the number they chose.\n• Matching numbers: the batter is OUT.\n• If Fist is enabled, either player may choose ✊ Fist.\n• Fist vs Fist: the batter is OUT.\n• Only one player chooses Fist: the other player's number is scored.\nThere are no separate four- or six-run boundary bonuses.\n\nMATCH SETTINGS\nThe host configures the match before continuing. Other players can see the settings but cannot change them.\n• Match format: Team-wise or Individual tournament.\n• Wickets per player: how many dismissals a player can take before they are eliminated from batting.\n• Allow Fist: enables or disables the Fist choice.\n• Team-wise duration: choose overs per innings or Unlimited. One over is six balls.\n• Individual duration: choose balls per player or Unlimited.\n• Unlimited: an innings continues until its eligible batters have used all their wickets. A chase can still end immediately when the target is passed.\n• After a dismissal, a player with wickets remaining returns to the back of the batting queue.\n\nSAVE SETTINGS AND CONTINUE\n• Save settings stores the current choices and shares them with everyone. It does not begin the match; the host can still change the settings.\n• Continue saves the current choices and moves the game into the next setup stage (team selection for a team match, or the first innings for an individual tournament). After continuing, settings are locked.\n\nTEAM-WISE MATCH\n1. With an even number of players, choose Red or Blue. With an odd number, choose Red, Blue or the separate Wildcard Player option. Red and Blue must always have equal numbers; the wildcard is outside both teams. You may change your choice until everyone has selected.\n2. Each team elects a captain. Every teammate gets one private vote. A tie among the top candidates triggers a runoff vote.\n3. Red bats first. The batting captain chooses the next eligible batter; the bowling captain chooses a bowler at the start of each over.\n4. An over is six balls. The same bowler completes all six balls, even if a wicket falls. The previous bowler cannot bowl the next over, except in a two-player match.\n5. Batters rotate after each dismissal. A player with wickets remaining can return later in the queue.\n6. Teams swap roles for the second innings. The chasing team wins as soon as it passes the target; otherwise the completed scores decide the result.\n\nODD PLAYER — THE WILDCARD\nWith an odd number of players, exactly one player selects the separate Wildcard Player option. The Red and Blue teams remain equal in size. The host chooses the wildcard's role:\n• Bat only: may bat for either team, but cannot bowl.\n• Bowl only: may bowl for either team, but cannot bat.\n• Bat and bowl: may bat or bowl for either team.\nThe wildcard can never bat and bowl in the same delivery. If the wildcard is batting for a team, they cannot bowl against themselves. Their wicket allowance is tracked separately for each team, and runs count for the team they are batting for.\n\nINDIVIDUAL TOURNAMENT\nEveryone bats one innings with the same ball allocation (or Unlimited), subject to their wicket allowance. Other players rotate as bowlers; nobody bowls in their own innings. A fair bowling round gives every eligible bowler one over before anyone gets a second. If an innings ends part-way through an over, the next batter takes the crease and the current bowler finishes that over unless doing so would make them bowl against themselves.\n\nSCORECARD, HIGH SCORE AND HISTORY\n• The live scoreboard shows team scores or individual standings.\n• The scorecard is shown in both formats. HS (Highest Score) is each player's best single-innings score; it is not limited to individual tournaments and is not dependent on choosing one wicket. The wicket setting only controls how many dismissals a player can take.\n• Batting figures include runs, balls, highest score, wickets lost and strike rate. Bowling figures include overs, runs conceded, wickets taken and economy.\n• Overs use overs.balls notation: 8.2 means 8 overs and 2 balls (50 balls).\n• RR is the batting run rate. During a limited chase, the board also shows balls remaining and required run rate (RRR).\n• The chase panel shows how many more wickets the bowling team needs to win.\n• Completed overs show each delivery and the over total.\n• Ball-by-ball history records every delivery in the current match, including batter, bowler, both choices and the outcome. It is not capped at a fixed number of balls; scroll the history panel to see earlier deliveries. Reconnecting restores the full history.\n• Personal milestones are 50, 100, 150 and 200 runs; team milestones are 50, 100 and 150 runs.\n\nSUPER OVER\nIf the two team scores are tied after the regular match, both team captains independently vote Yes or No. A Super Over happens only when both vote Yes. Each team gets one six-ball over, with the match's configured wicket allowance. If either captain votes No, the match stays tied. If a Super Over is tied, both captains vote again; another Super Over is played only if both vote Yes. This repeats until a team wins or a captain declines.\n\nTHE RESULT\nThe result screen shows the winner or tie, final score and Super Over history when applicable. Team awards are Best Batter (most runs, then highest score, then strike rate; all exact ties share the award) and Best Bowler (most wickets, then lowest economy, then fewest runs conceded; all exact ties share the award). Individual tournament ranking is total runs, bowling wickets taken, highest score, bowling economy (lower is better), strike rate (higher is better), then bowling runs conceded (lower is better). Players tied on every criterion share a rank.\n\nRECONNECTING\nThe server is the source of truth. If you reconnect, the current innings, locked-choice status, scorecard, completed overs and full ball history are restored.",
   emoji:"🏏",color:"#c9e4d2",entry:"./src/games/hand-cricket/index.html",
   players:{min:2,max:8},interactionModel:"simultaneous",lateJoinPolicy:"wait",spectators:{supported:true},
   canStart(ctx){const n=activeIds(ctx).length;return n>=2&&n<=8?{ok:true}:{ok:false,reason:"Hand Cricket needs 2–8 connected players."};},
   createInitialState(ctx){
     const ids=activeIds(ctx);
     return {phase:"settings",playerOrder:ids,config:{mode:"team",wickets:2,oddPlayerMode:"bat-bowl",allowFist:true,unlimited:false,limit:5},
-      teams:{},teamVotes:{red:{},blue:{}},captains:{red:null,blue:null},runoff:{red:[],blue:[]},wildcardId:null,
+      teams:{},teamVotes:{red:{},blue:{}},captains:{red:null,blue:null},runoff:{red:[],blue:[]},wildcardId:null,superOverActive:false,superOverRound:0,superOverVote:{red:null,blue:null},superOverRounds:[],regulationScores:null,
       stats:makeStats(ids),bowlingSequence:0,teamScores:{red:{runs:0,wickets:0,balls:0},blue:{runs:0,wickets:0,balls:0}},
       wicketLosses:{red:{},blue:{}},battingQueue:{red:[],blue:[]},history:[],completedOvers:[],overBalls:[],
       milestones:[],pending:{},innings:1,individualIndex:0,individualBalls:0,individualWickets:0,
@@ -201,10 +224,10 @@ export const handCricket={
   },
   getPublicState(s){
     if(!s)return null;
-    const {pending,teamVotes,...pub}=s;
+    const {pending,teamVotes,superOverVote,...pub}=s;
     return {...pub,pendingPlayers:Object.keys(pending||{}),captainVotesCast:{
       red:Object.keys(teamVotes?.red||{}),blue:Object.keys(teamVotes?.blue||{})
-    }};
+    },superOverVotesCast:{red:superOverVote?.red!==null&&superOverVote?.red!==undefined,blue:superOverVote?.blue!==null&&superOverVote?.blue!==undefined}};
   },
   getPrivateState(s,id){return s?.playerOrder.includes(id)?{hasSubmitted:s.pending?.[id]!==undefined,choice:s.pending?.[id]??null}:null;},
   onPlayerLeave(ctx,s,id){
@@ -256,9 +279,15 @@ export const handCricket={
     }
     if(a.type==="start-match")return s.phase==="settings"&&host?{ok:true}:{ok:false,reason:"Only the host can start the match."};
     if(a.type==="choose-team"){
-      const counts={red:s.playerOrder.filter(pid=>s.teams[pid]==="red").length,blue:s.playerOrder.filter(pid=>s.teams[pid]==="blue").length};
-      const cap=Math.ceil(s.playerOrder.length/2);
-      return s.phase==="teams"&&TEAMS.includes(a.team)&&!s.teams[id]&&counts[a.team]<cap?{ok:true}:{ok:false,reason:"That team is full or your team choice is already locked."};
+      const odd=s.playerOrder.length%2===1,cap=Math.floor(s.playerOrder.length/2);
+      const validTeam=TEAMS.includes(a.team)||(odd&&a.team==="wildcard");
+      const counts={red:s.playerOrder.filter(pid=>pid!==id&&s.teams[pid]==="red").length,blue:s.playerOrder.filter(pid=>pid!==id&&s.teams[pid]==="blue").length,wildcard:s.playerOrder.filter(pid=>pid!==id&&s.teams[pid]==="wildcard").length};
+      const room=a.team==="wildcard"?counts.wildcard<1:counts[a.team]<cap;
+      return s.phase==="teams"&&validTeam&&room?{ok:true}:{ok:false,reason:"That option is full or unavailable. You can change your choice while team selection remains open."};
+    }
+    if(a.type==="vote-super-over"){
+      const team=TEAMS.find(t=>s.captains[t]===id);
+      return s.phase==="super-over-vote"&&team&&s.superOverVote?.[team]===null&&["yes","no"].includes(a.vote)?{ok:true}:{ok:false,reason:"Only an unvoted team captain can vote Yes or No on the Super Over."};
     }
     if(a.type==="vote-captain"){
       const team=teamOf(s,id),candidates=s.runoff[team]?.length?s.runoff[team]:s.playerOrder.filter(pid=>teamOf(s,pid)===team);
@@ -291,14 +320,16 @@ export const handCricket={
       n.teams[id]=a.team;
       if(n.playerOrder.every(pid=>n.teams[pid])){
         const red=n.playerOrder.filter(pid=>n.teams[pid]==="red"),blue=n.playerOrder.filter(pid=>n.teams[pid]==="blue");
-        if(!red.length||!blue.length)return n;
-        if(n.playerOrder.length%2){const larger=red.length>blue.length?red:blue;n.wildcardId=larger[0]||null;}
+        n.wildcardId=n.playerOrder.find(pid=>n.teams[pid]==="wildcard")||null;
+        const expected=Math.floor(n.playerOrder.length/2);
+        if(red.length!==expected||blue.length!==expected||(n.playerOrder.length%2===1)!==Boolean(n.wildcardId))return n;
         n.battingQueue={red:red.slice(),blue:blue.slice()};
         if(n.wildcardId&&n.config.oddPlayerMode!=="bowl-only"){
-          for(const team of TEAMS)if(!n.battingQueue[team].includes(n.wildcardId))n.battingQueue[team].push(n.wildcardId);
+          for(const team of TEAMS)n.battingQueue[team].push(n.wildcardId);
         }
         n.phase="captains";
-        for(const team of TEAMS)if(n.battingQueue[team].length===1)n.captains[team]=n.battingQueue[team][0];
+        for(const team of TEAMS)if(red.length===1&&team==="red"||blue.length===1&&team==="blue")n.captains[team]=team==="red"?red[0]:blue[0];
+        if(n.captains.red&&n.captains.blue)startTeamInnings(n,"red",1);
       }
       return n;
     }
@@ -312,6 +343,14 @@ export const handCricket={
         else{n.runoff[team]=leaders;n.teamVotes[team]={};}
       }
       if(n.captains.red&&n.captains.blue)startTeamInnings(n,"red",1);
+      return n;
+    }
+    if(a.type==="vote-super-over"){
+      const team=TEAMS.find(t=>n.captains[t]===id);n.superOverVote[team]=a.vote;
+      if(TEAMS.every(t=>n.superOverVote[t]!==null)){
+        if(TEAMS.some(t=>n.superOverVote[t]==="no"))finish(n,null);
+        else startSuperOver(n);
+      }
       return n;
     }
     if(a.type==="select-batter"){n.currentBatterId=a.playerId;n.batterSelectionOpen=false;return n;}
@@ -330,10 +369,12 @@ export const handCricket={
   getStatus(ctx,s){return s.phase==="finished"?"finished":"active";},
   getResults(ctx,s){
     if(s.config.mode==="team"){
-      const red=s.teamScores.red,blue=s.teamScores.blue;
-      return {outcome:s.winnerTeam?"winner":red.runs===blue.runs?"draw":"winner",winnerTeam:s.winnerTeam,scores:{red,blue},topScorer:s.playerOrder.map(id=>({id,runs:s.stats[id].runs})).sort((a,b)=>b.runs-a.runs)[0]||null,bestBowler:s.playerOrder.map(id=>({id,wickets:s.stats[id].wicketsTaken,runs:s.stats[id].runsConceded,balls:s.stats[id].ballsBowled,economy:s.stats[id].ballsBowled?s.stats[id].runsConceded/(s.stats[id].ballsBowled/6):Infinity})).sort((a,b)=>b.wickets-a.wickets||a.economy-b.economy||a.runs-b.runs)[0]||null,history:s.history.length};
+      const rows=s.playerOrder.map(id=>({id,...s.stats[id],nickname:nameOf(ctx,id)}));
+      const bestBatters=allTied(rows.slice().sort(compareBestBatter),compareBestBatter).map(x=>({id:x.id,runs:x.runs,highestScore:x.highestScore,strikeRate:strikeRateOf(x)}));
+      const bestBowlers=allTied(rows.slice().sort(compareBestBowler),compareBestBowler).map(x=>({id:x.id,wicketsTaken:x.wicketsTaken,runsConceded:x.runsConceded,ballsBowled:x.ballsBowled,economy:economyOf(x)}));
+      return {outcome:s.winnerTeam?"winner":s.teamScores.red.runs===s.teamScores.blue.runs?"draw":"winner",winnerTeam:s.winnerTeam,scores:{red:s.teamScores.red,blue:s.teamScores.blue},regulationScores:s.regulationScores,superOverRounds:s.superOverRounds||[],bestBatters,bestBowlers,history:s.history.length};
     }
-    const ranking=s.playerOrder.map(id=>({playerId:id,nickname:nameOf(ctx,id),...s.stats[id]})).sort((a,b)=>b.runs-a.runs||b.highestScore-a.highestScore||a.balls-b.balls);
-    return {outcome:"winner",ranking,topScorer:ranking[0]||null,bestBowler:ranking.slice().sort((a,b)=>b.wicketsTaken-a.wicketsTaken||(a.ballsBowled?a.runsConceded/(a.ballsBowled/6):Infinity)-(b.ballsBowled?b.runsConceded/(b.ballsBowled/6):Infinity)||a.runsConceded-b.runsConceded)[0]||null,history:s.history.length};
+    const ranking=s.playerOrder.map(id=>({playerId:id,nickname:nameOf(ctx,id),...s.stats[id],economy:economyOf(s.stats[id]),strikeRate:strikeRateOf(s.stats[id])})).sort(compareIndividual);
+    return {outcome:"winner",ranking,history:s.history.length};
   }
 };
