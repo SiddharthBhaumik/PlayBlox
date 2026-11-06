@@ -84,7 +84,7 @@ function startTeamInnings(s,team,innings){
   s.currentBatterId=nextBatter(s,team);
   s.batterSelectionOpen=true;s.bowlerSelectionOpen=true;
   s.lastBowlerId=null;s.currentBowlerId=nextTeamBowler(s,s.currentBatterId,s.bowlingTeam);
-  s.overBowlerId=s.currentBowlerId;s.overBalls=[];s.pending={};
+  s.overBowlerId=s.currentBowlerId;s.overBalls=[];s.pending={};s.phase="playing";
   if(!s.currentBatterId)finish(s,innings===2?s.bowlingTeam:null);
   else if(!s.currentBowlerId)finish(s,null);
 }

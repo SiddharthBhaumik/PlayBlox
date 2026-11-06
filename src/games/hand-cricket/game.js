@@ -76,7 +76,7 @@ function renderPlay(){
   const reveal=$("delivery-reveal");
   reveal.hidden=false;reveal.classList.remove("hc-reveal");void reveal.offsetWidth;reveal.classList.add("hc-reveal");
   reveal.innerHTML='<div class="hc-reveal-side"><small>🏏 BATTER · '+esc(d.batterName)+'</small><strong>'+esc(String(d.batChoice).toUpperCase())+'</strong></div><div class="hc-reveal-vs">VS</div><div class="hc-reveal-side"><small>🎯 BOWLER · '+esc(d.bowlerName)+'</small><strong>'+esc(String(d.bowlChoice).toUpperCase())+'</strong></div><div class="hc-reveal-result '+(d.out?'out-text':'')+'">'+(d.out?'OUT · '+esc(d.reason):d.runs?d.runs+' RUN'+(d.runs===1?'':'S'):'DOT BALL')+'</div>';
-  document.querySelectorAll(".hc-score-team").forEach(el=>{el.classList.remove("hc-score-update");void el.offsetWidth;el.classList.add("hc-score-update");});
+  if($("motion-toggle").checked)document.querySelectorAll(".hc-score-team").forEach(el=>{el.classList.remove("hc-score-update");void el.offsetWidth;el.classList.add("hc-score-update");});
   playSound(d.out?"wicket":d.runs?"run":"dot");
   for(const event of state.lastEvents||[])if(event.type==="milestone")playSound("milestone");
 }
