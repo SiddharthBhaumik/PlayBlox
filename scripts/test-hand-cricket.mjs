@@ -328,7 +328,7 @@ assert.equal(so.superOverRounds.length,2);
 // the Super Over is capped at two team wickets even when the match setting allows more.
 const superOverOrderPlayers=makePlayers(4);
 let superOverOrder=handCricket.createInitialState(context("p1",superOverOrderPlayers));
-superOverOrder=action(superOverOrderPlayers,superOverOrder,"p1",{type:"update-settings",config:{mode:"team",wickets:3,oddPlayerMode:"bat-bowl",allowFist:false,unlimited:true,limit:1}});
+superOverOrder=action(superOverOrderPlayers,superOverOrder,"p1",{type:"update-settings",config:{mode:"team",wickets:3,oddPlayerMode:"bat-bowl",allowFist:false,unlimited:false,limit:1}});
 superOverOrder=action(superOverOrderPlayers,superOverOrder,"p1",{type:"start-match"});
 superOverOrder=await chooseTeams(superOverOrderPlayers,superOverOrder,[["p1","red"],["p2","red"],["p3","blue"],["p4","blue"]]);
 superOverOrder=action(superOverOrderPlayers,superOverOrder,"p1",{type:"vote-captain",candidateId:"p1"});
