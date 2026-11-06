@@ -149,3 +149,25 @@
 :root[data-theme="dark"] .hc-game .hc-final-main h3{color:#c5a6ed!important}
 :root[data-theme="dark"] .hc-game .hc-score-team .hc-active-player{color:#c5a6ed!important}
 :root[data-theme="dark"] .hc-game .hc-over-history,:root[data-theme="dark"] .hc-game .hc-history{color:#f2edf8!important}
+
+/* Extend each palette to the page chrome and shared roster. */
+:root[data-theme="light"] body:has(.hc-game){background:#fff8ed!important;background-image:radial-gradient(#c45b2410 .8px,transparent .8px),radial-gradient(ellipse at 50% -15%,#f1c99b55,transparent 60%)!important;background-size:28px 28px,100% 100%!important}
+:root[data-theme="dark"] body:has(.hc-game){background:#111016!important;background-image:radial-gradient(#b99adf18 .8px,transparent .8px),radial-gradient(ellipse at 50% -15%,#49365c55,transparent 60%)!important;background-size:28px 28px,100% 100%!important}
+:root[data-theme="light"] .game-layout .game-roster{background:linear-gradient(145deg,#fffaf2,#ffefdc)!important;color:#422b1d!important;border:1px solid #e7c9a8!important;box-shadow:0 12px 28px #75401f12!important}
+:root[data-theme="light"] .game-layout .game-roster h2,:root[data-theme="light"] .game-layout .game-player-info strong{color:#75401f!important}
+:root[data-theme="light"] .game-layout .game-player{background:#fff3e5!important;color:#422b1d!important;border-color:#e7c9a8!important}
+:root[data-theme="light"] .game-layout .game-player small{color:#80634d!important}
+:root[data-theme="dark"] .game-layout .game-roster{background:linear-gradient(145deg,#241e2e,#17141e)!important;color:#f2edf8!important;border:1px solid #574668!important}
+:root[data-theme="dark"] .game-layout .game-roster h2,:root[data-theme="dark"] .game-layout .game-player-info strong{color:#f2edf8!important}
+:root[data-theme="dark"] .game-layout .game-player{background:#30263b!important;color:#f2edf8!important;border-color:#574668!important}
+:root[data-theme="dark"] .game-layout .game-player small{color:#b9acc9!important}
+:root[data-theme="light"] .topbar .theme-toggle{background:#fff1df!important;color:#75401f!important;border-color:#d8ae88!important;box-shadow:0 3px 0 #e7c9a8!important}
+:root[data-theme="dark"] .topbar .theme-toggle{background:#30263b!important;color:#eadcf8!important;border-color:#685477!important;box-shadow:0 3px 0 #09070d!important}
+:root[data-theme="light"] .hc-analytics-team-filter button{background:#f5e3d0!important;color:#603719!important;border-color:#d8ae88!important}
+:root[data-theme="light"] .hc-analytics-team-filter button.active{background:#d97832!important;color:#fffaf2!important;border-color:#c45b24!important}
+:root[data-theme="dark"] .hc-analytics-team-filter button{background:#30263b!important;color:#eadcf8!important;border-color:#685477!important}
+:root[data-theme="dark"] .hc-analytics-team-filter button.active{background:#b99adf!important;color:#21182b!important;border-color:#c5a6ed!important}
+:root[data-theme="light"] .hc-analytics-tabs button{background:#f5e3d0!important;color:#603719!important;border-color:#d8ae88!important}
+:root[data-theme="light"] .hc-analytics-tabs button.active{background:#d97832!important;color:#fffaf2!important}
+:root[data-theme="dark"] .hc-analytics-tabs button{background:#30263b!important;color:#eadcf8!important;border-color:#685477!important}
+:root[data-theme="dark"] .hc-analytics-tabs button.active{background:#b99adf!important;color:#21182b!important}
