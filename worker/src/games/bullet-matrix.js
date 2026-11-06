@@ -15,6 +15,8 @@ export const bulletMatrix = {
   color: "#ffd9c7",
   entry: "./src/games/bullet-matrix/index.html",
   players: { min: 2, max: 8 },
+  rematchChoices: ["replay"],
+  defaultRematchChoice: "replay",
   interactionModel: "simultaneous",
   lateJoinPolicy: "spectate",
   spectators: { supported: true },
