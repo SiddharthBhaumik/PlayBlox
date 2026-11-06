@@ -1,0 +1,151 @@
+/* Hand Cricket theme palettes — scoped to this game only. */
+:root[data-theme="light"] .hc-game{
+  --hc-bg:#fff8ed;--hc-panel:#fff1df;--hc-line:#e7c9a8;--hc-text:#422b1d;
+  --hc-muted:#80634d;--hc-gold:#c45b24;--hc-red:#bd5143;--hc-blue:#477fa7;
+}
+:root[data-theme="light"] .hc-heading h1{color:#422b1d!important}
+:root[data-theme="light"] .hc-heading h1 b{color:#c45b24!important}
+:root[data-theme="light"] .hc-heading p,:root[data-theme="light"] .hc-kicker{color:#75401f!important}
+:root[data-theme="light"] .hc-panel,
+:root[data-theme="light"] .hc-final-main,
+:root[data-theme="light"] .hc-final-card{
+  background:linear-gradient(145deg,#fffaf2,#fff0df)!important;
+  color:#422b1d!important;border-color:#e7c9a8!important;box-shadow:0 12px 28px #75401f12!important;
+}
+:root[data-theme="light"] .hc-meta span{background:#fff1df!important;color:#75401f!important;border-color:#e7c9a8!important}
+:root[data-theme="light"] .hc-notice{background:#fff0d9!important;color:#75401f!important;border-color:#d99b61!important}
+:root[data-theme="light"] .hc-form-grid label,:root[data-theme="light"] .hc-captain label{color:#75401f!important}
+:root[data-theme="light"] .hc-form-grid select,:root[data-theme="light"] .hc-captain select,
+:root[data-theme="light"] #setup-panel input[type=number]{
+  background:#fffdf9!important;color:#422b1d!important;border-color:#d8ae88!important;
+}
+:root[data-theme="light"] .hc-primary{background:#d97832!important;color:#fffaf2!important;border-color:#c45b24!important}
+:root[data-theme="light"] .hc-secondary,:root[data-theme="light"] .hc-team,:root[data-theme="light"] .hc-candidate{
+  background:#f4dfc8!important;color:#603719!important;border-color:#d5a77e!important;
+}
+:root[data-theme="light"] .hc-team.red{background:#f7ded4!important;color:#7e3028!important}
+:root[data-theme="light"] .hc-team.blue{background:#dceaf4!important;color:#244e70!important}
+:root[data-theme="light"] .hc-role,:root[data-theme="light"] .hc-choice,
+:root[data-theme="light"] .hc-final-details,:root[data-theme="light"] .hc-final-scores b,
+:root[data-theme="light"] .hc-final-row,:root[data-theme="light"] .hc-awards>div{
+  background:#fff5e9!important;color:#422b1d!important;border-color:#e7c9a8!important;
+}
+:root[data-theme="light"] .hc-numbers button{background:#f2dfc9!important;color:#603719!important;border-color:#d2a47b!important}
+:root[data-theme="light"] .hc-numbers button:not(:disabled):hover{background:#e9c39e!important}
+:root[data-theme="light"] .hc-numbers button.fist{background:#f4d7a6!important;color:#68451b!important}
+:root[data-theme="light"] .hc-rank>div,:root[data-theme="light"] .hc-setting-notes p{background:#fff3e5!important;color:#80634d!important;border-color:#e7c9a8!important}
+:root[data-theme="light"] .hc-score-team{background:#fff3e5!important;border-color:#e7c9a8!important}
+:root[data-theme="light"] .hc-score-team-tabs button,:root[data-theme="light"] .hc-score-type-tabs button,
+:root[data-theme="light"] .hc-pagination button{
+  background:#f5e3d0!important;color:#603719!important;border-color:#d8ae88!important;
+}
+:root[data-theme="light"] .hc-score-team-tabs button.active,:root[data-theme="light"] .hc-score-type-tabs button.active{
+  background:#d97832!important;color:#fffaf2!important;border-color:#c45b24!important;
+}
+:root[data-theme="light"] .hc-table-wrap th,:root[data-theme="light"] .hc-table-wrap td{border-color:#ead3bc!important;color:#573a27}
+:root[data-theme="light"] .hc-table-wrap th{color:#80634d!important}
+:root[data-theme="light"] .hc-ball.run{background:#d9efdf!important;color:#28633b!important}
+:root[data-theme="light"] .hc-ball.dot{background:#eee4d8!important;color:#725b49!important}
+:root[data-theme="light"] .hc-ball.out{background:#f4d6d1!important;color:#8c3029!important}
+:root[data-theme="light"] .hc-muted,:root[data-theme="light"] .hc-key,:root[data-theme="light"] .hc-role small,
+:root[data-theme="light"] .hc-role span,:root[data-theme="light"] .hc-score-team span,
+:root[data-theme="light"] .hc-score-team b,:root[data-theme="light"] .hc-final-scores small,
+:root[data-theme="light"] .hc-awards strong{color:#80634d!important}
+:root[data-theme="light"] .hc-game .playblox-lifecycle{
+  background:linear-gradient(145deg,#fffaf2,#ffefdc)!important;color:#422b1d!important;border:1px solid #e7c9a8!important;
+}
+:root[data-theme="light"] .hc-game .playblox-lifecycle-title,
+:root[data-theme="light"] .hc-game .playblox-lifecycle-status,
+:root[data-theme="light"] .hc-game .playblox-lifecycle-kicker,
+:root[data-theme="light"] .hc-game .playblox-lifecycle-votes,
+:root[data-theme="light"] .hc-game .playblox-lifecycle-manage summary,
+:root[data-theme="light"] .hc-game .playblox-lifecycle-manage strong,
+:root[data-theme="light"] .hc-game .playblox-kick-row{color:#422b1d!important}
+:root[data-theme="light"] .hc-game .playblox-lifecycle-actions button{background:#d97832!important;color:#fffaf2!important;border-color:#c45b24!important}
+:root[data-theme="light"] .hc-game .playblox-lifecycle-actions .playblox-lifecycle-lobby,
+:root[data-theme="light"] .hc-game .playblox-lifecycle-actions .playblox-lifecycle-leave{background:#f1dfcc!important;color:#603719!important}
+:root[data-theme="light"] .hc-game .playblox-lifecycle-manage summary,
+:root[data-theme="light"] .hc-game .playblox-kick-row{background:#fff2e4!important;border-color:#e7c9a8!important}
+:root[data-theme="light"] .hc-game .hc-delivery-reveal{background:#fff4e7!important;border-color:#e7c9a8!important}
+:root[data-theme="light"] .hc-game .hc-delivery-reveal .hc-reveal-result{color:#28633b!important}
+:root[data-theme="light"] .hc-game .hc-inline-result{color:#28633b!important}
+:root[data-theme="light"] .hc-game .hc-awards small,:root[data-theme="light"] .hc-game .hc-final-details>summary,
+:root[data-theme="light"] .hc-game .hc-final-main h3{color:#a94d20!important}
+:root[data-theme="light"] .hc-game .hc-score-team .hc-active-player{color:#a94d20!important}
+:root[data-theme="light"] .hc-game .hc-over-history,:root[data-theme="light"] .hc-game .hc-history{color:#422b1d!important}
+
+/* Dark theme: obsidian surfaces with restrained amethyst accents. */
+:root[data-theme="dark"] .hc-game{
+  --hc-bg:#111016;--hc-panel:#201b29;--hc-line:#493b59;--hc-text:#f2edf8;
+  --hc-muted:#b9acc9;--hc-gold:#b99adf;--hc-red:#e17a82;--hc-blue:#83a9df;
+}
+:root[data-theme="dark"] .hc-heading h1{color:#f2edf8!important}
+:root[data-theme="dark"] .hc-heading h1 b{color:#c5a6ed!important}
+:root[data-theme="dark"] .hc-heading p,:root[data-theme="dark"] .hc-kicker{color:#c5b5d8!important}
+:root[data-theme="dark"] .hc-panel,
+:root[data-theme="dark"] .hc-final-main,
+:root[data-theme="dark"] .hc-final-card{
+  background:linear-gradient(145deg,#241e2e,#17141e)!important;color:#f2edf8!important;
+  border-color:#493b59!important;box-shadow:0 14px 34px #0006!important;
+}
+:root[data-theme="dark"] .hc-meta span{background:#211b2a!important;color:#d9c8ed!important;border-color:#493b59!important}
+:root[data-theme="dark"] .hc-notice{background:#30253b!important;color:#eadcf8!important;border-color:#725b8b!important}
+:root[data-theme="dark"] .hc-form-grid label,:root[data-theme="dark"] .hc-captain label{color:#d9c8ed!important}
+:root[data-theme="dark"] .hc-form-grid select,:root[data-theme="dark"] .hc-captain select,
+:root[data-theme="dark"] #setup-panel input[type=number]{
+  background:#15121b!important;color:#f2edf8!important;border-color:#574668!important;
+}
+:root[data-theme="dark"] .hc-primary{background:#b99adf!important;color:#21182b!important;border-color:#c5a6ed!important}
+:root[data-theme="dark"] .hc-secondary,:root[data-theme="dark"] .hc-team,:root[data-theme="dark"] .hc-candidate{
+  background:#34283f!important;color:#f2edf8!important;border-color:#685477!important;
+}
+:root[data-theme="dark"] .hc-team.red{background:#48272e!important;color:#ffdce0!important}
+:root[data-theme="dark"] .hc-team.blue{background:#26364e!important;color:#dceaff!important}
+:root[data-theme="dark"] .hc-role,:root[data-theme="dark"] .hc-choice,
+:root[data-theme="dark"] .hc-final-details,:root[data-theme="dark"] .hc-final-scores b,
+:root[data-theme="dark"] .hc-final-row,:root[data-theme="dark"] .hc-awards>div{
+  background:#1b1722!important;color:#f2edf8!important;border-color:#493b59!important;
+}
+:root[data-theme="dark"] .hc-numbers button{background:#392c46!important;color:#f2edf8!important;border-color:#715c83!important}
+:root[data-theme="dark"] .hc-numbers button:not(:disabled):hover{background:#4a385b!important}
+:root[data-theme="dark"] .hc-numbers button.fist{background:#4b3b29!important;color:#ffe6bb!important}
+:root[data-theme="dark"] .hc-rank>div,:root[data-theme="dark"] .hc-setting-notes p{background:#1b1722!important;color:#cbbbdc!important;border-color:#493b59!important}
+:root[data-theme="dark"] .hc-score-team{background:#211b29!important;border-color:#493b59!important}
+:root[data-theme="dark"] .hc-score-team-tabs button,:root[data-theme="dark"] .hc-score-type-tabs button,
+:root[data-theme="dark"] .hc-pagination button{
+  background:#30263b!important;color:#eadcf8!important;border-color:#685477!important;
+}
+:root[data-theme="dark"] .hc-score-team-tabs button.active,:root[data-theme="dark"] .hc-score-type-tabs button.active{
+  background:#b99adf!important;color:#21182b!important;border-color:#c5a6ed!important;
+}
+:root[data-theme="dark"] .hc-table-wrap th,:root[data-theme="dark"] .hc-table-wrap td{border-color:#493b59!important;color:#f2edf8}
+:root[data-theme="dark"] .hc-table-wrap th{color:#b9acc9!important}
+:root[data-theme="dark"] .hc-ball.run{background:#244334!important;color:#bdebd0!important}
+:root[data-theme="dark"] .hc-ball.dot{background:#302a36!important;color:#d3c8dc!important}
+:root[data-theme="dark"] .hc-ball.out{background:#542a35!important;color:#ffdce0!important}
+:root[data-theme="dark"] .hc-muted,:root[data-theme="dark"] .hc-key,:root[data-theme="dark"] .hc-role small,
+:root[data-theme="dark"] .hc-role span,:root[data-theme="dark"] .hc-score-team span,
+:root[data-theme="dark"] .hc-score-team b,:root[data-theme="dark"] .hc-final-scores small,
+:root[data-theme="dark"] .hc-awards strong{color:#b9acc9!important}
+:root[data-theme="dark"] .hc-game .playblox-lifecycle{
+  background:linear-gradient(145deg,#241e2e,#17141e)!important;color:#f2edf8!important;border:1px solid #574668!important;
+}
+:root[data-theme="dark"] .hc-game .playblox-lifecycle-title,
+:root[data-theme="dark"] .hc-game .playblox-lifecycle-status,
+:root[data-theme="dark"] .hc-game .playblox-lifecycle-kicker,
+:root[data-theme="dark"] .hc-game .playblox-lifecycle-votes,
+:root[data-theme="dark"] .hc-game .playblox-lifecycle-manage summary,
+:root[data-theme="dark"] .hc-game .playblox-lifecycle-manage strong,
+:root[data-theme="dark"] .hc-game .playblox-kick-row{color:#f2edf8!important}
+:root[data-theme="dark"] .hc-game .playblox-lifecycle-actions button{background:#b99adf!important;color:#21182b!important;border-color:#c5a6ed!important}
+:root[data-theme="dark"] .hc-game .playblox-lifecycle-actions .playblox-lifecycle-lobby,
+:root[data-theme="dark"] .hc-game .playblox-lifecycle-actions .playblox-lifecycle-leave{background:#30263b!important;color:#eadcf8!important}
+:root[data-theme="dark"] .hc-game .playblox-lifecycle-manage summary,
+:root[data-theme="dark"] .hc-game .playblox-kick-row{background:#30263b!important;border-color:#685477!important}
+:root[data-theme="dark"] .hc-game .hc-delivery-reveal{background:#1b1722!important;border-color:#493b59!important}
+:root[data-theme="dark"] .hc-game .hc-delivery-reveal .hc-reveal-result{color:#bdebd0!important}
+:root[data-theme="dark"] .hc-game .hc-inline-result{color:#bdebd0!important}
+:root[data-theme="dark"] .hc-game .hc-awards small,:root[data-theme="dark"] .hc-game .hc-final-details>summary,
+:root[data-theme="dark"] .hc-game .hc-final-main h3{color:#c5a6ed!important}
+:root[data-theme="dark"] .hc-game .hc-score-team .hc-active-player{color:#c5a6ed!important}
+:root[data-theme="dark"] .hc-game .hc-over-history,:root[data-theme="dark"] .hc-game .hc-history{color:#f2edf8!important}
