@@ -98,3 +98,10 @@ footer{display:flex;justify-content:space-between;align-items:center;gap:12px;pa
 /* Make the current player easy to spot in the lobby list. */
 .lobby-player.is-you{border-color:#70b88b;background:#f0fff4;box-shadow:0 0 0 2px #d6f3df inset}.you-badge{padding:6px 9px;border:1px solid #9ed6b0;border-radius:999px;background:#dff7e7;color:#24653d;font-size:11px;font-weight:1000;white-space:nowrap}
 @media(max-width:420px){.lobby-player{gap:8px;padding:9px}.you-badge,.host-badge{padding:5px 7px;font-size:10px}}
+
+/* Theme switcher — light theme remains the default. */
+.topbar{flex-wrap:wrap}
+.topbar .theme-toggle{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:40px;padding:8px 13px;border:2px solid var(--ink);border-radius:999px;background:#fffdf5;color:var(--ink);font-size:12px;font-weight:1000;box-shadow:0 3px 0 rgba(41,53,46,.14)}
+.topbar .theme-toggle:hover{transform:translateY(-1px)}
+.topbar .theme-toggle span:first-child{font-size:15px}
+@media(max-width:480px){.topbar .theme-toggle{padding:7px 10px;font-size:11px}}
