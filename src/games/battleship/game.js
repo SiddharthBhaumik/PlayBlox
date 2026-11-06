@@ -54,7 +54,7 @@ async function voteRematch(choice){if(submitting)return;submitting=true;$("play-
 $("play-again").textContent="Replay";$("play-again").addEventListener("click",()=>voteRematch("continue"));$("no-rematch").addEventListener("click",()=>voteRematch("lobby"));
 $("host-end-round").addEventListener("click",()=>returnEveryoneToLobby($("host-end-round")));
 $("return-lobby").addEventListener("click",()=>returnEveryoneToLobby($("return-lobby")));
-$("leave-game").addEventListener("click",async()=>{if(leaving)return;if(!window.confirm("Leave this game and party? You will need to rejoin to play again."))return;leaving=true;$("leave-game").disabled=true;try{await api("/api/rooms/"+encodeURIComponent(code)+"/leave",{method:"POST",body:"{}"});sessionStorage.removeItem("playblox:"+code+":token");location.href="../../../"}catch(e){leaving=false;$("leave-game").disabled=false;showError(e.message)}});
+$("leave-game").addEventListener("click",async()=>{if(leaving)return;if(!window.confirm("Leave this game and return to the party lobby? You will remain in the party."))return;leaving=true;$("leave-game").disabled=true;try{await api("/api/rooms/"+encodeURIComponent(code)+"/game/leave",{method:"POST",body:"{}"});location.href=$("back-to-lobby").href}catch(e){leaving=false;$("leave-game").disabled=false;showError(e.message)}});
 $("back-to-lobby").addEventListener("click",event=>{event.preventDefault();returnEveryoneToLobby($("back-to-lobby"))});
 function makeAllAxes(){document.querySelectorAll(".board-wrap").forEach(makeAxes)}makeAllAxes();
 window.addEventListener("beforeunload",()=>{leaving=true;if(reconnectTimer)clearTimeout(reconnectTimer);if(heartbeatTimer)clearInterval(heartbeatTimer);if(socket)socket.close()});
