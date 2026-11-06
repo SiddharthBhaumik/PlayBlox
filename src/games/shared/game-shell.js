@@ -9,7 +9,12 @@ if (!document.querySelector('link[data-playblox-game-shell]')) {
   stylesheet.rel = "stylesheet";
   stylesheet.href = cssUrl;
   stylesheet.dataset.playbloxGameShell = "true";
-  document.head.append(stylesheet);
+  // Keep the shared dark theme last in the cascade. This stylesheet is
+  // injected at runtime, so appending it normally would override dark-theme.css
+  // and leave shared panels (roster, lifecycle, guide dialog) in light colors.
+  const themeStylesheet = document.getElementById("playblox-dark-theme");
+  if (themeStylesheet) document.head.insertBefore(stylesheet, themeStylesheet);
+  else document.head.append(stylesheet);
 }
 
 export function renderGamePlayerPanel({ container, room, gameState = null, myPlayerId = null }) {
