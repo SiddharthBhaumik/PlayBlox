@@ -1,5 +1,6 @@
 import { DurableObject } from "cloudflare:workers";
 import { getServerGame } from "./games/registry.js";
+import { normalizeRematchChoice, rematchChoicesFor, canEndGameForEveryone } from "./game-lifecycle-policy.js";
 
 const ROOM_CAP = 8;
 const ROOM_IDLE_TTL_MS = 2 * 60 * 60 * 1000;
@@ -373,23 +374,10 @@ export class PartyRoom extends DurableObject {
 
     // Games may declare distinct replay choices (for example, continue or restart).
     // Older clients may still send "replay" or the playAgain boolean.
-    const replayChoices = Array.isArray(game.rematchChoices) && game.rematchChoices.length
-      ? game.rematchChoices
-      : ["replay"];
-    let choice = body.choice;
-    if (typeof body.playAgain === "boolean") {
-      choice = body.playAgain
-        ? (game.defaultRematchChoice || replayChoices[0] || "replay")
-        : "lobby";
-    }
-    if (choice === "replay" && !replayChoices.includes("replay")) {
-      choice = game.defaultRematchChoice || replayChoices[0];
-    } else if ((choice === "continue" || choice === "restart")
-      && !replayChoices.includes(choice) && replayChoices.includes("replay")) {
-      choice = "replay";
-    }
+    const replayChoices = rematchChoicesFor(game);
+    const choice = normalizeRematchChoice(game, body);
     if (choice === "lobby") {
-      if (!player.isHost) return json({ error: "Only the host can return everyone to the lobby." }, 403, request);
+      if (!canEndGameForEveryone(player)) return json({ error: "Only the host can return everyone to the lobby." }, 403, request);
       this.recordHistory("returned-to-lobby", player.nickname + " chose to return everyone to the lobby", { gameId: game.id });
       this.room.lifecycle = "lobby";
       for (const entry of this.room.players) if (entry.role === "spectator" || entry.role === "waiting") entry.role = "player";
@@ -591,7 +579,7 @@ export class PartyRoom extends DurableObject {
   async resetGame(request) {
     const player = this.authorizePlayer(request);
     if (!player) return json({ error: "A valid player session is required." }, 401, request);
-    if (!player.isHost) return json({ error: "Only the host can return the party to the lobby." }, 403, request);
+    if (!canEndGameForEveryone(player)) return json({ error: "Only the host can return the party to the lobby." }, 403, request);
     if (!["guide", "results", "playing"].includes(this.room.lifecycle)) return json({ error: "There is no game to reset." }, 409, request);
     this.recordHistory("returned-to-lobby", `${this.room.gameMetadata?.name || "Game"} ended; returned to lobby`, { gameId: this.room.gameId });
     this.room.lifecycle = "lobby";
