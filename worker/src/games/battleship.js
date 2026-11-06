@@ -35,6 +35,8 @@ export const battleship = {
   color: "#b9dce9",
   entry: "./src/games/battleship/index.html",
   players: { min: 2, max: 2 },
+  rematchChoices: ["replay"],
+  defaultRematchChoice: "replay",
   interactionModel: "turn-based",
   lateJoinPolicy: "wait",
   spectators: { supported: true },

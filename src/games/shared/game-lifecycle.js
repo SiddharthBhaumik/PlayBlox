@@ -17,7 +17,7 @@ function lobbyDestination(code, fallback) {
   return target.href || fallback;
 }
 
-export function setupGameLifecycle({ root, getRoom, getPlayerId, api, backToLobby }) {
+export function setupGameLifecycle({ root, getRoom, getPlayerId, api, backToLobby, showReplay = true, enabled = true }) {
   if (!root) return () => {};
   let redirectedToLobby = false;
   let panel = lifecycleInstances.get(root);
@@ -86,19 +86,22 @@ export function setupGameLifecycle({ root, getRoom, getPlayerId, api, backToLobb
     }
     const player = room?.players?.find(entry => entry.id === getPlayerId());
     const finished = room?.lifecycle === "results";
+    if (!enabled) { panel.hidden = true; return; }
     panel.hidden = !room || (!finished && !player?.isHost && player?.role !== "player");
     panel.querySelector(".playblox-lifecycle-title").textContent = finished ? "Round complete" : "Game in progress";
-    panel.querySelector(".playblox-lifecycle-replay").hidden = !finished || !(room.gameState?.playerOrder || []).includes(getPlayerId());
+    panel.querySelector(".playblox-lifecycle-replay").hidden = !showReplay || !finished || !(room.gameState?.playerOrder || []).includes(getPlayerId());
     panel.querySelector(".playblox-lifecycle-replay").textContent = "↻ Replay / Continue";
-    panel.querySelector(".playblox-lifecycle-lobby").hidden = !finished || !(room.gameState?.playerOrder || []).includes(getPlayerId());
+    panel.querySelector(".playblox-lifecycle-lobby").hidden = !finished || !player?.isHost;
     panel.querySelector(".playblox-lifecycle-end").hidden = !player?.isHost || finished;
     panel.querySelector(".playblox-lifecycle-leave").hidden = !room.gameState?.playerOrder?.includes(getPlayerId());
     const votes = room?.rematchVotes || {};
     const participantIds = room?.gameState?.playerOrder || [];
     const activeIds = participantIds.filter(id => room.players.some(p => p.id === id && p.role === "player"));
-    const decided = activeIds.filter(id => votes[id] === "replay").length;
+    const decided = activeIds.filter(id => Boolean(votes[id]) && votes[id] !== "lobby").length;
     panel.querySelector(".playblox-lifecycle-status").textContent = finished
-      ? decided + " of " + activeIds.length + " remaining players have voted to replay. Returning to the lobby ends the match for everyone."
+      ? decided + " of " + activeIds.length + " remaining players have voted to replay. " + (player?.isHost
+        ? "You can return everyone to the party lobby."
+        : "Only the host can return everyone; you can leave the game and return to the party lobby.")
       : (player?.isHost ? "The host can end the game for everyone. Any player can leave the game and return to the party lobby." : "You can leave this game and return to the party lobby without leaving the party.");
     panel.querySelector(".playblox-lifecycle-votes").hidden = !finished;
     panel.querySelector(".playblox-lifecycle-votes").textContent = finished ? participantIds.filter(id => room.players.some(p => p.id === id && p.role === "player")).map(id => {

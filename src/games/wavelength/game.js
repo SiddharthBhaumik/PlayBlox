@@ -10,7 +10,7 @@ const player=id=>room?.players.find(p=>p.id===id);
 const clueGiverId=()=>gameState?.playerOrder?.[gameState.clueGiverIndex];
 const isFinished=()=>room?.lifecycle==="results"||gameState?.phase==="finished";
 function help(message,error=false){$("game-help").textContent=message;$("game-help").classList.toggle("error",error)}
-const syncGameLifecycle = setupGameLifecycle({ root: document.querySelector("main"), getRoom: () => room, getPlayerId: () => myPlayerId, api, backToLobby: () => $("back-to-lobby").href });
+const syncGameLifecycle = setupGameLifecycle({ root: document.querySelector("main"), getRoom: () => room, getPlayerId: () => myPlayerId, api, backToLobby: () => $("back-to-lobby").href , enabled: false });
 
 function setConnection(message,offline=false){$("connection-status").textContent=message;$("connection-status").classList.toggle("offline",offline)}
 async function api(path,options={}){let response;try{response=await fetch(API_BASE_URL+path,{...options,headers:{...(options.body?{"Content-Type":"application/json"}:{}),Authorization:"Bearer "+token,...(options.headers||{})}})}catch{throw new Error("Could not reach the party service.")}const data=await response.json().catch(()=>({}));if(!response.ok){const e=new Error(data.error||"Something went wrong.");e.stateVersion=data.stateVersion;throw e}return data}
@@ -110,7 +110,7 @@ $("continue-round").addEventListener("click",()=>chooseNext("continue"));
 $("restart-game").addEventListener("click",()=>chooseNext("restart"));
 async function endRound(button){if(!player(myPlayerId)?.isHost)return;if(!confirm("End this game and return everyone to the party lobby?"))return;button.disabled=true;try{await api("/api/rooms/"+encodeURIComponent(code)+"/game/reset",{method:"POST",body:"{}"});location.href=$("back-to-lobby").href}catch(e){help(e.message,true);button.disabled=false}}
 setupHostEndRound($("return-lobby"),{getRoom:()=>room,getPlayerId:()=>myPlayerId,onEnd:endRound});
-$("leave-game").addEventListener("click",async()=>{if(leaving||!confirm("Leave this game and party?"))return;leaving=true;try{await api("/api/rooms/"+encodeURIComponent(code)+"/leave",{method:"POST",body:"{}"});location.href="../../../"}catch(e){leaving=false;help(e.message,true)}});
+$("leave-game").addEventListener("click",async()=>{if(leaving||!confirm("Leave this game and return to the party lobby? You will remain in the party."))return;leaving=true;try{await api("/api/rooms/"+encodeURIComponent(code)+"/game/leave",{method:"POST",body:"{}"});location.href=$("back-to-lobby").href}catch(e){leaving=false;help(e.message,true)}});
 function connect(){
  const gen=++generation;if(socket)try{socket.close()}catch{}
  if(!code||!token){setConnection("Party session not found",true);help("Return to the party lobby and join again.",true);return}

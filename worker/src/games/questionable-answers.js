@@ -14,6 +14,8 @@ export const questionableAnswers = {
   color: "#e5e8ff",
   entry: "./src/games/questionable-answers/index.html",
   players: { min: 3, max: 8 },
+  rematchChoices: ["replay"],
+  defaultRematchChoice: "replay",
   interactionModel: "simultaneous",
   lateJoinPolicy: "spectate",
   spectators: { supported: true },

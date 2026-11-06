@@ -30,7 +30,7 @@ function showError(message) {
   $("game-help").textContent = message;
   $("game-help").classList.add("error");
 }
-const syncGameLifecycle = setupGameLifecycle({ root: document.querySelector("main"), getRoom: () => room, getPlayerId: () => myPlayerId, api, backToLobby: () => $("back-to-lobby").href });
+const syncGameLifecycle = setupGameLifecycle({ root: document.querySelector("main"), getRoom: () => room, getPlayerId: () => myPlayerId, api, backToLobby: () => $("back-to-lobby").href , enabled: false });
 
 function render() {
   if (!room || !gameState) return;
@@ -60,6 +60,7 @@ function render() {
   const rematchPrompt = $("rematch-prompt");
   const canVoteRematch = finished && activeIds.has(myPlayerId);
   rematchPrompt.hidden = !canVoteRematch;
+  $("no-rematch").hidden = true;
   $("return-lobby").hidden = !isHost;
   $("leave-game").hidden = false;
   $("leave-game").disabled = leaving;
@@ -238,13 +239,12 @@ $("no-rematch").addEventListener("click", () => voteRematch(false));
 setupHostEndRound($("return-lobby"), { getRoom: () => room, getPlayerId: () => myPlayerId, onEnd: returnEveryoneToLobby });
 $("leave-game").addEventListener("click", async () => {
   if (leaving) return;
-  if (!window.confirm("Leave this game and party? You will need to rejoin to play again.")) return;
+  if (!window.confirm("Leave this game and return to the party lobby? You will remain in the party.")) return;
   leaving = true;
   $("leave-game").disabled = true;
   try {
-    await api("/api/rooms/" + encodeURIComponent(code) + "/leave", { method: "POST", body: "{}" });
-    sessionStorage.removeItem("playblox:" + code + ":token");
-    location.href = "../../../";
+    await api("/api/rooms/" + encodeURIComponent(code) + "/game/leave", { method: "POST", body: "{}" });
+    location.href = $("back-to-lobby").href;
   } catch (error) {
     leaving = false;
     $("leave-game").disabled = false;

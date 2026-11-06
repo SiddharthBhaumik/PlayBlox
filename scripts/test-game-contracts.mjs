@@ -2,11 +2,45 @@ import assert from "node:assert/strict";
 import { gameRegistry } from "../src/games/registry.js";
 import { listServerGames, getServerGame } from "../worker/src/games/registry.js";
 import { SPECTRUMS } from "../worker/src/games/wavelength-spectrums.js";
+import { wavelength } from "../worker/src/games/wavelength.js";
+import { normalizeRematchChoice, canEndGameForEveryone } from "../worker/src/game-lifecycle-policy.js";
 import { wouldYouRather } from "../worker/src/games/would-you-rather.js";
 import { sixtySeven } from "../worker/src/games/67.js";
 
 assert.ok(SPECTRUMS.length >= 500, "Wavelength must provide at least 500 spectrum pairs");
 assert.equal(new Set(SPECTRUMS.map(pair => `${pair.left}|${pair.right}`)).size, SPECTRUMS.length, "Wavelength spectrum pairs must be unique");
+
+// Shared lifecycle permissions and game-specific replay choices.
+assert.equal(canEndGameForEveryone({ isHost: true }), true, "The host may end a match for everyone");
+assert.equal(canEndGameForEveryone({ isHost: false }), false, "A non-host may not end a match for everyone");
+assert.equal(canEndGameForEveryone(null), false, "Missing player identity must never authorize a collective end");
+assert.equal(normalizeRematchChoice(wavelength, { choice: "continue" }), "continue");
+assert.equal(normalizeRematchChoice(wavelength, { choice: "restart" }), "restart");
+assert.equal(normalizeRematchChoice(wavelength, { playAgain: true }), "continue",
+  "Legacy replay clients should default to Wavelength Continue");
+assert.equal(normalizeRematchChoice(wavelength, { playAgain: false }), "lobby",
+  "Legacy decline actions map to collective lobby return and are then host-authorized");
+
+const wavePlayers = ["p1", "p2", "p3"].map((id, index) => ({ id, nickname: `Player ${id}`, isHost: index === 0, connected: true, role: "player" }));
+const waveContext = { players: wavePlayers, player: wavePlayers[0] };
+const finishedWave = {
+  ...wavelength.createInitialState(waveContext),
+  phase: "finished",
+  round: 1,
+  scores: { p1: 8, p2: 5, p3: 2 },
+  history: [{ round: 1 }],
+};
+const continuedWave = wavelength.startNextRound(waveContext, finishedWave, "continue");
+assert.equal(continuedWave.round, 2);
+assert.deepEqual(continuedWave.scores, finishedWave.scores,
+  "Wavelength Continue must preserve cumulative scores");
+const restartedWave = wavelength.startNextRound(waveContext, finishedWave, "restart");
+assert.equal(restartedWave.round, 1);
+assert.deepEqual(restartedWave.scores, { p1: 0, p2: 0, p3: 0 },
+  "Wavelength Restart must reset all scores");
+assert.deepEqual(restartedWave.history, [],
+  "Wavelength Restart must begin a fresh match history");
+
 
 const serverGames = listServerGames();
 const player = (id) => ({ id, nickname: `Player ${id}`, isHost: id === "p1", connected: true, role: "player" });

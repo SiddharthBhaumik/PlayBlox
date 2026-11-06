@@ -11,6 +11,8 @@ export const ticTacToe = {
   color: "#ffe4a8",
   entry: "./src/games/tic-tac-toe/index.html",
   players: { min: 2, max: 2 },
+  rematchChoices: ["replay"],
+  defaultRematchChoice: "replay",
   interactionModel: "turn-based",
   lateJoinPolicy: "wait",
   spectators: { supported: true },

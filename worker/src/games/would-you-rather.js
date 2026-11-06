@@ -84,6 +84,8 @@ export const wouldYouRather = {
   color: "#f7dfb5",
   entry: "./src/games/would-you-rather/index.html",
   players: { min: 2, max: 8 },
+  rematchChoices: ["replay"],
+  defaultRematchChoice: "replay",
   interactionModel: "simultaneous",
   lateJoinPolicy: "spectate",
   spectators: { supported: true },

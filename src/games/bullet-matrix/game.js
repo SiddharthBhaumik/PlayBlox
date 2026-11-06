@@ -11,7 +11,7 @@ let selectedAction = null, selectedTargets = {}, shieldStrength = 1, submitting 
 $("back-to-lobby").href = "../../../" + (code ? "?party=" + encodeURIComponent(code) + "&lobby=1" : "");
 function setConnection(message, offline=false){$("connection-status").textContent=message;$("connection-status").classList.toggle("offline",offline)}
 function help(message,error=false){$("game-help").textContent=message;$("game-help").classList.toggle("error",error)}
-const syncGameLifecycle = setupGameLifecycle({ root: document.querySelector("main"), getRoom: () => room, getPlayerId: () => myPlayerId, api, backToLobby: () => $("back-to-lobby").href });
+const syncGameLifecycle = setupGameLifecycle({ root: document.querySelector("main"), getRoom: () => room, getPlayerId: () => myPlayerId, api, backToLobby: () => $("back-to-lobby").href , enabled: false });
 
 function currentPlayer(){return room?.players.find(p=>p.id===myPlayerId)}
 function isAlive(){return Boolean(gameState?.alivePlayerIds?.includes(myPlayerId))}
@@ -41,7 +41,7 @@ function render(){
  if(done){
   $("winner-title").textContent=gameState.winnerId?"🏆 "+(room.players.find(p=>p.id===gameState.winnerId)?.nickname||"A player")+" wins!": "Everyone was eliminated";
   $("winner-copy").textContent=gameState.isDraw?"No player survived this round.": "The last surviving player wins Bullet Matrix.";
-  $("rematch-prompt").hidden=!(gameState.playerOrder||[]).includes(myPlayerId);
+  $("rematch-prompt").hidden=!(gameState.playerOrder||[]).includes(myPlayerId);$("no-rematch").hidden=true;
   const votes=room.rematchVotes||{},voted=Boolean(votes[myPlayerId]);
   $("play-again").disabled=voted;$("play-again").textContent=voted?"Waiting for others…":"Play again";
   $("rematch-status").textContent=voted?"Your rematch vote is in. Waiting for the other players.":"Everyone from the match must agree to play again.";
@@ -119,5 +119,5 @@ async function endRound(button){if(!currentPlayer()?.isHost){help("Only the host
 async function voteRematch(playAgain){if(playAgain){$("play-again").disabled=true;$("no-rematch").disabled=false}else{$("no-rematch").disabled=true}try{const r=await api("/api/rooms/"+encodeURIComponent(code)+"/game/rematch",{method:"POST",body:JSON.stringify({playAgain})});if(r.status==="waiting"){room.rematchVotes=r.votes||{};render();$("no-rematch").disabled=false}else if(r.status==="lobby")location.href=$("back-to-lobby").href}catch(e){help(e.message,true);$("play-again").disabled=false;$("no-rematch").disabled=false}}
 $("play-again").addEventListener("click",()=>voteRematch(true));$("no-rematch").addEventListener("click",()=>voteRematch(false));
 setupHostEndRound($("return-lobby"),{getRoom:()=>room,getPlayerId:()=>myPlayerId,onEnd:endRound});
-$("leave-game").addEventListener("click",async()=>{if(leaving||!confirm("Leave this game and party? You will need to rejoin to play again."))return;leaving=true;$("leave-game").disabled=true;try{await api("/api/rooms/"+encodeURIComponent(code)+"/leave",{method:"POST",body:"{}"});location.href="../../../"}catch(e){leaving=false;$("leave-game").disabled=false;help(e.message,true)}});
+$("leave-game").addEventListener("click",async()=>{if(leaving||!confirm("Leave this game and return to the party lobby? You will remain in the party."))return;leaving=true;$("leave-game").disabled=true;try{await api("/api/rooms/"+encodeURIComponent(code)+"/game/leave",{method:"POST",body:"{}"});location.href=$("back-to-lobby").href}catch(e){leaving=false;$("leave-game").disabled=false;help(e.message,true)}});
 if(code&&token){syncRoom().catch(e=>help(e.message,true));connect()}else connect();
