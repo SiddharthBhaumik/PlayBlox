@@ -73,6 +73,7 @@ function finish(s,winnerTeam=null){
 }
 function requestSuperOverVote(s){
   s.superOverRounds=s.superOverRounds||[];
+  if(!s.superOverRound&&!s.regulationScores)s.regulationScores=clone(s.teamScores);
   s.superOverRounds.push({round:s.superOverRound||0,scores:clone(s.teamScores)});
   s.phase="super-over-vote";s.superOverActive=false;s.superOverVote={red:null,blue:null};
   s.currentBatterId=null;s.currentBowlerId=null;s.pending={};s.overBalls=[];
