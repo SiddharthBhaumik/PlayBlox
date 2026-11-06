@@ -33,14 +33,21 @@ function nextTeamBowler(s,batterId,team){
 function nextIndividualBowler(s,batterId){
   const pool=s.playerOrder.filter(id=>id!==batterId);
   if(!pool.length)return null;
-  const eligibleRound=s.roundOrder.filter(id=>pool.includes(id));
-  if(!eligibleRound.length||eligibleRound.every(id=>s.bowlingRound[id])){
-    s.roundOrder=pool.slice().sort((a,b)=>
-      Math.floor(s.stats[a].ballsBowled/6)-Math.floor(s.stats[b].ballsBowled/6)||
-      s.stats[a].ballsBowled-s.stats[b].ballsBowled||s.playerOrder.indexOf(a)-s.playerOrder.indexOf(b));
+  const rank=(a,b)=>
+    Math.floor(s.stats[a].ballsBowled/6)-Math.floor(s.stats[b].ballsBowled/6)||
+    (s.stats[a].lastBowledAt||0)-(s.stats[b].lastBowledAt||0)||
+    s.playerOrder.indexOf(a)-s.playerOrder.indexOf(b);
+  const current=s.roundOrder.filter(id=>pool.includes(id));
+  const added=pool.filter(id=>!current.includes(id));
+  if(!s.roundOrder.length||pool.every(id=>s.bowlingRound[id])){
+    s.roundOrder=pool.slice().sort(rank);
     s.bowlingRound={};
-  }else s.roundOrder=eligibleRound;
-  const candidates=s.roundOrder.filter(id=>!s.bowlingRound[id]);
+  }else{
+    // A new innings can make its previous batter eligible to bowl. Add them
+    // to the live round without giving already-used bowlers another turn.
+    s.roundOrder=[...current,...added].sort(rank);
+  }
+  const candidates=s.roundOrder.filter(id=>pool.includes(id)&&!s.bowlingRound[id]);
   const noRepeat=s.playerOrder.length<=2?candidates:candidates.filter(id=>id!==s.lastBowlerId);
   const chosen=(noRepeat.length?noRepeat:candidates)[0]||null;
   if(chosen)s.bowlingRound[chosen]=true;
@@ -122,6 +129,7 @@ function resolveDelivery(s,ctx){
   else{runs=bat;reason=runs===0?"Dot ball":"Runs scored";}
   const team=s.config.mode==="team"?s.battingTeam:null;
   const batterStats=s.stats[batter],bowlerStats=s.stats[bowler];
+  s.bowlingSequence=(s.bowlingSequence||0)+1;bowlerStats.lastBowledAt=s.bowlingSequence;
   const batterBefore=s.currentInningsRuns[batter]||0;
   batterStats.balls++;bowlerStats.ballsBowled++;
   batterStats.runs+=runs;bowlerStats.runsConceded+=runs;
@@ -185,7 +193,7 @@ export const handCricket={
     const ids=activeIds(ctx);
     return {phase:"settings",playerOrder:ids,config:{mode:"team",wickets:2,oddPlayerMode:"bat-bowl",allowFist:true,unlimited:false,limit:5},
       teams:{},teamVotes:{red:{},blue:{}},captains:{red:null,blue:null},runoff:{red:[],blue:[]},wildcardId:null,
-      stats:makeStats(ids),teamScores:{red:{runs:0,wickets:0,balls:0},blue:{runs:0,wickets:0,balls:0}},
+      stats:makeStats(ids),bowlingSequence:0,teamScores:{red:{runs:0,wickets:0,balls:0},blue:{runs:0,wickets:0,balls:0}},
       wicketLosses:{red:{},blue:{}},battingQueue:{red:[],blue:[]},history:[],completedOvers:[],overBalls:[],
       milestones:[],pending:{},innings:1,individualIndex:0,individualBalls:0,individualWickets:0,
       currentInningsRuns:{},bowlingRound:{},roundOrder:[],lastBowlerId:null,overBowlerId:null,

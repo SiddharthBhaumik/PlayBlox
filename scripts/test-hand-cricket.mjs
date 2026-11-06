@@ -101,6 +101,17 @@ individual=submit(two,individual,"p2",3);
 individual=submit(two,individual,"p1","fist");
 assert.equal(individual.stats.p2.runs,3,"When only one chooses Fist, the other player's number is scored");
 
+// A new innings makes its previous batter eligible to bowl. They join the
+// current bowling round rather than being skipped until the next round.
+const four=makePlayers(4);
+let fair=handCricket.createInitialState(context("p1",four));
+fair=action(four,fair,"p1",{type:"update-settings",config:{mode:"individual",wickets:2,oddPlayerMode:"bat-bowl",allowFist:false,unlimited:false,limit:6}});
+fair=action(four,fair,"p1",{type:"start-match"});
+assert.equal(fair.currentBowlerId,"p2");
+for(let i=0;i<6;i++)fair=playBall(four,fair,1,0);
+assert.equal(fair.currentBatterId,"p2");
+assert.equal(fair.currentBowlerId,"p1","The previous batter joins the current bowling round once they become eligible");
+
 // Invalid actions cannot choose Fist when disabled or submit twice.
 const noFist=handCricket.createInitialState(context("p1",two));
 const started=action(two,noFist,"p1",{type:"update-settings",config:{mode:"individual",wickets:1,oddPlayerMode:"bat-bowl",allowFist:false,unlimited:false,limit:6}});
