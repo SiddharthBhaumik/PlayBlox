@@ -295,14 +295,17 @@ export const handCricket={
       return s.phase==="captains"&&TEAMS.includes(team)&&!s.teamVotes[team]?.[id]&&candidates.includes(a.candidateId)?{ok:true}:{ok:false,reason:"Choose one captain vote from your own team."};
     }
     if(a.type==="select-batter"){
-      return s.config.mode==="team"&&s.phase==="playing"&&id===s.captains[s.battingTeam]&&eligibleBatters(s,s.battingTeam).includes(a.playerId)&&!Object.keys(s.pending).length&&s.batterSelectionOpen?{ok:true}:{ok:false,reason:"The batting captain can choose one eligible batter at the start or after a wicket."};
+      const eligible=eligibleBatters(s,s.battingTeam).filter(pid=>s.bowlerSelectionOpen||pid!==s.currentBowlerId);
+      return s.config.mode==="team"&&s.phase==="playing"&&id===s.captains[s.battingTeam]&&eligible.includes(a.playerId)&&!Object.keys(s.pending).length&&s.batterSelectionOpen?{ok:true}:{ok:false,reason:"The batting captain must choose an eligible batter who is not the confirmed bowler."};
     }
     if(a.type==="select-bowler"){
-      const candidates=eligibleBowlers(s,s.bowlingTeam,s.currentBatterId),alternatives=candidates.filter(pid=>pid!==s.lastBowlerId);
+      const batterId=s.batterSelectionOpen?null:s.currentBatterId;
+      const candidates=eligibleBowlers(s,s.bowlingTeam,batterId),alternatives=candidates.filter(pid=>pid!==s.lastBowlerId);
       return s.config.mode==="team"&&s.phase==="playing"&&id===s.captains[s.bowlingTeam]&&candidates.includes(a.playerId)&&(!alternatives.length||a.playerId!==s.lastBowlerId)&&s.overBalls.length===0&&s.bowlerSelectionOpen&&!Object.keys(s.pending).length?{ok:true}:{ok:false,reason:"Only your bowling captain can choose one eligible bowler before an over begins."};
     }
     if(a.type==="submit-ball"){
       if(s.phase!=="playing"||![s.currentBatterId,s.currentBowlerId].includes(id))return {ok:false,reason:"You are not batting or bowling this ball."};
+      if(s.config.mode==="team"&&(s.batterSelectionOpen||s.bowlerSelectionOpen||!s.currentBatterId||!s.currentBowlerId||s.currentBatterId===s.currentBowlerId))return {ok:false,reason:"The ball cannot start until both captains confirm an eligible batter and bowler."};
       if(s.pending[id]!==undefined)return {ok:false,reason:"Your choice is already locked."};
       if(!VALUES.includes(a.choice)||(!s.config.allowFist&&a.choice==="fist"))return {ok:false,reason:"Choose a valid number"+(s.config.allowFist?" or Fist.":".")};
       return {ok:true};
@@ -357,7 +360,6 @@ export const handCricket={
     if(a.type==="select-batter"){n.currentBatterId=a.playerId;n.batterSelectionOpen=false;return n;}
     if(a.type==="select-bowler"){n.currentBowlerId=a.playerId;n.overBowlerId=a.playerId;n.bowlerSelectionOpen=false;return n;}
     if(a.type==="submit-ball"){
-      if(n.config.mode==="team"){n.bowlerSelectionOpen=false;n.batterSelectionOpen=false;}
       n.pending[id]=a.choice;
       if(n.pending[n.currentBatterId]!==undefined&&n.pending[n.currentBowlerId]!==undefined){
         const resolved=resolveDelivery(n,ctx);n.lastEvents=resolved.events;
