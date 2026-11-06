@@ -135,6 +135,7 @@ function startIndividualInnings(s,batterId,{keepOver=false}={}){
   if(!batterId||!s.playerOrder.includes(batterId)||!individualEligible(s,batterId)){finish(s,null);return;}
   s.individualBatterId=batterId;s.currentBatterId=batterId;
   s.individualIndex=(s.individualIndex||0)+1;
+  s.currentInningsRuns[batterId]=0;
   s.individualBalls=s.stats[batterId]?.balls||0;
   s.individualWickets=s.stats[batterId]?.wickets||0;
   for(const id of s.playerOrder)if(s.currentInningsRuns[id]===undefined)s.currentInningsRuns[id]=0;
