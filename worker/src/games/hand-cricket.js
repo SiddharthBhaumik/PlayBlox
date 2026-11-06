@@ -191,7 +191,7 @@ export const handCricket = {
       return s.phase==="teams"&&["red","blue"].includes(a.team)&&!s.teams[id]&&counts[a.team]<cap?{ok:true}:{ok:false,reason:"That team is full or your team choice is already locked."};
     }
     if(a.type==="vote-captain"){
-      const team=teamOf(s,id);if(s.phase!=="captains"||!team||!(s.runoff[team]?.length?s.runoff[team].includes(a.candidateId):s.playerOrder.includes(a.candidateId)&&teamOf(s,a.candidateId)===team))return {ok:false,reason:"Choose a captain from your own team."};
+      const team=teamOf(s,id);if(s.phase!=="captains"||!team||s.teamVotes[team]?.[id]||!(s.runoff[team]?.length?s.runoff[team].includes(a.candidateId):s.playerOrder.includes(a.candidateId)&&teamOf(s,a.candidateId)===team))return {ok:false,reason:"Choose one captain vote from your own team."};
       return {ok:true};
     }
     if(a.type==="select-batter")return s.config.mode==="team"&&s.phase==="playing"&&id===s.captains[s.battingTeam]&&eligibleBatters(s,s.battingTeam).includes(a.playerId)&&!Object.keys(s.pending||{}).length&&(s.teamScores[s.battingTeam].balls===0||Boolean(s.lastDelivery?.out))?{ok:true}:{ok:false,reason:"The batting captain can choose an eligible batter at the start of an innings or after a wicket."};
