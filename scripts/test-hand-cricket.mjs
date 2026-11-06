@@ -82,15 +82,33 @@ assert.equal(wicketState.teamScores.red.wickets,1);
 assert.equal(wicketState.stats.p1.wickets,1);
 assert.equal(wicketState.currentBatterId,"p2");
 
+
+// Team selection remains editable until all players have selected, and the
+// explicit wildcard place keeps Red and Blue equal for odd player counts.
+const five=makePlayers(5);
+let balanced=handCricket.createInitialState(context("p1",five));
+balanced=action(five,balanced,"p1",{type:"update-settings",config:{mode:"team",wickets:2,oddPlayerMode:"bat-bowl",allowFist:true,unlimited:false,limit:1}});
+balanced=action(five,balanced,"p1",{type:"start-match"});
+balanced=action(five,balanced,"p1",{type:"choose-team",team:"red"});
+balanced=action(five,balanced,"p1",{type:"choose-team",team:"blue"});
+assert.equal(balanced.teams.p1,"blue","A player can change their choice before selection closes");
+balanced=await chooseTeams(five,balanced,[["p2","red"],["p3","blue"],["p4","red"],["p5","wildcard"]]);
+assert.equal(balanced.phase,"captains");
+assert.equal(five.filter(p=>balanced.teams[p.id]==="red").length,2);
+assert.equal(five.filter(p=>balanced.teams[p.id]==="blue").length,2);
+assert.equal(balanced.wildcardId,"p5");
+
 // Three-player wildcard is available to both teams in bat-and-bowl mode.
 const three=makePlayers(3);
 let odd=handCricket.createInitialState(context("p1",three));
 odd=action(three,odd,"p1",{type:"update-settings",config:{mode:"team",wickets:1,oddPlayerMode:"bat-bowl",allowFist:true,unlimited:false,limit:1}});
 odd=action(three,odd,"p1",{type:"start-match"});
-odd=await chooseTeams(three,odd,[["p1","red"],["p2","red"],["p3","blue"]]);
-assert.equal(odd.wildcardId,"p1");
-assert.ok(odd.battingQueue.blue.includes("p1"));
-assert.ok(odd.battingQueue.red.includes("p1"));
+odd=await chooseTeams(three,odd,[["p1","red"],["p2","blue"],["p3","wildcard"]]);
+assert.equal(odd.wildcardId,"p3");
+assert.deepEqual(three.filter(p=>odd.teams[p.id]==="red").map(p=>p.id),["p1"]);
+assert.deepEqual(three.filter(p=>odd.teams[p.id]==="blue").map(p=>p.id),["p2"]);
+assert.ok(odd.battingQueue.blue.includes("p3"));
+assert.ok(odd.battingQueue.red.includes("p3"));
 
 // With one batter per team and one wicket each, one dismissal ends that team's innings.
 // The wicket count must not leak into the opposing team's separate allowance.
@@ -148,5 +166,51 @@ assert.equal((await handCricket.validateAction(context("p1",two),playing,{type:"
 assert.equal((await handCricket.validateAction(context("p1",two),playing,{type:"submit-ball",choice:0})).ok,false,"Zero is not selectable");
 assert.equal((await handCricket.validateAction(context("p1",two),playing,{type:"submit-ball",choice:1})).ok,true,"One is selectable");
 assert.equal((await handCricket.validateAction(context("p1",two),playing,{type:"submit-ball",choice:6})).ok,true,"Six is selectable");
+
+
+// A tied regulation match requires both captains to approve a six-ball Super Over.
+// If that is tied, the vote repeats; declining at any stage leaves the match tied.
+const soPlayers=makePlayers(4);
+let so=handCricket.createInitialState(context("p1",soPlayers));
+so=action(soPlayers,so,"p1",{type:"update-settings",config:{mode:"team",wickets:2,oddPlayerMode:"bat-bowl",allowFist:false,unlimited:false,limit:1}});
+so=action(soPlayers,so,"p1",{type:"start-match"});
+so=await chooseTeams(soPlayers,so,[["p1","red"],["p2","red"],["p3","blue"],["p4","blue"]]);
+so=action(soPlayers,so,"p1",{type:"vote-captain",candidateId:"p1"});
+so=action(soPlayers,so,"p2",{type:"vote-captain",candidateId:"p1"});
+so=action(soPlayers,so,"p3",{type:"vote-captain",candidateId:"p3"});
+so=action(soPlayers,so,"p4",{type:"vote-captain",candidateId:"p3"});
+for(let i=0;i<6;i++)so=playBall(soPlayers,so,1,2);
+for(let i=0;i<6;i++)so=playBall(soPlayers,so,1,2);
+assert.equal(so.phase,"super-over-vote");
+assert.equal(so.superOverRounds.length,1);
+assert.equal((await handCricket.validateAction(context("p1",soPlayers),so,{type:"vote-super-over",vote:"yes"})).ok,true);
+so=action(soPlayers,so,"p1",{type:"vote-super-over",vote:"yes"});
+assert.equal(so.phase,"super-over-vote","One captain alone cannot start the Super Over");
+so=action(soPlayers,so,"p3",{type:"vote-super-over",vote:"yes"});
+assert.equal(so.phase,"playing");
+assert.equal(so.superOverActive,true);
+assert.equal(so.superOverRound,1);
+for(let i=0;i<6;i++)so=playBall(soPlayers,so,1,2);
+for(let i=0;i<6;i++)so=playBall(soPlayers,so,1,2);
+assert.equal(so.phase,"super-over-vote","A tied Super Over triggers another captain vote");
+assert.equal(so.superOverRounds.length,2);
+so=action(soPlayers,so,"p1",{type:"vote-super-over",vote:"yes"});
+so=action(soPlayers,so,"p3",{type:"vote-super-over",vote:"yes"});
+for(let i=0;i<6;i++)so=playBall(soPlayers,so,1,2);
+for(let i=0;i<6;i++)so=playBall(soPlayers,so,2,1);
+assert.equal(so.phase,"finished");
+assert.equal(so.winnerTeam,"blue","The second Super Over breaks the tie");
+assert.equal(so.superOverRounds.length,2);
+
+// Individual tournament ranking uses the requested bowling-based tie-breaks.
+const ranked=handCricket.createInitialState(context("p1",soPlayers));
+ranked.config.mode="individual";
+ranked.stats.p1={runs:100,balls:100,wickets:0,ballsBowled:12,runsConceded:24,wicketsTaken:2,highestScore:90};
+ranked.stats.p2={runs:100,balls:100,wickets:0,ballsBowled:12,runsConceded:12,wicketsTaken:3,highestScore:70};
+ranked.stats.p3={runs:100,balls:80,wickets:0,ballsBowled:12,runsConceded:12,wicketsTaken:3,highestScore:70};
+ranked.stats.p4={runs:99,balls:100,wickets:0,ballsBowled:12,runsConceded:6,wicketsTaken:4,highestScore:99};
+const individualResults=handCricket.getResults(context("p1",soPlayers),ranked);
+assert.equal(individualResults.ranking[0].playerId,"p4","Runs remain the primary ranking criterion");
+assert.equal(individualResults.ranking[1].playerId,"p3","Bowling wickets break equal-run ties before highest score");
 
 console.log("Hand Cricket extended rules tests passed.");
