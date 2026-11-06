@@ -3,7 +3,7 @@ import {setupGameLifecycle} from "../shared/game-lifecycle.js";
 const API=window.PLAYBLOX_API_BASE_URL||(["localhost","127.0.0.1"].includes(location.hostname)?"http://localhost:8787":"https://playblox-party-service.playblox-party.workers.dev");
 const params=new URLSearchParams(location.search),code=(params.get("party")||"").toUpperCase(),token=code?sessionStorage.getItem("playblox:"+code+":token"):null;
 const $=id=>document.getElementById(id);
-let room=null,state=null,privateState=null,myId=null,version=0,socket=null,reconnect=null,heartbeat=null,delay=1000,leaving=false,lastDeliveryAt=0,lastPhase=null,overPage=0,historyPage=0,scoreTeamTab="red",scoreTypeTab="batting",finalOverPage=0,finalHistoryPage=0,finalOversOpen=false,finalHistoryOpen=false;
+let room=null,state=null,privateState=null,myId=null,version=0,socket=null,reconnect=null,heartbeat=null,delay=1000,leaving=false,lastDeliveryAt=0,lastPhase=null,overPage=0,historyPage=0,scoreTeamTab="red",scoreTypeTab="batting",finalOverPage=0,finalHistoryPage=0,finalOversOpen=false,finalHistoryOpen=false,noticeTimer=null,lastWildcardPriorityNoticeAt=0;
 const endpoint="/api/rooms/"+encodeURIComponent(code);
 $("back-to-lobby").href="../../../"+(code?"?party="+encodeURIComponent(code)+"&lobby=1":"");
 async function api(path,options={}){const r=await fetch(API+path,{...options,headers:{...(options.body?{"Content-Type":"application/json"}:{}),...(token?{Authorization:"Bearer "+token}:{}),...(options.headers||{})}});const d=await r.json().catch(()=>({}));if(!r.ok){const e=new Error(d.error||"Request failed");e.stateVersion=d.stateVersion;throw e;}return d;}
@@ -14,6 +14,11 @@ function isHost(){return Boolean(player(myId)?.isHost);}
 function send(action){return api(endpoint+"/game/action",{method:"POST",body:JSON.stringify({actionId:crypto.randomUUID(),expectedStateVersion:version,action})});}
 async function act(action){try{const r=await send(action);version=r.stateVersion??version;await sync();}catch(e){$("notice").textContent=e.message;if(Number.isInteger(e.stateVersion))version=e.stateVersion;await sync().catch(()=>{});}}
 function showNotice(s){$("notice").textContent=s;}
+function showTimedNotice(s,duration=10000){
+ showNotice(s);
+ if(noticeTimer)clearTimeout(noticeTimer);
+ noticeTimer=setTimeout(()=>{if($("notice").textContent===s)$("notice").textContent="";},duration);
+}
 function setConnection(s,off=false){$("connection-status").textContent=s;$("connection-status").classList.toggle("offline",off);}
 function renderSettings(){
  const c=state.config,host=isHost(),teamMode=c.mode==="team";
@@ -88,11 +93,11 @@ function renderCaptainControls(){
  const controls=[];
  if(state.config.mode==="team"){
   if(myId===state.captains[state.battingTeam]&&state.batterSelectionOpen){
-   const eligible=state.battingQueue[state.battingTeam].filter(id=>(state.wicketLosses[state.battingTeam]?.[id]||0)<state.config.wickets&&!(id===state.wildcardId&&state.config.oddPlayerMode==="bowl-only")&&(state.bowlerSelectionOpen||id!==state.currentBowlerId));
+   const eligible=state.battingQueue[state.battingTeam].filter(id=>(state.wicketLosses[state.battingTeam]?.[id]||0)<state.config.wickets&&!(id===state.wildcardId&&state.config.oddPlayerMode==="bowl-only")&&(id===state.wildcardId||id!==state.currentBowlerId));
    controls.push('<div class="hc-captain"><label>Captain · confirm next batter<select id="next-batter">'+eligible.map(id=>'<option value="'+id+'" '+(id===state.currentBatterId?'selected':'')+'>'+esc(player(id)?.nickname)+'</option>').join("")+'</select></label><button id="pick-batter" class="hc-secondary" '+(!eligible.length?'disabled':'')+'>Confirm batter</button></div>');
   }
-  if(myId===state.captains[state.bowlingTeam]&&state.bowlerSelectionOpen&&(!state.overBalls||state.overBalls.length===0)){
-   const batterId=state.batterSelectionOpen?null:state.currentBatterId;
+  if(myId===state.captains[state.bowlingTeam]&&state.bowlerSelectionOpen&&((!state.overBalls||state.overBalls.length===0)||state.wildcardBowlerReplacementRequired)){
+   const batterId=state.currentBatterId;
    const eligible=state.playerOrder.filter(id=>(state.teams[id]===state.bowlingTeam||(id===state.wildcardId&&state.config.oddPlayerMode!=="bat-only"))&&id!==batterId&&(state.playerOrder.length<=2||id!==state.lastBowlerId));
    controls.push('<div class="hc-captain"><label>Captain · confirm next bowler<select id="next-bowler">'+eligible.map(id=>'<option value="'+id+'" '+(id===state.currentBowlerId?'selected':'')+'>'+esc(player(id)?.nickname)+'</option>').join("")+'</select></label><button id="pick-bowler" class="hc-secondary" '+(!eligible.length?'disabled':'')+'>Confirm bowler</button></div>');
   }
@@ -104,7 +109,7 @@ function renderCaptainControls(){
 function renderSuperOverVote(){
  $("setup-panel").hidden=false;$("match-panel").hidden=true;$("result-panel").hidden=true;
  const team=state.captains.red===myId?"red":state.captains.blue===myId?"blue":null,cast=team&&Boolean(state.superOverVotesCast?.[team]),round=(state.superOverRound||0)+1;
- $("setup-panel").innerHTML='<div class="hc-section-label">MATCH TIED</div><h2>Super Over '+round+'?</h2><p class="hc-muted">Both captains must independently vote Yes. If either votes No, the match ends tied. If both vote Yes, each team plays one six-ball over. Another tied Super Over requires another unanimous Yes vote.</p><div class="hc-final-scores"><b>🔴 RED '+state.teamScores.red.runs+'/'+state.teamScores.red.wickets+'</b><b>🔵 BLUE '+state.teamScores.blue.runs+'/'+state.teamScores.blue.wickets+'</b></div>'+(team?'<div class="hc-actions"><button class="hc-primary" data-super-vote="yes" '+(cast?'disabled':'')+'>Yes · Play Super Over</button><button class="hc-secondary" data-super-vote="no" '+(cast?'disabled':'')+'>No · Keep the tie</button></div>':'<p class="hc-muted">Only team captains can vote. Waiting for their decisions.</p>')+'<p class="hc-muted">Red captain: '+(state.superOverVotesCast?.red?"Voted":"Waiting")+' · Blue captain: '+(state.superOverVotesCast?.blue?"Voted":"Waiting")+'</p>';
+ $("setup-panel").innerHTML='<div class="hc-section-label">MATCH TIED</div><h2>Super Over '+round+'?</h2><p class="hc-muted">Both captains must independently vote Yes. If either votes No, the match ends tied. If both vote Yes, each team gets up to six balls and two wickets. The team that batted second in the previous innings bats first. Each captain confirms their own batter and bowler. Another tied Super Over requires another unanimous Yes vote and reverses the batting order again.</p><div class="hc-final-scores"><b>🔴 RED '+state.teamScores.red.runs+'/'+state.teamScores.red.wickets+'</b><b>🔵 BLUE '+state.teamScores.blue.runs+'/'+state.teamScores.blue.wickets+'</b></div>'+(team?'<div class="hc-actions"><button class="hc-primary" data-super-vote="yes" '+(cast?'disabled':'')+'>Yes · Play Super Over</button><button class="hc-secondary" data-super-vote="no" '+(cast?'disabled':'')+'>No · Keep the tie</button></div>':'<p class="hc-muted">Only team captains can vote. Waiting for their decisions.</p>')+'<p class="hc-muted">Red captain: '+(state.superOverVotesCast?.red?"Voted":"Waiting")+' · Blue captain: '+(state.superOverVotesCast?.blue?"Voted":"Waiting")+'</p>';
  $("setup-panel").querySelectorAll("[data-super-vote]").forEach(b=>b.onclick=()=>act({type:"vote-super-over",vote:b.dataset.superVote}));
  showNotice("A Super Over will start only if both captains vote Yes.");
 }
@@ -152,6 +157,10 @@ function renderFinished(){
 }
 function render(){
  if(!room||!state)return;
+ if(state.wildcardBattingPriorityNoticeAt&&state.wildcardBattingPriorityNoticeAt!==lastWildcardPriorityNoticeAt){
+  lastWildcardPriorityNoticeAt=state.wildcardBattingPriorityNoticeAt;
+  showTimedNotice("Wildcard selected to bat: batting has priority over bowling. The bowling captain must confirm a different bowler.",10000);
+ }
  lifecycle();$("room-label").textContent=(room.name||"Party")+" · "+code;
  if(room.lifecycle==="results"||state.phase==="finished"){renderFinished();}
  else if(state.phase==="super-over-vote")renderSuperOverVote();
