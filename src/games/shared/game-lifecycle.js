@@ -17,7 +17,7 @@ function lobbyDestination(code, fallback) {
   return target.href || fallback;
 }
 
-export function setupGameLifecycle({ root, getRoom, getPlayerId, api, backToLobby, showReplay = true }) {
+export function setupGameLifecycle({ root, getRoom, getPlayerId, api, backToLobby, showReplay = true, enabled = true }) {
   if (!root) return () => {};
   let redirectedToLobby = false;
   let panel = lifecycleInstances.get(root);
@@ -86,6 +86,7 @@ export function setupGameLifecycle({ root, getRoom, getPlayerId, api, backToLobb
     }
     const player = room?.players?.find(entry => entry.id === getPlayerId());
     const finished = room?.lifecycle === "results";
+    if (!enabled) { panel.hidden = true; return; }
     panel.hidden = !room || (!finished && !player?.isHost && player?.role !== "player");
     panel.querySelector(".playblox-lifecycle-title").textContent = finished ? "Round complete" : "Game in progress";
     panel.querySelector(".playblox-lifecycle-replay").hidden = !showReplay || !finished || !(room.gameState?.playerOrder || []).includes(getPlayerId());
