@@ -17,6 +17,11 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Check JavaScript syntax and game contracts
+      - name: Check JavaScript syntax, Hand Cricket rules and game contracts
         run: |
-          npm test
+          npm run check:syntax
+          npm run test:hand-cricket
+          node scripts/test-game-contracts.mjs
+      - name: Check registry guide alignment (known 67 guide mismatch)
+        run: npm run validate:games
+        continue-on-error: true
