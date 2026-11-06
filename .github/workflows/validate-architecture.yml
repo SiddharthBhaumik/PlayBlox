@@ -21,6 +21,7 @@ jobs:
         run: |
           npm run check:syntax
           npm run test:hand-cricket
+          npm run test:hand-cricket-analytics
       - name: Check other game contracts (known 67 contract failure)
         run: node scripts/test-game-contracts.mjs
         continue-on-error: true
