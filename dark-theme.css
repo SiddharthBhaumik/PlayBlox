@@ -1,0 +1,73 @@
+/* PlayBlox midnight playground — shared presentation layer */
+:root{color-scheme:dark;--paper:#080d20;--ink:#f7f0e5;--muted:#bac3df;--red:#ff7b91;--yellow:#ffc943;--blue:#72c9f2;--green:#52d6b4;--purple:#b58aff;--shadow:0 16px 38px #0005;--pb-surface:#141d38;--pb-raised:#1b2747;--pb-border:#a9b7ee40;--pb-text:#f7f0e5;--pb-muted:#bac3df}
+html{background:#080d20;color-scheme:dark}body{color:var(--pb-text);background:#080d20;background-image:radial-gradient(#af9dff2e .8px,transparent .8px),radial-gradient(ellipse at 50% -15%,#455baa47,transparent 55%);background-size:28px 28px,100% 100%;background-attachment:fixed}
+h1,h2,h3,h4,strong,b,label{color:var(--pb-text)}p,small,.muted,.hint,.game-intro,.intro,.game-help,.panel-copy,.activity-caption,.card-description{color:var(--pb-muted)}
+input,textarea,select{background:#0c142b!important;color:var(--pb-text)!important;border-color:#a4b5e66b!important}input::placeholder,textarea::placeholder{color:#8994b6!important}
+button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible,a:focus-visible{outline-color:#ffc943}
+.brand{color:#f7f0e5}.brand-mark{border-color:#ffc943;background:#ffc943;box-shadow:3px 4px 0 #573f7b}.brand-name span{color:#ffc943}
+.top-note{border:1px solid #bcc2e652;background:#121b35c7;color:#d4d8ed}.status-dot{box-shadow:0 0 0 3px #52d6b42e}
+.eyebrow{border-color:#ffc943b8;background:#121b35e8;color:#ffe7a0;box-shadow:0 0 22px #ffc94314}.highlight:after{background:#ffc943}
+.hero>p{color:#c8c9e8}.doodle{filter:drop-shadow(0 0 9px currentColor)}
+.party-card,.coming-soon,.game-card,.lobby-panel,.party-dialog,.game-roster,.tic-card,.bullet-card,.qa-card,.wave-card,.wyr-card,.fleet-card,.crypto-main .board,.table-panel,.playblox-lifecycle,.playblox-guide-dialog{color:#f7f0e5;background:linear-gradient(145deg,#192546f7,#0d152bf7);border-color:#a6b5eb47;box-shadow:0 14px 36px #0004}
+.create-card{background:linear-gradient(145deg,#103d3b,#102b3b);border-color:#35c8a8}.join-card{background:linear-gradient(145deg,#382342,#201d3d);border-color:#d56ca9}
+.party-card h2,.coming-soon h2,.party-dialog h2{color:#fff3e4}.card-description,.games-intro,.tiny-note{color:#c2c9df}
+.card-icon,.game-emoji,.game-title-icon{background:#fff1d9;border-color:#ffc9438c;box-shadow:0 5px 18px #0004}
+.sticker{border:1px solid #ffffff33;background:#ffc943;color:#171629}.join-card .sticker{background:#b58aff;color:#171329}
+.field-group label,.party-card label{color:#ffe7aa}
+.primary-button{border:1px solid #ffffff29;background:linear-gradient(135deg,#e9ad2e,#ffd65b);color:#211a25;box-shadow:0 5px 0 #0004}.join-card .primary-button{background:linear-gradient(135deg,#a66be9,#d08aff);color:#1c1230}
+.secondary-button{border:1px solid #ffffff2e;background:#29375c;color:#f7f0e5;box-shadow:0 4px 0 #0004}
+.feedback{border-color:#ffc94373;background:#3b3024;color:#ffedc3}.feedback.success{background:#123a35;color:#c5fff0}
+.game-card{background:linear-gradient(145deg,#1b2748,#111a34);border-color:#a9b7ee43}.game-card p{color:#c0c9e3}.game-tag{color:#f5ce72}
+.empty-toybox{border-color:#a9b7ee4d;background:#111a34;color:#b9c1dc}.empty-toybox strong{color:#fff}
+.friendship-strip>div{border-color:#a9b7ee33;background:#141e3acc;color:#d2d8ed}
+footer{border-color:#a9b7ee33;color:#929dbd}footer a{color:#c8b2ff}
+.party-dialog{background:#151f3c;color:#f7f0e5}.party-dialog::backdrop{background:#020510c7;backdrop-filter:blur(8px)}.party-dialog>p{color:#c1c9df}.room-code{background:#0b142c;border-color:#ffc943;color:#ffe39a}
+.lobby-heading-icon{border-color:#ffc943;background:#ffc943}.lobby-subtitle{color:#bbc5e2}.lobby-status{border-color:#52d6b466;background:#103a38;color:#9df3d9}.lobby-status.offline{border-color:#d56c78;background:#421f34;color:#ffc2c8}
+.lobby-panel h2,.lobby-panel h3{color:#fff3e4}.lobby-player,.game-player,.player-card,.activity-item,.participant-option{background:#1b294b!important;color:#f4f0e8!important;border-color:#a9b7ee38!important}.lobby-player small,.game-player small,.player-card small{color:#b9c5e0}
+.lobby-player.is-you,.game-player.is-turn,.participant-option.selected{background:#183c3b!important;outline-color:#43d5bd}.lobby-code,.selected-game-summary{background:#0c142b;color:#ffe5a0;border-color:#ffc94359}
+.lobby-game-choice,.game-choice,.participant-picker button{background:#1b294b;color:#f7f0e5;border-color:#a9b7ee4d}.lobby-game-choice.selected,.game-choice.selected{border-color:#ffc943;background:#302b49}
+.back-link{color:#f7f0e5!important;background:#192544!important;border-color:#a9b7ee52!important;box-shadow:0 4px 0 #0004!important}
+.game-title-row h1 span,.qa-game h1 span,.wave-game h1 span,.wyr-title-row h1 span{color:#ffc943}
+.game-room-meta,.wave-meta,.wyr-meta,.meta{color:#b8c4e1}.game-room-meta span,.wave-meta span,.wyr-meta span,.meta span{background:#182442;border-color:#a9b7ee40;color:#d8def1}
+.game-room-meta #connection-status,.wave-meta #connection-status,.wyr-meta #connection-status,.meta #connection-status{color:#75e0bb}
+.game-room-meta #connection-status.offline,.wave-meta #connection-status.offline,.wyr-meta #connection-status.offline,.meta #connection-status.offline{color:#ffb2b9;background:#422333}
+.game-roster h2{color:#ffe8a9}.game-player{background:#1a2745}.game-player.is-turn{background:#26365c;outline-color:#ffc943}.player-dot{background:#52d6b4;box-shadow:0 0 0 3px #52d6b429}
+.turn-banner,.round-banner,.phase-pill,.round-pill,.turn-pill{background:#342e4b!important;border-color:#ffc9436b!important;color:#ffe5a0!important}
+.tic-card,.bullet-card,.qa-card,.wave-card,.wyr-card,.fleet-card{background:linear-gradient(145deg,#172342,#101a34)}
+.tic-cell{background:#101a34;border-color:#405078;color:#fff}.tic-cell:not(:disabled):hover{background:#26375b}.tic-cell.mark-x{color:#79d7ff;background:#15364b}.tic-cell.mark-o{color:#ff8cb5;background:#46263e}.tic-cell.winning-cell{background:#17463f;box-shadow:0 0 0 3px #52d6b4 inset}
+.game-result,.result-panel{background:#183e3a;border-color:#52d6b4;color:#d4fff1}.rematch-prompt,.round-reveal,.match-result{background:#172342;border-color:#a9b7ee40;color:#f7f0e5}
+.player-card{background:#172342;border-color:#a9b7ee40}.player-card.me{background:#26334f;border-color:#43d5bd}.player-card.eliminated{opacity:.56}
+.player-state,.action-note,.submit-row span{color:#b9c4df}.action-panel{border-color:#a9b7ee33}
+.action-button{background:#1b2949;border-color:#506087;color:#f7f0e5}.action-button small{color:#bdc7e2}.action-button.selected{background:#44334e;border-color:#ffc943;box-shadow:0 0 0 2px #ffc94333}
+.action-form,.target-row,.round-detail{background:#111c37;border-color:#a9b7ee38;color:#f7f0e5}.submit-row button,.rematch-buttons button{background:#ffc943;color:#201a28;border-color:#ffc943}
+.host-end-button{background:#853d5a;color:#fff;border-color:#e77ba4}
+.round-table{border-color:#a86b49;background:radial-gradient(ellipse at 35% 28%,#d7a46f,#82513f 72%,#4b3040);box-shadow:inset 0 0 0 5px #e3b780,0 13px 0 #452c3d,0 18px 24px #0006}.table-center{color:#251b2a}.table-progress{background:#392943;color:#ffe7b0}
+.seat{background:#1b294b;border-color:#66739c;box-shadow:0 5px 18px #0005}.seat.you{background:#17443f;outline-color:#43d5bd}.seat-avatar{background:#3b4265;border-color:#aab5df}.seat-status{color:#c1cbe4}
+.submission-panel,.reveal-panel{background:#111c37;border-color:#a9b7ee47}.submission-panel textarea{background:#0b142c;color:#f7f0e5;border-color:#56658b}.submission-footer span,.reveal-panel>p{color:#bac5df}.submission-footer button{background:#ffc943;color:#211a25;border-color:#ffc943}
+.reveal-panel{background:#142c39}.reveal-pair{background:#1c2948;border-color:#a9b7ee40}.pair-route{color:#b9c5e0}.pair-answer{background:#49354c;color:#ffe6a4}
+.wave-panel,.wyr-panel,.fleet-panel,.panel,.phase-panel{background:#111c37!important;border-color:#a9b7ee40!important;color:#f7f0e5}.panel-kicker,.kicker,.section-kicker{color:#83d9d0}.panel-copy,.muted,.hint,.library-hint,.field-label{color:#bdc8e2}
+.score-row{border-color:#a9b7ee38}.score-row small,.score-row em{color:#b7c3df}
+.leaderboard-row,.leaderboard-item,.score-item{background:#1b2949!important;border-color:#a9b7ee33!important;color:#f7f0e5}
+.spectrum-labels input,.field-label input,.question-category,.option-fields input,.option-fields textarea{background:#0b142c!important;color:#f7f0e5!important;border-color:#52628a!important}
+.wave-primary,.wyr-primary{background:#ffc943!important;color:#211a25!important}.wave-secondary,.wyr-secondary{background:#29385d!important;color:#f7f0e5!important}.spectrum-slider{accent-color:#ffc943}
+.wyr-option,.option-card,.vote-option{background:#1b2949!important;border-color:#59688e!important;color:#f7f0e5!important}.wyr-option.selected,.option-card.selected,.vote-option.selected{background:#44334e!important;border-color:#ffc943!important}
+.fleet-title span{color:#ffc943}.ocean-board{background:#12334b!important;border-color:#5ba7c5!important}.ocean-cell,.ocean-board button{background:#1b4962!important;border-color:#5a8ea7!important;color:#eaf8ff!important}
+.ocean-cell.hit,.ocean-board button.hit{background:#803c54!important}.ocean-cell.miss,.ocean-board button.miss{background:#263b58!important}.placement-controls select,.fleet-panel select{background:#0b142c!important;color:#f7f0e5!important}.navy-button{background:#ffc943!important;color:#211a25!important;border-color:#ffc943!important}
+.turn-chip{background:#26385a;color:#f7f0e5}
+.crypto-main .board{background:linear-gradient(145deg,#172342,#101a34);border-color:#56658b}.crypto-main .panel,.crypto-main .phase-panel{background:#111c37}
+.team-columns article,.clue-columns article{background:#1a2848;border-color:#a9b7ee40}.team-columns h3,.clue-columns h3{color:#f7f0e5}.team-roster p,.word{background:#202e50;color:#f7f0e5}.word b{background:#34466f;color:#fff}
+.team-pill{background:#29385d;color:#f7f0e5}.team-button.blue{background:#183d61;color:#bde8ff}.team-button.red{background:#512b46;color:#ffd0dd}.private-code{background:#080f22;color:#ffe39a}
+.history-round,.history-team{background:#1b2949;border-color:#a9b7ee38}
+.table-panel{background:linear-gradient(145deg,#192849,#101a34);border-color:#53628b}.table-glow{background:radial-gradient(ellipse,#273d68,#142344);border-color:#6676a2;box-shadow:inset 0 0 0 8px #1b2c50,0 10px 25px #0006}
+.total-core{background:#101a34;border-color:#e2b95c;box-shadow:0 8px 0 #7f6338,0 18px 34px #0006}.total-core small,.total-core span{color:#c8b98f}.total-core strong{color:#fff1cf;text-shadow:2px 3px #765d39}
+.player-seat .seat-name{color:#f7f0e5}.player-seat .seat-state{color:#bac5df}.seat-avatar{border-color:#26375c;color:#fff}
+.effect-chip{background:#283452;border-color:#59678b;color:#ffe7ad}.panel h2,.panel h3{color:#fff1d8}
+.die{background:#202d4e;border-color:#7181aa;box-shadow:0 5px 0 #111a31;color:#fff}.die small{color:#c3cde4}.die.selected{background:#49384a;border-color:#ffc943}
+.action-card{background:#1d2a4b;border-color:#56658c;box-shadow:0 4px 0 #101a32;color:#f7f0e5}.action-card.selected{background:#44344d;border-color:#ffc943}
+.selection-preview,.bookmark-row{background:#202e50;color:#d9e0f3}.digit-choice span,.private-label,.action-footer span{color:#bbc6e1}.digit-choice button,.glitch-controls select{background:#1a2949;color:#f7f0e5;border-color:#63739b}
+.special-card{background:#3a3042;border-color:#c69a58;color:#ffe4aa}.special-controls button,.bookmark-row button{background:#465477;color:#fff}
+.playblox-guide-dialog .guide-dialog-copy{background:#111c37;border-color:#a9b7ee3d;color:#dbe2f4}.playblox-guide-dialog .guide-dialog-copy h3,.playblox-guide-dialog .guide-dialog-copy h4{color:#ffe1a0;border-color:#a9b7ee33}.playblox-guide-dialog .guide-dialog-copy strong{color:#fff0c8}.playblox-guide-dialog .guide-dialog-progress{color:#bac5df}
+.playblox-lifecycle{background:#172342;border-color:#a9b7ee4d}.playblox-lifecycle-kicker,.playblox-lifecycle-votes{color:#bac5df}.playblox-lifecycle-actions button{background:#ffc943;color:#211a25;border-color:#ffc943}.playblox-lifecycle-actions .playblox-lifecycle-lobby{background:#29385d;color:#fff}
+.playblox-lifecycle-error,.error,.error-message{color:#ff9cab}.playblox-lifecycle-manage summary{background:#202e50;color:#f7f0e5;border-color:#a9b7ee40}.playblox-kick-row{background:#202e50;color:#f7f0e5;border-color:#a9b7ee33}
+.kick-player-button,.playblox-kick-row button{background:#512b46;color:#ffd0dd;border-color:#bd6687}
+@media(max-width:680px){.game-roster{position:static}}@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
