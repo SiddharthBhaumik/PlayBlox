@@ -134,3 +134,80 @@ footer{border-color:#a9b7ee33;color:#929dbd}footer a{color:#c8b2ff}
 /* Theme switcher contrast while dark mode is active. */
 .topbar .theme-toggle{border:1px solid rgba(188,194,230,.34);background:#192544;color:#f7f0e5;box-shadow:0 3px 0 rgba(0,0,0,.28)}
 .topbar .theme-toggle:hover{background:#26365a}
+
+/* Lobby polish: replace washed-out light remnants with deliberate dark surfaces. */
+[data-theme-toggle],.topbar [data-theme-toggle],button.theme-toggle{
+  background:#1b2949!important;color:#fff3df!important;
+  border:1px solid #8292bd!important;border-radius:999px!important;
+  box-shadow:0 3px 0 #080d20!important;font-weight:900!important;
+}
+[data-theme-toggle] span:last-child{color:#fff3df!important}
+[data-theme-toggle]:hover{background:#293b62!important;border-color:#ffc943!important}
+
+/* Party invite code: make the entire invite module feel like one component. */
+.lobby-invite-box{
+  background:linear-gradient(135deg,#142d3b,#182747)!important;
+  border:1px solid #56cbb1!important;border-style:solid!important;
+  box-shadow:inset 0 0 0 1px #56cbb122,0 8px 22px #0003!important;
+}
+.lobby-invite-box .section-kicker{color:#67e2d0!important}
+.lobby-invite-box strong{display:block;margin-top:4px;color:#e7edff!important;font-size:12px}
+.lobby-code{
+  display:inline-flex!important;align-items:center;justify-content:center;
+  margin-top:7px!important;padding:5px 12px!important;
+  border:1px solid #ffd66b!important;border-radius:9px!important;
+  background:#ffc943!important;color:#211a25!important;
+  box-shadow:0 3px 0 #8e6721!important;letter-spacing:4px!important;
+}
+.lobby-invite-box .primary-button{
+  border:1px solid #ffdc78!important;background:linear-gradient(135deg,#e9ad2e,#ffd65b)!important;
+  color:#211a25!important;box-shadow:0 4px 0 #8e6721!important;
+}
+
+/* Activity feed uses dark, readable rows instead of pale grey/cream chips. */
+.lobby-activity{scrollbar-color:#56678f #111c37!important}
+.lobby-activity::-webkit-scrollbar-track{background:#111c37!important}
+.lobby-activity::-webkit-scrollbar-thumb{background:#56678f!important;border-color:#111c37!important}
+.lobby-activity li,.lobby-activity li:first-child{
+  background:#202f52!important;border:1px solid #65769f!important;
+  color:#e5ebfa!important;
+}
+.lobby-activity li:first-child{background:#17443f!important;border-color:#43b996!important;color:#d8fff1!important}
+.activity-caption{color:#c5d0e9!important}
+
+/* Player rows and badges retain clear hierarchy without grey-on-navy text. */
+.lobby-player{background:#1b2949!important;border-color:#53658e!important;color:#f7f0e5!important}
+.player-details strong{color:#fff3df!important}
+.player-details small{color:#c2cce4!important}
+.host-badge{background:#ffc943!important;color:#211a25!important}
+.you-badge{background:#17443f!important;border-color:#52d6b4!important;color:#d8fff1!important}
+.player-count{background:#ffc943!important;color:#211a25!important;border-color:#ffc943!important}
+
+/* Game picker: lift description and status contrast; keep the selected state unmistakable. */
+.lobby-game-choice{
+  background:linear-gradient(145deg,#1d2c50,#15213e)!important;
+  color:#f7f0e5!important;border:1px solid #61739e!important;
+  box-shadow:0 5px 14px #0003!important;
+}
+.lobby-game-choice strong{color:#fff3df!important}
+.lobby-game-choice small{color:#c6d1eb!important}
+.lobby-game-choice .game-choice-limits{color:#f3d58a!important}
+.game-choice-status{background:#344467!important;color:#e8edfa!important;border:1px solid #64759c!important}
+.lobby-game-choice.is-selected{
+  background:linear-gradient(145deg,#16453f,#173b42)!important;
+  border:2px solid #62e0b6!important;
+  box-shadow:0 0 0 2px #62e0b633,0 7px 18px #0004!important;
+}
+.lobby-game-choice.is-selected .game-choice-status{background:#c9f6df!important;color:#14513e!important;border-color:#8be0b5!important}
+.lobby-game-choice:disabled{opacity:1!important}
+.selected-game-summary{
+  background:#111c37!important;border:1px dashed #b58aff!important;
+  color:#f5e5b4!important;
+}
+.participant-picker{background:#14213e!important;border-color:#65769f!important}
+.participant-picker h3{color:#fff3df!important}
+.participant-option{background:#202f52!important;border-color:#65769f!important;color:#f7f0e5!important}
+.participant-option small{color:#c6d1eb!important}
+.participant-option.selected{background:#17443f!important;border-color:#52d6b4!important}
+.game-launch-feedback{color:#ffb6bd!important}
+.game-launch-feedback.success{color:#8ce6c4!important}
