@@ -2,7 +2,7 @@ const VALUES=[1,2,3,4,5,6,"fist"];
 const WICKETS=[1,2,3];
 
 const TEAMS=["red","blue"];
-const validConfig=c=>Boolean(c&&["team","individual"].includes(c.mode)&&WICKETS.includes(c.wickets)&&["bat-only","bowl-only","bat-bowl"].includes(c.oddPlayerMode)&&typeof c.allowFist==="boolean"&&typeof c.unlimited==="boolean"&&Number.isInteger(c.limit)&&c.limit>=1&&c.limit<=120);
+const validConfig=c=>Boolean(c&&["team","individual"].includes(c.mode)&&WICKETS.includes(c.wickets)&&["bat-only","bowl-only","bat-bowl"].includes(c.oddPlayerMode)&&typeof c.allowFist==="boolean"&&typeof c.unlimited==="boolean"&&(c.unlimited||(Number.isInteger(c.limit)&&c.limit>=1&&c.limit<=120)));
 const clone=value=>JSON.parse(JSON.stringify(value));
 const nameOf=(ctx,id)=>ctx.players.find(p=>p.id===id)?.nickname||"Player";
 const activeIds=ctx=>ctx.players.filter(p=>p.role==="player"&&p.connected).map(p=>p.id);
