@@ -84,3 +84,34 @@
 .hc-final-main .hc-final-scores{margin:12px 0}
 @media(max-width:900px){.hc-final-layout{grid-template-columns:1fr}.hc-final-card{position:static}.hc-final-card .hc-table-wrap{max-height:360px}}
 @media(max-width:480px){.hc-final-main,.hc-final-card{padding:12px}.hc-final-details{padding:9px}.hc-final-card .hc-score-team-tabs,.hc-final-card .hc-score-type-tabs{gap:5px}}
+
+/* Hand Cricket analytics and compact expandable history */
+.hc-live-analytics>summary,.hc-collapsible-log>summary{cursor:pointer;list-style:none;color:var(--hc-gold);font-weight:900;letter-spacing:.08em;padding:2px 0}
+.hc-live-analytics>summary::-webkit-details-marker,.hc-collapsible-log>summary::-webkit-details-marker{display:none}
+.hc-live-analytics>summary:after,.hc-collapsible-log>summary:after{content:"＋";float:right;color:var(--hc-muted);font-size:16px}
+.hc-live-analytics[open]>summary:after,.hc-collapsible-log[open]>summary:after{content:"−"}
+.hc-live-analytics[open]>summary,.hc-collapsible-log[open]>summary{padding-bottom:13px;margin-bottom:12px;border-bottom:1px solid var(--hc-line)}
+.hc-analytics-team-filter,.hc-analytics-tabs{display:flex;gap:7px;flex-wrap:wrap;margin:10px 0}
+.hc-analytics-team-filter button,.hc-analytics-tabs button{border:1px solid #49645b;border-radius:9px;padding:8px 12px;background:#172a25;color:#dbe8df;font-weight:800;cursor:pointer}
+.hc-analytics-team-filter button.active,.hc-analytics-tabs button.active{background:#e5b85c;color:#17211c;border-color:#e5b85c}
+.hc-analytics-content{min-width:0}
+.hc-analytics-team-cards,.hc-analytics-insights{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:12px 0}
+.hc-analytics-team-cards article,.hc-analytics-insights article{display:grid;gap:5px;padding:13px;border:1px solid var(--hc-line);border-radius:12px;background:#10221d}
+.hc-analytics-team-cards small,.hc-analytics-insights small{color:var(--hc-muted);font-size:10px;font-weight:900;letter-spacing:.08em}
+.hc-analytics-team-cards strong{font:900 29px 'Barlow Condensed',sans-serif;color:#f5d48e}
+.hc-analytics-insights b{color:#f5d48e}.hc-analytics-team-cards span,.hc-analytics-insights span{font-size:11px;color:var(--hc-muted)}
+.hc-analytics-chart{width:100%;overflow:hidden}.hc-analytics-chart svg{display:block;width:100%;height:auto;min-width:280px}
+.hc-analytics-legend{display:flex;gap:12px;flex-wrap:wrap;margin:8px 0;color:var(--hc-muted);font-size:11px}
+.hc-analytics-legend span{display:flex;align-items:center;gap:5px}.hc-analytics-legend i{width:9px;height:9px;border-radius:50%}
+.hc-analytics-bars{display:grid;gap:9px;margin:12px 0}.hc-analytics-bar-row{display:grid;grid-template-columns:minmax(65px,110px) 1fr 34px;align-items:center;gap:8px;font-size:11px}
+.hc-analytics-bar-row>span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#dce9df}
+.hc-analytics-bar-row>div{height:10px;border-radius:20px;background:#263c33;overflow:hidden}.hc-analytics-bar-row i{display:block;height:100%;border-radius:20px;background:linear-gradient(90deg,#b88b42,#f0d28b)}
+.hc-analytics-bar-row>b{text-align:right;color:#f3d28b}
+.hc-analytics-content h4{margin:16px 0 7px;color:var(--hc-gold);font:800 18px 'Barlow Condensed',sans-serif}
+.hc-analytics-content .hc-table-wrap{max-width:100%;overflow-x:auto}.hc-analytics-content table{font-size:12px}
+.hc-analytics-rankings{display:grid;gap:7px}.hc-analytics-rankings>div{display:flex;justify-content:space-between;gap:10px;padding:10px;border:1px solid var(--hc-line);border-radius:9px;background:#10221d}.hc-analytics-rankings span{color:var(--hc-muted);font-size:11px;text-align:right}
+.hc-compare-select{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:7px;margin:10px 0 14px}
+.hc-compare-select label{display:flex;align-items:center;gap:8px;padding:9px;border:1px solid var(--hc-line);border-radius:9px;background:#10221d;font-size:12px;cursor:pointer}.hc-compare-select input{accent-color:#e5b85c}
+.hc-analytics-chase{padding:10px;border:1px solid #78633b;border-radius:9px;background:#30291b;color:#ffe2a1}
+.hc-collapsible-log #over-history,.hc-collapsible-log #ball-history{max-height:340px;overflow:auto;overscroll-behavior:contain;scrollbar-gutter:stable}
+@media(max-width:600px){.hc-analytics-team-filter button,.hc-analytics-tabs button{flex:1;padding:8px 7px;font-size:11px}.hc-analytics-rankings>div{flex-direction:column}.hc-analytics-rankings span{text-align:left}}
