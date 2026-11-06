@@ -182,7 +182,7 @@ function resolveDelivery(s,ctx){
       if(s.innings===1)startTeamInnings(s,s.bowlingTeam,2);
       else{
         const winner=score.runs>s.teamScores[s.bowlingTeam].runs?team:score.runs===s.teamScores[s.bowlingTeam].runs?null:s.bowlingTeam;
-        if(s.superOverActive&&!winner)requestSuperOverVote(s);else finish(s,winner);
+        if(!winner)requestSuperOverVote(s);else finish(s,winner);
       }
     }else{
       if(!s.currentBatterId)s.currentBatterId=nextBatter(s,team);
