@@ -4,3 +4,15 @@
 
 .hc-delivery-reveal{display:grid;grid-template-columns:1fr auto 1fr;gap:12px;align-items:center;padding:16px;margin:-4px 0 16px;border:1px solid var(--hc-line);border-radius:14px;background:#142521;text-align:center}.hc-delivery-reveal .hc-reveal-side{display:grid;gap:5px}.hc-delivery-reveal small{color:var(--hc-muted);font-size:10px;font-weight:900;letter-spacing:.1em}.hc-delivery-reveal strong{font:900 34px 'Barlow Condensed',sans-serif;color:var(--hc-gold)}.hc-delivery-reveal .hc-reveal-vs{color:var(--hc-muted);font-weight:900}.hc-delivery-reveal .hc-reveal-result{grid-column:1/-1;padding-top:10px;border-top:1px solid var(--hc-line);font-weight:900;color:#b8f0ca}.hc-delivery-reveal .hc-reveal-result.out-text{color:#ff8c83}.hc-delivery-reveal.hc-reveal{animation:hc-number-flip .65s ease both}@keyframes hc-number-flip{0%{opacity:.2;transform:translateY(8px) rotateX(75deg);filter:blur(3px)}55%{opacity:1;transform:translateY(-2px) rotateX(-8deg);filter:none}100%{transform:translateY(0) rotateX(0)}}.hc-score-team.hc-score-update{animation:hc-score-pop .38s ease}@keyframes hc-score-pop{45%{transform:scale(1.025);filter:brightness(1.35)}100%{transform:scale(1);filter:none}}.hc-stumps{display:inline-block;margin-right:6px;letter-spacing:-.12em;color:#ff8c83;font-size:19px}
 @media(prefers-reduced-motion:reduce){.hc-delivery-reveal.hc-reveal,.hc-score-team.hc-score-update{animation:none!important}}
+
+/* Hand Cricket refinements */
+.hc-heading h1{color:#17251f}.hc-heading h1 b{color:#7a5410}.hc-heading p,.hc-kicker{color:#33483c}
+.hc-game .playblox-lifecycle{background:#f2f0e7!important;color:#17251f!important;border:1px solid #a9b6a7!important;box-shadow:0 12px 32px #17251f20}
+.hc-game .playblox-lifecycle-title,.hc-game .playblox-lifecycle-status,.hc-game .playblox-lifecycle-kicker,.hc-game .playblox-lifecycle-votes,.hc-game .playblox-lifecycle-manage summary,.hc-game .playblox-lifecycle-manage strong,.hc-game .playblox-kick-row{color:#17251f!important}
+.hc-game .playblox-lifecycle-error{color:#8a211b!important}
+.hc-history #ball-history{max-height:340px;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;padding-right:6px;scrollbar-gutter:stable}
+.hc-final-history{max-height:420px;overflow:auto}
+.hc-hand-gesture{display:block;font-size:clamp(42px,7vw,64px);line-height:1.15;min-height:1.2em;animation:hc-hand-arrive .62s cubic-bezier(.2,.8,.2,1) both;transform-origin:50% 85%}
+.hc-reveal-side:first-child .hc-hand-gesture{animation-delay:.04s}.hc-reveal-side:last-of-type .hc-hand-gesture{animation-delay:.16s}
+@keyframes hc-hand-arrive{0%{opacity:0;transform:translateY(22px) rotate(-14deg) scale(.72)}65%{opacity:1;transform:translateY(-4px) rotate(5deg) scale(1.08)}100%{opacity:1;transform:translateY(0) rotate(0) scale(1)}}
+@media(max-width:760px){.hc-history #ball-history{max-height:300px}.hc-game .playblox-lifecycle{padding:14px}}
