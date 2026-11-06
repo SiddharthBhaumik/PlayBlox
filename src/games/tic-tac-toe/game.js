@@ -30,7 +30,7 @@ function showError(message) {
   $("game-help").textContent = message;
   $("game-help").classList.add("error");
 }
-const syncGameLifecycle = setupGameLifecycle({ root: document.querySelector("main"), getRoom: () => room, getPlayerId: () => myPlayerId, api, backToLobby: () => $("back-to-lobby").href , enabled: false });
+const syncGameLifecycle = setupGameLifecycle({ root: document.querySelector("main"), getRoom: () => room, getPlayerId: () => myPlayerId, api, backToLobby: () => $("back-to-lobby").href });
 
 function render() {
   if (!room || !gameState) return;
