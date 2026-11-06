@@ -66,3 +66,21 @@
 #setup-panel input[type=number]{width:100%;min-width:0;padding:12px 14px;border:1px solid var(--hc-line);border-radius:10px;background:#10221d;color:#f4f2e8;font:700 16px inherit;}
 #setup-panel label[hidden],#limit-wrap[hidden]{display:none!important}
 .guide-dialog-copy h3,.guide-dialog-copy h4{margin:22px 0 9px;color:#e8bf70;line-height:1.2}.guide-dialog-copy p{margin:8px 0;line-height:1.65}.guide-dialog-copy ul,.guide-dialog-copy ol{padding-left:23px;margin:8px 0 16px}.guide-dialog-copy li{padding:3px 0;line-height:1.55}
+
+
+/* Hand Cricket: balanced wildcard and completed-match presentation */
+.hc-team.wildcard{border-color:#a58a48;background:#40371f;color:#ffe7a3}
+.hc-final-layout{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(320px,.85fr);gap:16px;align-items:start;margin-top:12px}
+.hc-final-main,.hc-final-card{min-width:0;padding:16px;border:1px solid var(--hc-line);border-radius:14px;background:#142521}
+.hc-final-card{position:sticky;top:16px}
+.hc-final-details{margin:14px 0;padding:12px;border:1px solid var(--hc-line);border-radius:12px;background:#10201d}
+.hc-final-details>summary{cursor:pointer;font-weight:900;color:var(--hc-gold);padding:4px 2px}
+.hc-final-details .hc-over-row,.hc-final-details .hc-history-row{margin-top:8px}
+.hc-final-card .hc-table-wrap{max-height:520px;overflow:auto}
+.hc-final-card .hc-score-team-tabs button,.hc-final-card .hc-score-type-tabs button{font-size:11px;padding:8px 10px}
+.hc-final-card table{font-size:10px}
+.hc-final-card th,.hc-final-card td{padding:8px 5px}
+.hc-final-main h3{color:var(--hc-gold);font:800 22px 'Barlow Condensed',sans-serif;margin:16px 0 8px}
+.hc-final-main .hc-final-scores{margin:12px 0}
+@media(max-width:900px){.hc-final-layout{grid-template-columns:1fr}.hc-final-card{position:static}.hc-final-card .hc-table-wrap{max-height:360px}}
+@media(max-width:480px){.hc-final-main,.hc-final-card{padding:12px}.hc-final-details{padding:9px}.hc-final-card .hc-score-team-tabs,.hc-final-card .hc-score-type-tabs{gap:5px}}
