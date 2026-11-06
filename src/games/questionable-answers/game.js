@@ -149,7 +149,7 @@ $("replay-game").addEventListener("click",async()=>{
   try{
     const result=await api("/api/rooms/"+encodeURIComponent(code)+"/game/rematch",{method:"POST",body:JSON.stringify({playAgain:true})});
     if(result.status==="waiting")$("replay-status").textContent="Your replay vote is in. Waiting for the other players…";
-    else if(result.status==="started")help("Everyone agreed — starting another round!");
+    else if(result.status==="playing")help("Everyone agreed — starting another round!");
   }catch(e){help(e.message,true);button.disabled=false}
 });
 async function endRound(button){if(!player(myPlayerId)?.isHost)return;if(!confirm("End this game and return everyone to the party lobby?"))return;button.disabled=true;try{await api("/api/rooms/"+encodeURIComponent(code)+"/game/reset",{method:"POST",body:"{}"});location.href=$("back-to-lobby").href}catch(e){help(e.message,true);button.disabled=false}}
