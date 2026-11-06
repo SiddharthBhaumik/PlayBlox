@@ -21,7 +21,7 @@ assert.equal(normalizeRematchChoice(wavelength, { playAgain: true }), "continue"
 assert.equal(normalizeRematchChoice(wavelength, { playAgain: false }), "lobby",
   "Legacy decline actions map to collective lobby return and are then host-authorized");
 
-const wavePlayers = [player("p1"), player("p2"), player("p3")];
+const wavePlayers = ["p1", "p2", "p3"].map((id, index) => ({ id, nickname: `Player ${id}`, isHost: index === 0, connected: true, role: "player" }));
 const waveContext = { players: wavePlayers, player: wavePlayers[0] };
 const finishedWave = {
   ...wavelength.createInitialState(waveContext),
