@@ -11,7 +11,7 @@ $("back-to-lobby").href = "../../../" + (code ? "?party=" + encodeURIComponent(c
 
 function setConnection(message, offline=false) { $("connection-status").textContent=message; $("connection-status").classList.toggle("offline",offline); }
 function help(message,error=false) { $("game-help").textContent=message; $("game-help").classList.toggle("error",error); }
-const syncGameLifecycle = setupGameLifecycle({ root: document.querySelector("main"), getRoom: () => room, getPlayerId: () => myPlayerId, api, backToLobby: () => $("back-to-lobby").href });
+const syncGameLifecycle = setupGameLifecycle({ root: document.querySelector("main"), getRoom: () => room, getPlayerId: () => myPlayerId, api, backToLobby: () => $("back-to-lobby").href , enabled: false });
 
 function player(id) { return room?.players.find(p=>p.id===id); }
 function isFinished() { return room?.lifecycle==="results" || gameState?.phase==="finished"; }
