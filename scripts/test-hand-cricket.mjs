@@ -248,8 +248,6 @@ const wicketLimitPlayers=makePlayers(3);
 let wicketLimit=handCricket.createInitialState(context("p1",wicketLimitPlayers));
 wicketLimit=action(wicketLimitPlayers,wicketLimit,"p1",{type:"start-match",config:{...rotationConfig,wickets:2}});
 wicketLimit=playBall(wicketLimitPlayers,wicketLimit,1,1);
-wicketLimit=playBall(wicketLimitPlayers,wicketLimit,1,1);
-wicketLimit=playBall(wicketLimitPlayers,wicketLimit,1,1);
 assert.equal(wicketLimit.currentBatterId,"p1","The batter remains at the crease after the first of two wickets");
 wicketLimit=playBall(wicketLimitPlayers,wicketLimit,1,1);
 assert.equal(wicketLimit.currentBatterId,"p2","The next batter starts after p1 exhausts the configured wicket allowance");
