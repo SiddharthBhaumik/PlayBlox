@@ -407,7 +407,14 @@ wildcardPriority=await chooseTeams(wildcardPriorityPlayers,wildcardPriority,[["p
 // Model the collision case: the bowling captain's current assignment is the wildcard.
 wildcardPriority.currentBowlerId="p3";
 wildcardPriority.overBowlerId="p3";
+// Returning to bat starts a fresh personal innings for HS, while total runs persist.
+wildcardPriority.currentInningsRuns.p3=14;
+wildcardPriority.stats.p3.runs=25;
+wildcardPriority.stats.p3.highestScore=14;
 wildcardPriority=action(wildcardPriorityPlayers,wildcardPriority,"p1",{type:"select-batter",playerId:"p3"});
+assert.equal(wildcardPriority.currentInningsRuns.p3,0,"A returning batter starts a fresh innings accumulator");
+assert.equal(wildcardPriority.stats.p3.runs,25,"Cumulative match runs are preserved when a player returns");
+assert.equal(wildcardPriority.stats.p3.highestScore,14,"Previously recorded highest score is preserved");
 assert.equal(wildcardPriority.currentBatterId,"p3","The wildcard remains the selected batter when roles conflict");
 assert.notEqual(wildcardPriority.currentBowlerId,"p3","Batting priority removes the wildcard from the conflicting bowling role");
 assert.equal(wildcardPriority.bowlerSelectionOpen,true,"The bowling captain must confirm a replacement bowler");
