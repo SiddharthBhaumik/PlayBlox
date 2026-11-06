@@ -207,14 +207,17 @@ assert.equal((await handCricket.validateAction(context("p1",rotationPlayers),rot
 rotation=action(rotationPlayers,rotation,"p1",{type:"start-match",config:rotationConfig});
 assert.deepEqual(rotation.individualQueue,["p1","p2","p3"]);
 rotation=playBall(rotationPlayers,rotation,4,4);
-assert.equal(rotation.currentBatterId,"p2","A dismissal moves to the next player immediately");
-assert.deepEqual(rotation.individualQueue,["p2","p3","p1"],"A player with wickets remaining returns at the back of the queue");
+assert.equal(rotation.currentBatterId,"p1","A batter stays at the crease after the first wicket when wickets remain");
+assert.equal(rotation.stats.p1.wickets,1);
+assert.deepEqual(rotation.individualQueue,["p1","p2","p3"],"The active batter remains at the front of the queue");
 rotation=playBall(rotationPlayers,rotation,5,5);
-assert.equal(rotation.currentBatterId,"p3");
+assert.equal(rotation.currentBatterId,"p2","The next player starts only after p1 exhausts both wickets");
+assert.deepEqual(rotation.individualQueue,["p2","p3"],"An exhausted batter is removed from the batting queue");
 rotation=playBall(rotationPlayers,rotation,6,6);
-assert.equal(rotation.currentBatterId,"p1","The first player returns only after every other eligible player has had a turn");
-assert.equal(rotation.stats.p1.wickets,1,"Wickets accumulate across separate batting turns");
-assert.notEqual(rotation.currentBowlerId,"p1","A player cannot bowl against themselves when their next batting turn begins");
+assert.equal(rotation.currentBatterId,"p2","p2 also continues batting after their first wicket");
+rotation=playBall(rotationPlayers,rotation,3,3);
+assert.equal(rotation.currentBatterId,"p3","p2 leaves the batting queue after exhausting the second wicket");
+assert.notEqual(rotation.currentBowlerId,"p3","A player cannot bowl against themselves when their batting innings begins");
 
 // Limited individual tournaments count balls cumulatively across a player's turns.
 // Exhausting balls removes the player from batting rotation, not from bowling.
@@ -223,15 +226,19 @@ let ballLimit=handCricket.createInitialState(context("p1",ballLimitPlayers));
 const ballLimitConfig={mode:"individual",wickets:3,oddPlayerMode:"bat-bowl",allowFist:true,unlimited:false,limit:3};
 ballLimit=action(ballLimitPlayers,ballLimit,"p1",{type:"start-match",config:ballLimitConfig});
 ballLimit=playBall(ballLimitPlayers,ballLimit,2,2); // p1 wicket, ball 1
-ballLimit=playBall(ballLimitPlayers,ballLimit,3,3); // p2 wicket
-ballLimit=playBall(ballLimitPlayers,ballLimit,4,4); // p3 wicket
-assert.equal(ballLimit.currentBatterId,"p1","p1 gets a second turn after the full rotation");
+assert.equal(ballLimit.currentBatterId,"p1","A wicket alone does not end the turn while balls remain");
 ballLimit=playBall(ballLimitPlayers,ballLimit,1,2); // p1 ball 2
+assert.equal(ballLimit.currentBatterId,"p1","The batter continues until the ball allowance is exhausted");
 ballLimit=playBall(ballLimitPlayers,ballLimit,1,2); // p1 ball 3: allocation exhausted
 assert.equal(ballLimit.stats.p1.balls,3,"The ball allocation is cumulative across turns");
 assert.equal(ballLimit.currentBatterId,"p2","A player who uses all allocated balls leaves the batting queue");
 assert.equal(ballLimit.individualQueue.includes("p1"),false,"A ball-exhausted player is removed from batting rotation");
 assert.equal(ballLimit.playerOrder.includes("p1"),true,"A ball-exhausted player remains in the tournament and can bowl");
+ballLimit=playBall(ballLimitPlayers,ballLimit,3,3); // p2 wicket, ball 1
+assert.equal(ballLimit.currentBatterId,"p2","A new batter also continues after a wicket while balls remain");
+ballLimit=playBall(ballLimitPlayers,ballLimit,1,2); // p2 ball 2
+ballLimit=playBall(ballLimitPlayers,ballLimit,1,2); // p2 ball 3
+assert.equal(ballLimit.currentBatterId,"p3","The next player starts when p2 reaches the cumulative ball limit");
 assert.equal((await handCricket.validateAction(context("p1",ballLimitPlayers),handCricket.createInitialState(context("p1",ballLimitPlayers)),{type:"start-match",config:{...ballLimitConfig,unlimited:true,limit:0}})).ok,true,
   "Unlimited mode does not require a finite ball allocation");
 
@@ -243,8 +250,9 @@ wicketLimit=action(wicketLimitPlayers,wicketLimit,"p1",{type:"start-match",confi
 wicketLimit=playBall(wicketLimitPlayers,wicketLimit,1,1);
 wicketLimit=playBall(wicketLimitPlayers,wicketLimit,1,1);
 wicketLimit=playBall(wicketLimitPlayers,wicketLimit,1,1);
-assert.equal(wicketLimit.currentBatterId,"p1","p1 returns for a second turn after the full rotation");
+assert.equal(wicketLimit.currentBatterId,"p1","The batter remains at the crease after the first of two wickets");
 wicketLimit=playBall(wicketLimitPlayers,wicketLimit,1,1);
+assert.equal(wicketLimit.currentBatterId,"p2","The next batter starts after p1 exhausts the configured wicket allowance");
 assert.equal(wicketLimit.individualQueue.includes("p1"),false,"A player is removed after exhausting the configured wicket allowance");
 assert.equal(wicketLimit.playerOrder.includes("p1"),true,"Wicket exhaustion does not remove a player from the tournament");
 
@@ -258,11 +266,16 @@ oneDismissal=action(threeWicket,oneDismissal,"p1",{type:"start-match"});
 assert.equal(oneDismissal.currentBatterId,"p1");
 oneDismissal=playBall(threeWicket,oneDismissal,4,4);
 assert.equal(oneDismissal.stats.p1.wickets,1);
-assert.equal(oneDismissal.individualWickets,0,"The next player's innings starts with a fresh wicket count");
-assert.equal(oneDismissal.individualIndex,2,"The next batting turn begins after the first dismissal");
-assert.equal(oneDismissal.currentBatterId,"p2","The next eligible player bats before the dismissed player returns");
+assert.equal(oneDismissal.individualWickets,1,"The current batter's wicket count increments and is retained");
+assert.equal(oneDismissal.individualIndex,1,"A dismissal does not start a new batting innings");
+assert.equal(oneDismissal.currentBatterId,"p1","The same player continues batting while two wickets remain");
+oneDismissal=playBall(threeWicket,oneDismissal,4,4);
+oneDismissal=playBall(threeWicket,oneDismissal,4,4);
+assert.equal(oneDismissal.currentBatterId,"p2","The next player's innings starts only after all three wickets are used");
+assert.equal(oneDismissal.individualIndex,2);
 assert.equal(oneDismissal.currentBowlerId,"p1","The previous batter can bowl in the next player's innings");
-assert.equal(oneDismissal.completedOvers.at(-1).complete,false,"The interrupted over is saved when the innings changes");
+assert.equal(oneDismissal.completedOvers.length,1);
+assert.equal(oneDismissal.completedOvers[0].complete,false,"The interrupted over is saved when the innings changes");
 
 // A new innings makes its previous batter eligible to bowl. They join the
 // current bowling round rather than being skipped until the next round.
