@@ -57,10 +57,16 @@ function renderPlay(){
  $("setup-panel").hidden=true;$("match-panel").hidden=false;$("result-panel").hidden=true;
  const bat=state.currentBatterId,bowl=state.currentBowlerId,batPlayer=player(bat),bowlPlayer=player(bowl),mine=privateState?.hasSubmitted||state.pendingPlayers?.includes(myId);
  $("phase-label").textContent=state.config.mode==="team"?"INNINGS "+state.innings+" · OVER "+(Math.floor((state.teamScores[state.battingTeam]?.balls||0)/6)+1):"PLAYER INNINGS · "+(state.individualBalls||0)+" BALLS";
- const revealDelivery=state.lastDelivery&&(state.pendingPlayers||[]).length===0&&state.phase==="playing";$("players-at-crease").classList.toggle("hc-crease-revealed",revealDelivery);if(revealDelivery){const d=state.lastDelivery;$("players-at-crease").innerHTML='<div class="hc-role batter hc-role-reveal"><small>🏏 BATTER · '+esc(d.batterName)+'</small><span class="hc-hand-gesture">'+handGesture(d.batChoice)+'</span><b>'+esc(String(d.batChoice).toUpperCase())+'</b></div><div class="hc-vs">VS</div><div class="hc-role bowler hc-role-reveal"><small>🎯 BOWLER · '+esc(d.bowlerName)+'</small><span class="hc-hand-gesture">'+handGesture(d.bowlChoice)+'</span><b>'+esc(String(d.bowlChoice).toUpperCase())+'</b></div><div class="hc-inline-result '+(d.out?'out-text':'')+'">'+(d.out?'OUT · '+esc(d.reason):d.runs?d.runs+' RUN'+(d.runs===1?'':'S'):'DOT BALL')+'</div>';}else $("players-at-crease").innerHTML='<div class="hc-role batter"><small>🏏 BATTER</small><b>'+esc(batPlayer?.nickname||"Waiting")+'</b><span>'+(bat===myId?'YOU ARE BATTING':'')+'</span></div><div class="hc-vs">VS</div><div class="hc-role bowler"><small>🎯 BOWLER</small><b>'+esc(bowlPlayer?.nickname||"Waiting")+'</b><span>'+(bowl===myId?'YOU ARE BOWLING':'')+'</span></div>';
- const myRole=myId===bat?"batter":myId===bowl?"bowler":null;
+ const revealDelivery=state.lastDelivery&&(state.pendingPlayers||[]).length===0&&state.phase==="playing";$("players-at-crease").classList.toggle("hc-crease-revealed",revealDelivery);if(revealDelivery){const d=state.lastDelivery;$("players-at-crease").innerHTML='<div class="hc-role batter hc-role-reveal"><small>🏏 BATTER · '+esc(d.batterName)+'</small><span class="hc-hand-gesture">'+handGesture(d.batChoice)+'</span><b>'+esc(String(d.batChoice).toUpperCase())+'</b></div><div class="hc-vs">VS</div><div class="hc-role bowler hc-role-reveal"><small>🎯 BOWLER · '+esc(d.bowlerName)+'</small><span class="hc-hand-gesture">'+handGesture(d.bowlChoice)+'</span><b>'+esc(String(d.bowlChoice).toUpperCase())+'</b></div><div class="hc-inline-result '+(d.out?'out-text':'')+'">'+(d.out?'OUT · '+esc(d.reason):d.runs?d.runs+' RUN'+(d.runs===1?'':'S'):'DOT BALL')+'</div>';}else $("players-at-crease").innerHTML='<div class="hc-role batter"><small>🏏 BATTER'+(state.config.mode==="team"&&state.batterSelectionOpen?' · AWAITING CONFIRMATION':'')+'</small><b>'+esc(batPlayer?.nickname||"Waiting")+'</b><span>'+(bat===myId?'YOU ARE BATTING':'')+'</span></div><div class="hc-vs">VS</div><div class="hc-role bowler"><small>🎯 BOWLER'+(state.config.mode==="team"&&state.bowlerSelectionOpen?' · AWAITING CONFIRMATION':'')+'</small><b>'+esc(bowlPlayer?.nickname||"Waiting")+'</b><span>'+(bowl===myId?'YOU ARE BOWLING':'')+'</span></div>';
+ const selectionsPending=state.config.mode==="team"&&(state.batterSelectionOpen||state.bowlerSelectionOpen||!bat||!bowl);
+ const myRole=!selectionsPending?(myId===bat?"batter":myId===bowl?"bowler":null):null;
  let choice='';
- if(myRole){
+ if(selectionsPending){
+  const waiting=[];
+  if(state.batterSelectionOpen)waiting.push("batting captain to confirm the batter");
+  if(state.bowlerSelectionOpen)waiting.push("bowling captain to confirm the bowler");
+  $("choice-area").innerHTML='<div class="hc-waiting">Waiting for '+waiting.join(" and ")+'…<div class="hc-pips"><i></i><i></i><i></i></div></div>';
+ }else if(myRole){
   const waiting=mine?'<p class="hc-locked">✓ Choice locked. Waiting for '+(myRole==="batter"?bowlPlayer?.nickname:batPlayer?.nickname)+'…</p>':'<p class="hc-muted">Choose your number. The reveal happens when both choices are locked.</p>';
   choice='<div class="hc-choice"><h3>'+(myRole==="batter"?"Your batting choice":"Your bowling choice")+'</h3><div class="hc-numbers">'+[1,2,3,4,5,6].map(n=>'<button data-choice="'+n+'" '+(mine?'disabled':'')+'>'+n+'</button>').join("")+(state.config.allowFist?'<button class="fist" data-choice="fist" '+(mine?'disabled':'')+'>✊ Fist</button>':'')+'</div>'+waiting+'</div>';
   if(!mine)$("choice-area").innerHTML=choice;else $("choice-area").innerHTML=choice;
@@ -77,12 +83,13 @@ function renderCaptainControls(){
  const controls=[];
  if(state.config.mode==="team"){
   if(myId===state.captains[state.battingTeam]&&state.batterSelectionOpen){
-   const eligible=state.battingQueue[state.battingTeam].filter(id=>(state.wicketLosses[state.battingTeam]?.[id]||0)<state.config.wickets&&!(id===state.wildcardId&&state.config.oddPlayerMode==="bowl-only"));
-   controls.push('<div class="hc-captain"><label>Captain · choose next batter<select id="next-batter">'+eligible.map(id=>'<option value="'+id+'" '+(id===state.currentBatterId?'selected':'')+'>'+esc(player(id)?.nickname)+'</option>').join("")+'</select></label><button id="pick-batter" class="hc-secondary">Set batter</button></div>');
+   const eligible=state.battingQueue[state.battingTeam].filter(id=>(state.wicketLosses[state.battingTeam]?.[id]||0)<state.config.wickets&&!(id===state.wildcardId&&state.config.oddPlayerMode==="bowl-only")&&(state.bowlerSelectionOpen||id!==state.currentBowlerId));
+   controls.push('<div class="hc-captain"><label>Captain · confirm next batter<select id="next-batter">'+eligible.map(id=>'<option value="'+id+'" '+(id===state.currentBatterId?'selected':'')+'>'+esc(player(id)?.nickname)+'</option>').join("")+'</select></label><button id="pick-batter" class="hc-secondary" '+(!eligible.length?'disabled':'')+'>Confirm batter</button></div>');
   }
   if(myId===state.captains[state.bowlingTeam]&&state.bowlerSelectionOpen&&(!state.overBalls||state.overBalls.length===0)){
-   const eligible=state.playerOrder.filter(id=>(state.teams[id]===state.bowlingTeam||(id===state.wildcardId&&state.config.oddPlayerMode!=="bat-only"))&&id!==state.currentBatterId&&(state.playerOrder.length<=2||id!==state.lastBowlerId));
-   controls.push('<div class="hc-captain"><label>Captain · choose next bowler<select id="next-bowler">'+eligible.map(id=>'<option value="'+id+'">'+esc(player(id)?.nickname)+'</option>').join("")+'</select></label><button id="pick-bowler" class="hc-secondary" '+(!eligible.length?'disabled':'')+'>Set bowler</button></div>');
+   const batterId=state.batterSelectionOpen?null:state.currentBatterId;
+   const eligible=state.playerOrder.filter(id=>(state.teams[id]===state.bowlingTeam||(id===state.wildcardId&&state.config.oddPlayerMode!=="bat-only"))&&id!==batterId&&(state.playerOrder.length<=2||id!==state.lastBowlerId));
+   controls.push('<div class="hc-captain"><label>Captain · confirm next bowler<select id="next-bowler">'+eligible.map(id=>'<option value="'+id+'" '+(id===state.currentBowlerId?'selected':'')+'>'+esc(player(id)?.nickname)+'</option>').join("")+'</select></label><button id="pick-bowler" class="hc-secondary" '+(!eligible.length?'disabled':'')+'>Confirm bowler</button></div>');
   }
  }
  $("captain-controls").innerHTML=controls.join("");
