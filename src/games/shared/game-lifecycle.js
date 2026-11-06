@@ -19,6 +19,7 @@ function lobbyDestination(code, fallback) {
 
 export function setupGameLifecycle({ root, getRoom, getPlayerId, api, backToLobby }) {
   if (!root) return () => {};
+  let redirectedToLobby = false;
   let panel = lifecycleInstances.get(root);
   if (!panel) {
     panel = document.createElement("section");
@@ -76,6 +77,13 @@ export function setupGameLifecycle({ root, getRoom, getPlayerId, api, backToLobb
   }
   return () => {
     const room = getRoom();
+    // The server's lobby reset is broadcast to every connected game client.
+    // Navigate all of them back, not just the host who initiated the reset.
+    if (room?.lifecycle === "lobby" && room.code && !redirectedToLobby) {
+      redirectedToLobby = true;
+      location.assign(lobbyDestination(room.code, backToLobby?.()));
+      return;
+    }
     const player = room?.players?.find(entry => entry.id === getPlayerId());
     const finished = room?.lifecycle === "results";
     panel.hidden = !room || (!finished && !player?.isHost && player?.role !== "player");
