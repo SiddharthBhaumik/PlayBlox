@@ -1,7 +1,6 @@
 const VALUES=[1,2,3,4,5,6,"fist"];
 const WICKETS=[1,2,3];
-const TEAM_OVERS=[1,2,3,5,10,20];
-const INDIVIDUAL_BALLS=[6,12,18,30,60];
+
 const TEAMS=["red","blue"];
 const clone=value=>JSON.parse(JSON.stringify(value));
 const nameOf=(ctx,id)=>ctx.players.find(p=>p.id===id)?.nickname||"Player";
@@ -252,7 +251,7 @@ export const handCricket={
     if(a.type==="update-settings"){
       if(s.phase!=="settings"||!host)return {ok:false,reason:"Only the host can change match settings."};
       const c=a.config||{},limitList=c.mode==="team"?TEAM_OVERS:INDIVIDUAL_BALLS;
-      if(!["team","individual"].includes(c.mode)||!WICKETS.includes(c.wickets)||!["bat-only","bowl-only","bat-bowl"].includes(c.oddPlayerMode)||typeof c.allowFist!=="boolean"||typeof c.unlimited!=="boolean"||(!c.unlimited&&!limitList.includes(c.limit)))return {ok:false,reason:"One or more settings are invalid."};
+      if(!["team","individual"].includes(c.mode)||!WICKETS.includes(c.wickets)||!["bat-only","bowl-only","bat-bowl"].includes(c.oddPlayerMode)||typeof c.allowFist!=="boolean"||typeof c.unlimited!=="boolean"||(!c.unlimited&&(!Number.isInteger(c.limit)||c.limit<1||c.limit>120)))return {ok:false,reason:"One or more settings are invalid."};
       return {ok:true};
     }
     if(a.type==="start-match")return s.phase==="settings"&&host?{ok:true}:{ok:false,reason:"Only the host can start the match."};
