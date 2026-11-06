@@ -33,9 +33,9 @@ function renderTeams(){
 }
 function renderCaptains(){
  $("setup-panel").hidden=false;$("match-panel").hidden=true;
- const team=state.teams[myId],members=state.playerOrder.filter(id=>state.teams[id]===team),runoff=state.runoff[team]||[],votes=state.teamVotes[team]||{},voted=Boolean(votes[myId]);
+ const team=state.teams[myId],members=state.playerOrder.filter(id=>state.teams[id]===team),runoff=state.runoff[team]||[],voted=(state.captainVotesCast?.[team]||[]).includes(myId),votesCast=(state.captainVotesCast?.[team]||[]).length;
  const candidates=runoff.length?runoff:members;
- $("setup-panel").innerHTML='<div class="hc-section-label">CAPTAIN ELECTION</div><h2>'+team.toUpperCase()+' captain vote</h2><p class="hc-muted">'+(runoff.length?"The vote was tied. Vote again among the tied players.":"Choose who should lead your team. Votes are private until everyone has voted.")+'</p><div class="hc-candidates">'+candidates.map(id=>'<button class="hc-candidate" data-candidate="'+id+'" '+(voted?'disabled':'')+'>'+esc(player(id)?.nickname||"Player")+(id===myId?' (you)':'')+'</button>').join("")+'</div><p class="hc-muted">'+(voted?'Your vote is locked. Waiting for your teammates.':"One vote per player.")+'</p>';
+ $("setup-panel").innerHTML='<div class="hc-section-label">CAPTAIN ELECTION</div><h2>'+team.toUpperCase()+' captain vote</h2><p class="hc-muted">'+(runoff.length?"The vote was tied. Vote again among the tied players.":"Choose who should lead your team. Your choice stays secret until every teammate has voted.")+'</p><div class="hc-candidates">'+candidates.map(id=>'<button class="hc-candidate" data-candidate="'+id+'" '+(voted?'disabled':'')+'>'+esc(player(id)?.nickname||"Player")+(id===myId?' (you)':'')+'</button>').join("")+'</div><p class="hc-muted">'+(voted?'Your vote is locked. Waiting for your teammates.':"One vote per player.")+' · '+votesCast+'/'+members.length+' votes received</p>';
  $("setup-panel").querySelectorAll("[data-candidate]").forEach(b=>b.onclick=()=>act({type:"vote-captain",candidateId:b.dataset.candidate}));
  showNotice("Both teams must elect a captain. A tie triggers another vote between tied candidates.");
 }

@@ -201,8 +201,10 @@ export const handCricket={
   },
   getPublicState(s){
     if(!s)return null;
-    const {pending,...pub}=s;
-    return {...pub,pendingPlayers:Object.keys(pending||{})};
+    const {pending,teamVotes,...pub}=s;
+    return {...pub,pendingPlayers:Object.keys(pending||{}),captainVotesCast:{
+      red:Object.keys(teamVotes?.red||{}),blue:Object.keys(teamVotes?.blue||{})
+    }};
   },
   getPrivateState(s,id){return s?.playerOrder.includes(id)?{hasSubmitted:s.pending?.[id]!==undefined,choice:s.pending?.[id]??null}:null;},
   onPlayerLeave(ctx,s,id){
