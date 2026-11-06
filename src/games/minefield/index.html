@@ -2,7 +2,18 @@
 <html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#f5efe3"><title>Minefield Beta — PlayBlox</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Nunito:wght@500;600;700;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../../../styles.css"><link rel="stylesheet" href="./game.css">
-<link id="playblox-dark-theme" rel="stylesheet" href="../../../dark-theme.css" disabled><script type="module" src="./game.js"></script><script src="../../../theme.js" defer></script>
+<link id="playblox-dark-theme" rel="stylesheet" href="../../../dark-theme.css">
+<script>
+  (() => {
+    let preference = "dark";
+    try { preference = localStorage.getItem("playblox-theme") === "light" ? "light" : "dark"; } catch (_) {}
+    document.documentElement.dataset.theme = preference;
+    const themeLink = document.getElementById("playblox-dark-theme");
+    if (themeLink) themeLink.disabled = preference !== "dark";
+    const themeColor = document.querySelector('meta[name="theme-color"]');
+    if (themeColor) themeColor.content = preference === "dark" ? "#080d20" : "#fff8e9";
+  })();
+</script><script type="module" src="./game.js"></script><script src="../../../theme.js" defer></script>
 </head>
 <body><div class="page-shell game-shell minefield-shell">
 <header class="topbar"><a class="brand" href="../../../" aria-label="PlayBlox home"><span class="brand-mark">🧸</span><span class="brand-name">Play<span>Blox</span></span></a><a class="back-link" id="back-to-lobby" href="../../../">Back to party</a><button class="theme-toggle" type="button" data-theme-toggle aria-pressed="false"><span aria-hidden="true">🌙</span><span>Dark mode</span></button></header>
