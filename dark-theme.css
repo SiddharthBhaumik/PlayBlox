@@ -445,3 +445,48 @@ dialog.playblox-guide-dialog::backdrop{background:#020510d9!important;backdrop-f
   background:#ffc943!important;color:#211a25!important;
   border-color:#ffe08a!important;
 }
+
+
+/* Hand Cricket: remove legacy light-theme overrides from the match lifecycle. */
+:root[data-theme="dark"] .hc-heading h1{color:#fff3e4!important}
+:root[data-theme="dark"] .hc-heading h1 b{color:#ffc943!important}
+:root[data-theme="dark"] .hc-heading p,
+:root[data-theme="dark"] .hc-kicker{color:#c5d3e8!important}
+
+:root[data-theme="dark"] .hc-game .playblox-lifecycle{
+  background:linear-gradient(145deg,#1b2949,#101a34)!important;
+  color:#f7f0e5!important;border:2px solid #8192bd!important;
+  box-shadow:0 14px 34px #0007!important;
+}
+:root[data-theme="dark"] .hc-game .playblox-lifecycle-kicker{color:#7fe0d2!important}
+:root[data-theme="dark"] .hc-game .playblox-lifecycle-title{color:#fff1d8!important}
+:root[data-theme="dark"] .hc-game .playblox-lifecycle-status{color:#d2d9ed!important}
+:root[data-theme="dark"] .hc-game .playblox-lifecycle-votes{color:#bdc9e5!important}
+:root[data-theme="dark"] .hc-game .playblox-lifecycle-manage summary{
+  background:#202e50!important;color:#fff1d8!important;
+  border:1px solid #7181a8!important;border-radius:9px;
+}
+:root[data-theme="dark"] .hc-game .playblox-lifecycle-manage[open] summary{border-color:#8fe0d2!important}
+:root[data-theme="dark"] .hc-game .playblox-kick-row{
+  background:#202e50!important;color:#f7f0e5!important;border:1px solid #7181a8!important;
+}
+:root[data-theme="dark"] .hc-game .playblox-kick-row span{color:#f7f0e5!important}
+:root[data-theme="dark"] .hc-game .playblox-lifecycle-actions button{
+  background:linear-gradient(135deg,#e9ad2e,#ffd65b)!important;
+  color:#211a25!important;border:1px solid #ffe08a!important;
+  box-shadow:0 4px 0 #8b6726!important;
+}
+:root[data-theme="dark"] .hc-game .playblox-lifecycle-actions .playblox-lifecycle-lobby,
+:root[data-theme="dark"] .hc-game .playblox-lifecycle-actions .playblox-lifecycle-leave{
+  background:#29385d!important;color:#f7f0e5!important;
+  border-color:#8192bd!important;box-shadow:0 4px 0 #0b1227!important;
+}
+:root[data-theme="dark"] .hc-game .playblox-lifecycle-actions .playblox-lifecycle-end{
+  background:#512b46!important;color:#ffdce5!important;
+  border-color:#b85d82!important;box-shadow:0 4px 0 #2a182b!important;
+}
+:root[data-theme="dark"] .hc-game .playblox-lifecycle-actions button:disabled{
+  opacity:.55!important;background:#34415f!important;color:#aebbd8!important;
+  border-color:#596b91!important;box-shadow:none!important;
+}
+:root[data-theme="dark"] .hc-game .playblox-lifecycle-error{color:#ff9cab!important}
