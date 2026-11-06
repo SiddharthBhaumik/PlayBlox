@@ -197,8 +197,60 @@ individual=submit(two,individual,"p2",3);
 individual=submit(two,individual,"p1","fist");
 assert.equal(individual.stats.p2.runs,3,"When only one chooses Fist, the other player's number is scored");
 
-// Individual tournaments always advance on the first wicket, even if the
-// settings retain a two- or three-wicket allowance for team matches.
+// Individual tournament: configured wickets allow a batter to return after dismissal.
+// Rotation must complete one full round before anyone receives another turn.
+const rotationPlayers=makePlayers(3);
+let rotation=handCricket.createInitialState(context("p1",rotationPlayers));
+const rotationConfig={mode:"individual",wickets:2,oddPlayerMode:"bat-bowl",allowFist:true,unlimited:true,limit:6};
+assert.equal((await handCricket.validateAction(context("p1",rotationPlayers),rotation,{type:"start-match",config:rotationConfig})).ok,true,
+  "Continue accepts valid settings directly");
+rotation=action(rotationPlayers,rotation,"p1",{type:"start-match",config:rotationConfig});
+assert.deepEqual(rotation.individualQueue,["p1","p2","p3"]);
+rotation=playBall(rotationPlayers,rotation,4,4);
+assert.equal(rotation.currentBatterId,"p2","A dismissal moves to the next player immediately");
+assert.deepEqual(rotation.individualQueue,["p2","p3","p1"],"A player with wickets remaining returns at the back of the queue");
+rotation=playBall(rotationPlayers,rotation,5,5);
+assert.equal(rotation.currentBatterId,"p3");
+rotation=playBall(rotationPlayers,rotation,6,6);
+assert.equal(rotation.currentBatterId,"p1","The first player returns only after every other eligible player has had a turn");
+assert.equal(rotation.stats.p1.wickets,1,"Wickets accumulate across separate batting turns");
+assert.notEqual(rotation.currentBowlerId,"p1","A player cannot bowl against themselves when their next batting turn begins");
+
+// Limited individual tournaments count balls cumulatively across a player's turns.
+// Exhausting balls removes the player from batting rotation, not from bowling.
+const ballLimitPlayers=makePlayers(3);
+let ballLimit=handCricket.createInitialState(context("p1",ballLimitPlayers));
+const ballLimitConfig={mode:"individual",wickets:3,oddPlayerMode:"bat-bowl",allowFist:true,unlimited:false,limit:3};
+ballLimit=action(ballLimitPlayers,ballLimit,"p1",{type:"start-match",config:ballLimitConfig});
+ballLimit=playBall(ballLimitPlayers,ballLimit,2,2); // p1 wicket, ball 1
+ballLimit=playBall(ballLimitPlayers,ballLimit,3,3); // p2 wicket
+ballLimit=playBall(ballLimitPlayers,ballLimit,4,4); // p3 wicket
+assert.equal(ballLimit.currentBatterId,"p1","p1 gets a second turn after the full rotation");
+ballLimit=playBall(ballLimitPlayers,ballLimit,1,2); // p1 ball 2
+ballLimit=playBall(ballLimitPlayers,ballLimit,1,2); // p1 ball 3: allocation exhausted
+assert.equal(ballLimit.stats.p1.balls,3,"The ball allocation is cumulative across turns");
+assert.equal(ballLimit.currentBatterId,"p2","A player who uses all allocated balls leaves the batting queue");
+assert.equal(ballLimit.individualQueue.includes("p1"),false,"A ball-exhausted player is removed from batting rotation");
+assert.equal(ballLimit.playerOrder.includes("p1"),true,"A ball-exhausted player remains in the tournament and can bowl");
+assert.equal((await handCricket.validateAction(context("p1",ballLimitPlayers),handCricket.createInitialState(context("p1",ballLimitPlayers)),{type:"start-match",config:{...ballLimitConfig,unlimited:true,limit:0}})).ok,true,
+  "Unlimited mode does not require a finite ball allocation");
+
+// Unlimited individual tournaments end a player's batting eligibility only
+// after all configured wickets have been used.
+const wicketLimitPlayers=makePlayers(3);
+let wicketLimit=handCricket.createInitialState(context("p1",wicketLimitPlayers));
+wicketLimit=action(wicketLimitPlayers,wicketLimit,"p1",{type:"start-match",config:{...rotationConfig,wickets:2}});
+wicketLimit=playBall(wicketLimitPlayers,wicketLimit,1,1);
+wicketLimit=playBall(wicketLimitPlayers,wicketLimit,1,1);
+wicketLimit=playBall(wicketLimitPlayers,wicketLimit,1,1);
+assert.equal(wicketLimit.currentBatterId,"p1","p1 returns for a second turn after the full rotation");
+wicketLimit=playBall(wicketLimitPlayers,wicketLimit,1,1);
+assert.equal(wicketLimit.individualQueue.includes("p1"),false,"A player is removed after exhausting the configured wicket allowance");
+assert.equal(wicketLimit.playerOrder.includes("p1"),true,"Wicket exhaustion does not remove a player from the tournament");
+
+// 
+// Individual dismissals end the current turn, but a player with wickets
+// remaining returns to the back of the batting queue.
 const threeWicket=makePlayers(3);
 let oneDismissal=handCricket.createInitialState(context("p1",threeWicket));
 oneDismissal=action(threeWicket,oneDismissal,"p1",{type:"update-settings",config:{mode:"individual",wickets:3,oddPlayerMode:"bat-bowl",allowFist:true,unlimited:true,limit:6}});
@@ -207,8 +259,8 @@ assert.equal(oneDismissal.currentBatterId,"p1");
 oneDismissal=playBall(threeWicket,oneDismissal,4,4);
 assert.equal(oneDismissal.stats.p1.wickets,1);
 assert.equal(oneDismissal.individualWickets,0,"The next player's innings starts with a fresh wicket count");
-assert.equal(oneDismissal.individualIndex,1,"The first dismissal immediately advances the tournament to the next player");
-assert.equal(oneDismissal.currentBatterId,"p2","The dismissed player must not continue batting");
+assert.equal(oneDismissal.individualIndex,2,"The next batting turn begins after the first dismissal");
+assert.equal(oneDismissal.currentBatterId,"p2","The next eligible player bats before the dismissed player returns");
 assert.equal(oneDismissal.currentBowlerId,"p1","The previous batter can bowl in the next player's innings");
 assert.equal(oneDismissal.completedOvers.at(-1).complete,false,"The interrupted over is saved when the innings changes");
 
