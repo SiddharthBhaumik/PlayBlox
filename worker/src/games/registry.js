@@ -12,6 +12,7 @@ import { decrypto } from "./decrypto.js";
 import { minefield } from "./minefield.js";
 import { sixtySeven } from "./67.js";
 import { wouldYouRather } from "./would-you-rather.js";
+import { handCricket } from "./hand-cricket.js";
 
 const serverGames = new Map();
 
@@ -40,6 +41,7 @@ registerServerGame(decrypto);
 registerServerGame(minefield);
 registerServerGame(sixtySeven);
 registerServerGame(wouldYouRather);
+registerServerGame(handCricket);
 
 export function getServerGame(id) { return serverGames.get(id) || null; }
 export function listServerGames() {

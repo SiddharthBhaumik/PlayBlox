@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#101c1b"><title>Hand Cricket — PlayBlox</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800;900&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../../styles.css"><link rel="stylesheet" href="./game.css"><script type="module" src="./game.js"></script>
+</head>
+<body><div class="page-shell game-shell">
+<header class="topbar"><a class="brand" href="../../../"><span class="brand-mark">🧸</span><span class="brand-name">Play<span>Blox</span></span></a><a class="back-link" id="back-to-lobby" href="../../../" hidden>Back to party</a></header>
+<div class="game-layout"><aside class="game-roster"><h2>In this match</h2><ul id="game-players"><li>Connecting…</li></ul></aside>
+<main class="hc-game">
+<div class="hc-kicker">PLAYBLOX · MATCH CENTRE</div><div class="hc-heading"><span>🏏</span><div><h1>HAND <b>CRICKET</b></h1><p>One ball. Two choices. All the pressure.</p></div></div>
+<div class="hc-meta"><span id="room-label">Joining party…</span><span id="connection-status">Connecting…</span></div>
+<div id="notice" class="hc-notice" role="status">Connecting to your match…</div>
+<section id="setup-panel" class="hc-panel" hidden></section>
+<section id="match-panel" hidden>
+<div id="scoreboard" class="hc-scoreboard"></div>
+<div class="hc-main-grid"><section class="hc-panel hc-play"><div id="phase-label" class="hc-section-label">LIVE BALL</div><div id="players-at-crease" class="hc-crease"></div><div id="choice-area"></div><div id="captain-controls"></div></section>
+<section class="hc-panel hc-stats"><div class="hc-section-label">MATCH SCORECARD</div><div id="scorecard"></div></section></div>
+<section class="hc-panel hc-over"><div class="hc-section-label">CURRENT OVER</div><div id="over-summary"></div></section>
+<section class="hc-panel hc-history"><div class="hc-section-label">BALL-BY-BALL HISTORY</div><div id="ball-history"></div></section>
+</section>
+<section id="result-panel" class="hc-panel" hidden></section>
+<div class="hc-footer"><label><input id="sound-toggle" type="checkbox" checked> Sound effects</label><label><input id="motion-toggle" type="checkbox" checked> Animations</label></div>
+<p id="game-help" class="game-help">Your choices stay hidden until both players lock in.</p>
+<button id="return-lobby" class="secondary-button" type="button" hidden>End match and return to lobby</button><button id="leave-game" class="secondary-button" type="button" hidden>Leave game</button>
+</main></div></div></body></html>

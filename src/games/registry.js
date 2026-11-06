@@ -157,6 +157,21 @@ export const gameRegistry = [
     lateJoinPolicy: 'wait',
     spectators: { supported: true },
   },
+  {
+    id: 'hand-cricket',
+    name: 'Hand Cricket',
+    description: 'Pick a number, read your opponent, and build an innings together.',
+    guide: "HAND CRICKET · PLAYBLOX\n\nPICK: The batter and bowler secretly choose 0–6. If Fist is enabled, either player may choose Fist. Both choices are revealed together.\n\nSCORING: If the numbers differ, the batter scores the number they chose. If both choose the same number, the batter is OUT. If only one chooses Fist, the other player's number is scored. If both choose Fist, the batter is OUT.\n\nTEAM MATCH: Choose Red or Blue, elect captains by vote, and let captains choose the next batter and bowler. Each over has six balls. Batters rotate after a wicket and return later if they have wickets left.\n\nINDIVIDUAL TOURNAMENT: Everyone bats for the same ball allocation. Other players bowl in a fair rotation; each eligible bowler gets a turn in the round before anyone gets a second. Highest score wins.\n\nReconnects preserve the server score, ball history and match phase.",
+    emoji: '🏏',
+    color: '#c9e4d2',
+    status: 'beta',
+    path: './src/games/hand-cricket/index.html',
+    entryMode: 'party',
+    players: { min: 2, max: 8 },
+    interactionModel: 'simultaneous',
+    lateJoinPolicy: 'wait',
+    spectators: { supported: true },
+  },
   // Example for a future game (uncomment and edit when its page exists):
   // {
   //   id: 'memory-match',
