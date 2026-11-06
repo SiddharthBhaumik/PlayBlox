@@ -195,7 +195,7 @@ function resolveDelivery(s,ctx){
     ball:team?s.teamScores[team].balls:batterStats.balls,
     innings:team?s.innings:s.individualIndex,battingTeam:team,
     batterId:batter,bowlerId:bowler,batterName:nameOf(ctx,batter),bowlerName:nameOf(ctx,bowler),
-    batChoice:bat,bowlChoice:bowl,out,runs,reason,at:Date.now()
+    batChoice:bat,bowlChoice:bowl,out,runs,reason,superOver:Boolean(s.superOverActive),superOverRound:s.superOverRound||0,at:Date.now()
   };
   s.history.push(delivery);s.overBalls.push(delivery);s.lastDelivery=delivery;s.pending={};
   if(team){
