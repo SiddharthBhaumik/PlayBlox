@@ -213,7 +213,7 @@ assert.equal(so.superOverRounds.length,2);
 so=action(soPlayers,so,"p1",{type:"vote-super-over",vote:"yes"});
 so=action(soPlayers,so,"p3",{type:"vote-super-over",vote:"yes"});
 for(let i=0;i<6;i++)so=playBall(soPlayers,so,1,2);
-for(let i=0;i<6;i++)so=playBall(soPlayers,so,2,1);
+for(let i=0;i<6&&so.phase==="playing";i++)so=playBall(soPlayers,so,2,1);
 assert.equal(so.phase,"finished");
 assert.equal(so.winnerTeam,"blue","The second Super Over breaks the tie");
 assert.equal(so.superOverRounds.length,2);
