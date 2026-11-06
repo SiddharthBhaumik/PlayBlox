@@ -13,7 +13,7 @@ const player=id=>room?.players.find(p=>p.id===id);
 function setConnection(message,offline=false){$("connection-status").textContent=message;$("connection-status").classList.toggle("offline",offline)}
 function showError(message){$("game-help").textContent=message;$("game-help").classList.add("error")}
 function setBanner(message){$("turn-banner").textContent=message}
-const syncGameLifecycle = setupGameLifecycle({ root: document.querySelector("main"), getRoom: () => room, getPlayerId: () => myPlayerId, api, backToLobby: () => $("back-to-lobby").href });
+const syncGameLifecycle = setupGameLifecycle({ root: document.querySelector("main"), getRoom: () => room, getPlayerId: () => myPlayerId, api, backToLobby: () => $("back-to-lobby").href , enabled: false });
 
 async function api(path,options={}){let response;try{response=await fetch(API_BASE_URL+path,{...options,headers:{...(options.body?{"Content-Type":"application/json"}:{}),...(token?{Authorization:"Bearer "+token}:{}),...(options.headers||{})}})}catch{throw new Error("Could not reach the party service.")}const data=await response.json().catch(()=>({}));if(!response.ok){const error=new Error(data.error||"The request failed.");error.stateVersion=data.stateVersion;throw error}return data}
 function sendAction(action){return api("/api/rooms/"+encodeURIComponent(code)+"/game/action",{method:"POST",body:JSON.stringify({actionId:crypto.randomUUID(),expectedStateVersion:stateVersion,action})})}
