@@ -208,7 +208,7 @@ ranked.config.mode="individual";
 ranked.stats.p1={runs:100,balls:100,wickets:0,ballsBowled:12,runsConceded:24,wicketsTaken:2,highestScore:90};
 ranked.stats.p2={runs:100,balls:100,wickets:0,ballsBowled:12,runsConceded:12,wicketsTaken:3,highestScore:70};
 ranked.stats.p3={runs:100,balls:80,wickets:0,ballsBowled:12,runsConceded:12,wicketsTaken:3,highestScore:70};
-ranked.stats.p4={runs:99,balls:100,wickets:0,ballsBowled:12,runsConceded:6,wicketsTaken:4,highestScore:99};
+ranked.stats.p4={runs:101,balls:100,wickets:0,ballsBowled:12,runsConceded:6,wicketsTaken:4,highestScore:99};
 const individualResults=handCricket.getResults(context("p1",soPlayers),ranked);
 assert.equal(individualResults.ranking[0].playerId,"p4","Runs remain the primary ranking criterion");
 assert.equal(individualResults.ranking[1].playerId,"p3","Bowling wickets break equal-run ties before highest score");
