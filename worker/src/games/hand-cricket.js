@@ -87,6 +87,8 @@ function startSuperOver(s){
   s.teamScores={red:{runs:0,wickets:0,balls:0},blue:{runs:0,wickets:0,balls:0}};
   s.wicketLosses={red:{},blue:{}};
   s.wildcardBowlerReplacementRequired=false;
+  const availableBatters=eligibleBatters(s,firstBattingTeam).length;
+  s.superOverWicketLimit=s.config.wickets===1?Math.min(2,availableBatters):2;
   startTeamInnings(s,firstBattingTeam,1);
 }
 const economyOf=x=>x.ballsBowled?x.runsConceded/(x.ballsBowled/6):Infinity;
@@ -202,7 +204,8 @@ function resolveDelivery(s,ctx){
   if(team){
     if(out){refreshHighest(s,batter);s.currentBatterId=nextBatter(s,team,batter);}
     const score=s.teamScores[team],limit=s.superOverActive?6:s.config.unlimited?Infinity:s.config.limit*6;
-    const inningsDone=score.balls>=limit||(s.superOverActive?score.wickets>=2:!eligibleBatters(s,team).length);
+    const superOverWicketLimit=s.superOverActive?(s.superOverWicketLimit||2):Infinity;
+    const inningsDone=score.balls>=limit||(s.superOverActive?(score.wickets>=superOverWicketLimit||!eligibleBatters(s,team).length):!eligibleBatters(s,team).length);
     if(inningsDone){
       for(const id of s.playerOrder)refreshHighest(s,id);
       if(s.overBalls.length)saveOver(s,s.overBalls.length===6);
