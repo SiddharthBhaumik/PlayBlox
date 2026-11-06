@@ -130,3 +130,7 @@ footer{border-color:#a9b7ee33;color:#929dbd}footer a{color:#c8b2ff}
 .crypto-main .members,.crypto-main .muted{color:#bdc8e2!important}
 .game-exit-actions #continue-round{background:#18765e!important;color:#fff!important;border-color:#43b996!important}
 .game-exit-actions #restart-game{background:#49364b!important;color:#ffe4a2!important;border-color:#b58aff!important}
+
+/* Theme switcher contrast while dark mode is active. */
+.topbar .theme-toggle{border:1px solid rgba(188,194,230,.34);background:#192544;color:#f7f0e5;box-shadow:0 3px 0 rgba(0,0,0,.28)}
+.topbar .theme-toggle:hover{background:#26365a}
