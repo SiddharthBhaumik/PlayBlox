@@ -50,7 +50,9 @@ assert.equal((await handCricket.validateAction(context("p3",players),state,{type
   "A captain may lock one bowler choice at the start of an over");
 
 // A complete over stays with its bowler; the next over cannot use that bowler again.
-for(let i=0;i<6;i++)state=playBall(players,state,1,2);
+state=playBall(players,state,1,2);
+assert.equal(state.stats.p1.highestScore,1,"Highest score updates live in the scorecard");
+for(let i=1;i<6;i++)state=playBall(players,state,1,2);
 assert.equal(state.teamScores.red.runs,6);
 assert.equal(state.teamScores.red.balls,6);
 assert.equal(state.completedOvers.length,1);
