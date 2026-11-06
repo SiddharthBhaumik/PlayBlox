@@ -134,6 +134,7 @@ function resolveDelivery(s,ctx){
   batterStats.balls++;bowlerStats.ballsBowled++;
   batterStats.runs+=runs;bowlerStats.runsConceded+=runs;
   s.currentInningsRuns[batter]=batterBefore+runs;
+  refreshHighest(s,batter);
   if(team)s.batterSelectionOpen=Boolean(out);
   if(out){
     batterStats.wickets++;bowlerStats.wicketsTaken++;
