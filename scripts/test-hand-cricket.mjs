@@ -197,6 +197,21 @@ individual=submit(two,individual,"p2",3);
 individual=submit(two,individual,"p1","fist");
 assert.equal(individual.stats.p2.runs,3,"When only one chooses Fist, the other player's number is scored");
 
+// Individual tournaments always advance on the first wicket, even if the
+// settings retain a two- or three-wicket allowance for team matches.
+const threeWicket=makePlayers(3);
+let oneDismissal=handCricket.createInitialState(context("p1",threeWicket));
+oneDismissal=action(threeWicket,oneDismissal,"p1",{type:"update-settings",config:{mode:"individual",wickets:3,oddPlayerMode:"bat-bowl",allowFist:true,unlimited:true,limit:6}});
+oneDismissal=action(threeWicket,oneDismissal,"p1",{type:"start-match"});
+assert.equal(oneDismissal.currentBatterId,"p1");
+oneDismissal=playBall(threeWicket,oneDismissal,4,4);
+assert.equal(oneDismissal.stats.p1.wickets,1);
+assert.equal(oneDismissal.individualWickets,0,"The next player's innings starts with a fresh wicket count");
+assert.equal(oneDismissal.individualIndex,1,"The first dismissal immediately advances the tournament to the next player");
+assert.equal(oneDismissal.currentBatterId,"p2","The dismissed player must not continue batting");
+assert.equal(oneDismissal.currentBowlerId,"p1","The previous batter can bowl in the next player's innings");
+assert.equal(oneDismissal.completedOvers.at(-1).complete,false,"The interrupted over is saved when the innings changes");
+
 // A new innings makes its previous batter eligible to bowl. They join the
 // current bowling round rather than being skipped until the next round.
 const four=makePlayers(4);
