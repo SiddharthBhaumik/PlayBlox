@@ -10,14 +10,17 @@
   <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Nunito:wght@500;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../../../styles.css">
   <link rel="stylesheet" href="./game.css">
-  <link rel="stylesheet" href="../../../dark-theme.css">
+  <link id="playblox-dark-theme" rel="stylesheet" href="../../../dark-theme.css" disabled>
+  
   <script type="module" src="./game.js"></script>
+<script src="../../../theme.js" defer></script>
 </head>
 <body>
   <div class="page-shell game-shell">
     <header class="topbar">
       <a class="brand" href="../../../" aria-label="PlayBlox home"><span class="brand-mark" aria-hidden="true">🧸</span><span class="brand-name">Play<span>Blox</span></span></a>
       <a class="back-link" id="back-to-lobby" href="../../../" hidden aria-hidden="true" tabindex="-1">Back to party</a>
+    <button class="theme-toggle" type="button" data-theme-toggle aria-pressed="false"><span aria-hidden="true">🌙</span><span>Dark mode</span></button>
     </header>
     <div class="game-layout">
       <aside class="game-roster" aria-label="Players in this game"><h2>In this game</h2><ul id="game-players"><li>Connecting to party…</li></ul></aside>
