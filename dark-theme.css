@@ -326,3 +326,122 @@ dialog.playblox-guide-dialog::backdrop{background:#020510d9!important;backdrop-f
 .participant-option small{color:#c6d1eb!important}
 .lobby-invite-box strong{color:#fff3df!important}
 .lobby-invite-box .lobby-code{color:#211a25!important}
+
+
+/* Minefield: full dark-theme treatment for its bespoke tactical HUD and map. */
+.minefield-shell .title-row h1{color:#fff3e4!important}
+.minefield-shell .title-row h1 .beta-tag{
+  background:#ffc66b!important;color:#38210d!important;border-color:#a96c28!important;
+}
+.minefield-shell .intro{color:#c7d2ec!important}
+.minefield-shell .room-meta{color:#d7def1!important}
+.minefield-shell .room-meta span{
+  background:#1a2747!important;color:#e9edfa!important;
+  border-color:#7483aa!important;box-shadow:0 3px 10px #0003!important;
+}
+.minefield-shell .status-strip>div{
+  background:linear-gradient(145deg,#1b2949,#121d38)!important;
+  border:1px solid #7282aa!important;box-shadow:0 5px 14px #0004!important;
+}
+.minefield-shell .status-strip small{color:#8fe1d4!important}
+.minefield-shell .status-strip strong{color:#fff1d8!important}
+.minefield-shell .control-panel,
+.minefield-shell .board-panel,
+.minefield-shell .setup-panel,
+.minefield-shell .result-panel{
+  background:linear-gradient(145deg,#192746,#101a34)!important;
+  color:#f7f0e5!important;border:2px solid #8192bd!important;
+  box-shadow:0 14px 32px #0005!important;
+}
+.minefield-shell .panel-block{border-color:#7181a855!important}
+.minefield-shell .panel-block h2,
+.minefield-shell .board-heading h2,
+.minefield-shell .setup-panel h2,
+.minefield-shell .result-panel h2{color:#fff1d8!important}
+.minefield-shell .panel-block p,
+.minefield-shell .board-heading p,
+.minefield-shell .board-heading h2 span,
+.minefield-shell .board-foot,
+.minefield-shell .setup-panel p,
+.minefield-shell .result-panel p{color:#c2cde6!important}
+.minefield-shell .muted,
+.minefield-shell .hint,
+.minefield-shell .legend p{color:#bac7e2!important}
+.minefield-shell .power-label{color:#ffe4a2!important}
+.minefield-shell .power-label select{
+  background:#0c142b!important;color:#f7f0e5!important;
+  border:1px solid #7181aa!important;
+}
+.minefield-shell .dice-row .die-face{
+  background:#27385c!important;color:#ffe4a2!important;
+  border:2px solid #ffc943!important;box-shadow:inset 0 0 0 2px #ffffff0d!important;
+}
+.minefield-shell .control-panel button,
+.minefield-shell .setup-panel button{
+  background:linear-gradient(135deg,#e9ad2e,#ffd65b)!important;
+  color:#211a25!important;border:1px solid #ffe08a!important;
+  box-shadow:0 4px 0 #8b6726!important;
+}
+.minefield-shell .control-panel button.secondary{
+  background:#29385d!important;color:#f7f0e5!important;
+  border-color:#8192bd!important;box-shadow:0 4px 0 #0b1227!important;
+}
+.minefield-shell .control-panel button.action-mode{
+  background:#49354b!important;color:#ffe3a4!important;
+  border-color:#b58aff!important;box-shadow:0 4px 0 #21182f!important;
+}
+.minefield-shell .control-panel button.selected{
+  outline:3px solid #ffc943!important;
+}
+.minefield-shell .control-panel button:disabled,
+.minefield-shell .setup-panel button:disabled{
+  opacity:1!important;background:#34415f!important;
+  color:#aebbd8!important;border-color:#596b91!important;
+  box-shadow:none!important;
+}
+.minefield-shell .zoom-controls button{
+  background:#29385d!important;color:#ffe5a0!important;
+  border:1px solid #8192bd!important;
+}
+.minefield-shell .board-viewport{
+  background:#0b142b!important;border:1px solid #7181a8!important;
+  box-shadow:inset 0 0 0 2px #ffffff08!important;
+}
+.minefield-shell .tile{
+  background:#344b52!important;color:#d9f2e8!important;
+  border-color:#637e83!important;
+}
+.minefield-shell .tile.fog{background:#1a2942!important;color:#71819d!important;border-color:#293b5b!important}
+.minefield-shell .tile.wall{background:#111827!important;border-color:#080d18!important}
+.minefield-shell .tile.room{background:#5b4b35!important;color:#ffedc5!important;border-color:#b58b50!important}
+.minefield-shell .tile.room.mine{background:#74521f!important;color:#fff0c8!important;border-color:#d79b36!important}
+.minefield-shell .tile.room.power{background:#44366d!important;color:#eee3ff!important;border-color:#9476d8!important}
+.minefield-shell .tile.room.medical{background:#174d42!important;color:#d9fff0!important;border-color:#52bd91!important}
+.minefield-shell .tile.room-inactive{background:#30394b!important;color:#aab5ca!important;border-color:#65718a!important}
+.minefield-shell .tile.room-unseen,
+.minefield-shell .tile.room-unexplored{color:#c3cbe0!important}
+.minefield-shell .tile.my-position{background:#16865c!important;color:#e2fff0!important;border-color:#74edb5!important}
+.minefield-shell .tile.enemy-position{background:#9a3f54!important;color:#fff0f2!important;border-color:#ff9aae!important}
+.minefield-shell .tile.own-flag{background:#9b6b17!important;color:#fff4cf!important;border-color:#ffcf5a!important}
+.minefield-shell .tile.own-mine,
+.minefield-shell .tile.spotted-mine{background:#9b492d!important;color:#fff0e8!important;border-color:#ffad7e!important}
+.minefield-shell .tile.trail-1{background:#405c72!important;color:#e4f1ff!important}
+.minefield-shell .tile.trail-2{background:#334b62!important;color:#d1e0f4!important}
+.minefield-shell .tile.trail-3{background:#293d55!important;color:#c2d0e5!important}
+.minefield-shell .tile.mine-placement-option,
+.minefield-shell .tile.mine-placement-option.fog{
+  background:#174d3c!important;color:#baffd9!important;
+  border-color:#63e2a4!important;outline-color:#63e2a4!important;
+}
+.minefield-shell .tile.room-unexplored::after{
+  color:#fff0c8!important;background:#29385d!important;
+}
+.minefield-shell .mine-timer{
+  background:#0a1020!important;color:#fff!important;border-color:#a9b7ee!important;
+}
+.minefield-shell .flag-hints{color:#ffd98b!important}
+.minefield-shell .error-message{color:#ff9eaa!important}
+.minefield-shell .result-button{
+  background:#ffc943!important;color:#211a25!important;
+  border-color:#ffe08a!important;
+}
