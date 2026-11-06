@@ -18,8 +18,8 @@
     if (meta) meta.content = isDark ? "#080d20" : "#fff8e9";
   }
 
-  let saved = "light";
-  try { saved = localStorage.getItem(KEY) === "dark" ? "dark" : "light"; } catch (_) {}
+  let saved = "dark";
+  try { saved = localStorage.getItem(KEY) === "light" ? "light" : "dark"; } catch (_) {}
   applyTheme(saved);
 
   document.addEventListener("click", (event) => {
