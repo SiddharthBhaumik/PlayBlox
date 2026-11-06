@@ -10,7 +10,26 @@ const chooseTeams=async(players,state,teams)=>{
  for(const [id,team] of teams){assert.equal((await handCricket.validateAction(context(id,players),state,{type:"choose-team",team})).ok,true);state=action(players,state,id,{type:"choose-team",team});}
  return state;
 };
+const confirmTeamSelections=(players,state)=>{
+ if(state.config.mode!=="team")return state;
+ if(state.batterSelectionOpen){
+  const captain=state.captains[state.battingTeam];
+  const eligible=state.battingQueue[state.battingTeam].filter(id=>(state.wicketLosses[state.battingTeam]?.[id]||0)<state.config.wickets&&!(id===state.wildcardId&&state.config.oddPlayerMode==="bowl-only")&&(state.bowlerSelectionOpen||id!==state.currentBowlerId));
+  const batter=eligible.includes(state.currentBatterId)?state.currentBatterId:eligible[0];
+  assert.ok(batter,"A batter must be available for captain confirmation");
+  state=action(players,state,captain,{type:"select-batter",playerId:batter});
+ }
+ if(state.bowlerSelectionOpen){
+  const captain=state.captains[state.bowlingTeam];
+  const eligible=state.playerOrder.filter(id=>(state.teams[id]===state.bowlingTeam||(id===state.wildcardId&&state.config.oddPlayerMode!=="bat-only"))&&(state.batterSelectionOpen||id!==state.currentBatterId)&&(state.playerOrder.length<=2||id!==state.lastBowlerId));
+  const bowler=eligible.includes(state.currentBowlerId)?state.currentBowlerId:eligible[0];
+  assert.ok(bowler,"A bowler must be available for captain confirmation");
+  state=action(players,state,captain,{type:"select-bowler",playerId:bowler});
+ }
+ return state;
+};
 const playBall=(players,state,batChoice=1,bowlChoice=2)=>{
+ state=confirmTeamSelections(players,state);
  const batter=state.currentBatterId,bowler=state.currentBowlerId;
  state=submit(players,state,batter,batChoice);
  assert.equal(handCricket.getPublicState(state).pendingPlayers.length,1);
@@ -44,10 +63,21 @@ state=action(players,state,"p4",{type:"vote-captain",candidateId:"p3"});
 assert.equal(state.phase,"playing");
 assert.equal(state.currentBatterId,"p1");
 assert.equal(state.currentBowlerId,"p3");
+assert.equal(state.batterSelectionOpen,true);
+assert.equal(state.bowlerSelectionOpen,true);
+assert.equal((await handCricket.validateAction(context("p1",players),state,{type:"submit-ball",choice:1})).ok,false,
+  "A ball must be blocked until the batting captain confirms the batter");
+state=action(players,state,"p1",{type:"select-batter",playerId:"p1"});
+assert.equal((await handCricket.validateAction(context("p1",players),state,{type:"submit-ball",choice:1})).ok,false,
+  "A ball must remain blocked until the bowling captain confirms the bowler");
 assert.equal((await handCricket.validateAction(context("p3",players),state,{type:"select-bowler",playerId:"p3"})).ok,true);
 state=action(players,state,"p3",{type:"select-bowler",playerId:"p3"});
+assert.equal(state.batterSelectionOpen,false);
+assert.equal(state.bowlerSelectionOpen,false);
 assert.equal((await handCricket.validateAction(context("p3",players),state,{type:"select-bowler",playerId:"p4"})).ok,false,
   "A captain may lock one bowler choice at the start of an over");
+assert.equal((await handCricket.validateAction(context("p1",players),state,{type:"submit-ball",choice:1})).ok,true,
+  "A ball becomes available only after both captain confirmations");
 
 // A complete over stays with its bowler; the next over cannot use that bowler again.
 state=playBall(players,state,1,2);
@@ -84,11 +114,14 @@ wicketState=action(players,wicketState,"p1",{type:"vote-captain",candidateId:"p1
 wicketState=action(players,wicketState,"p2",{type:"vote-captain",candidateId:"p1"});
 wicketState=action(players,wicketState,"p3",{type:"vote-captain",candidateId:"p3"});
 wicketState=action(players,wicketState,"p4",{type:"vote-captain",candidateId:"p3"});
-wicketState=submit(players,wicketState,"p1",5);
-wicketState=submit(players,wicketState,"p3",5);
+wicketState=playBall(players,wicketState,5,5);
 assert.equal(wicketState.teamScores.red.wickets,1);
 assert.equal(wicketState.stats.p1.wickets,1);
 assert.equal(wicketState.currentBatterId,"p2");
+assert.equal(wicketState.batterSelectionOpen,true,"A wicket requires the batting captain to confirm the next batter");
+assert.equal(wicketState.bowlerSelectionOpen,false,"The same bowler continues the current over");
+assert.equal((await handCricket.validateAction(context("p2",players),wicketState,{type:"submit-ball",choice:1})).ok,false,
+  "The next ball is blocked until the next batter is confirmed");
 
 
 // Team selection remains editable until all players have selected, and the
@@ -113,6 +146,12 @@ odd=action(three,odd,"p1",{type:"update-settings",config:{mode:"team",wickets:1,
 odd=action(three,odd,"p1",{type:"start-match"});
 odd=await chooseTeams(three,odd,[["p1","red"],["p2","blue"],["p3","wildcard"]]);
 assert.equal(odd.wildcardId,"p3");
+assert.equal(odd.captains.red,"p1");
+assert.equal(odd.captains.blue,"p2");
+assert.equal(odd.batterSelectionOpen,true);
+assert.equal(odd.bowlerSelectionOpen,true);
+assert.equal((await handCricket.validateAction(context("p1",three),odd,{type:"submit-ball",choice:1})).ok,false,
+  "Three-player wildcard matches must also wait for both captain confirmations");
 assert.deepEqual(three.filter(p=>odd.teams[p.id]==="red").map(p=>p.id),["p1"]);
 assert.deepEqual(three.filter(p=>odd.teams[p.id]==="blue").map(p=>p.id),["p2"]);
 assert.ok(odd.battingQueue.blue.includes("p3"));
