@@ -81,7 +81,7 @@ function renderAnalytics(container){
   let series=[];
   if(teamMode){
    series=["red","blue"].map(t=>({label:t.toUpperCase(),points:data.teamProgress[t].map(p=>({ball:p.ball,runs:p.runs,out:p.out}))}));
-   body=analyticsLineChart(series)+'<div class="hc-analytics-team-cards">'+["red","blue"].map(t=>{const s=state.teamScores[t]||{runs:0,wickets:0,balls:0};return '<article><small>'+t.toUpperCase()+' · LIVE SCORE</small><strong>'+s.runs+'/'+s.wickets+'</strong><span>'+Math.floor(s.balls/6)+'.'+s.balls%6+' overs</span></article>';}).join("")+'</div><p class="hc-muted">Each team line stops at its last recorded regular-innings delivery. Red and Blue are aligned by their own ball count.</p>';
+   body=analyticsLineChart(series)+'<div class="hc-analytics-team-cards">'+["red","blue"].map(t=>{const points=data.teamProgress[t],s=points.length?{runs:points[points.length-1].runs,wickets:points[points.length-1].wickets,balls:points[points.length-1].ball}:{runs:0,wickets:0,balls:0};return '<article><small>'+t.toUpperCase()+' · REGULAR INNINGS</small><strong>'+s.runs+'/'+s.wickets+'</strong><span>'+Math.floor(s.balls/6)+'.'+s.balls%6+' overs</span></article>';}).join("")+'</div><p class="hc-muted">Each team line stops at its last recorded regular-innings delivery. Red and Blue are aligned by their own ball count.</p>';
   }else{
    const options=data.innings.map(x=>'<option value="'+esc(x.key)+'">'+esc((player(x.playerId)?.nickname||"Player")+" · innings "+x.innings)+'</option>').join("");
    body='<p class="hc-muted">Choose multiple players and either combine their innings or inspect one selected innings per player.</p><div class="hc-compare-select">'+ids.map(id=>'<label><input type="checkbox" data-graph-player="'+id+'" '+(analyticsGraphPlayers.includes(id)?"checked":"")+'><span>'+esc(player(id)?.nickname||"Player")+'</span></label>').join("")+'</div><label class="hc-muted">Innings <select id="analytics-graph-innings"><option value="all">Combine all innings</option>'+options+'</select></label>';
@@ -90,9 +90,9 @@ function renderAnalytics(container){
    body+=series.length?analyticsLineChart(series):'<p class="hc-muted">Select one or more players to plot their batting runs.</p>';
   }
  }else if(analyticsTab==="matchups"){
-  const batters=[...new Set(data.deliveries.map(d=>d.batterId))],bowlers=[...new Set(data.deliveries.map(d=>d.bowlerId))];
+  const matchupDeliveries=analyticsTeam==="both"?data.deliveries:data.deliveries.filter(d=>d.battingTeam===analyticsTeam);\n  const batters=[...new Set(matchupDeliveries.map(d=>d.batterId))],bowlers=[...new Set(matchupDeliveries.map(d=>d.bowlerId))];
   const batter=analyticsMatchBatter||batters[0]||"",bowler=analyticsMatchBowler||bowlers[0]||"";
-  const m=data.matchups.find(x=>x.batterId===batter&&x.bowlerId===bowler);
+  const matchupRows=new Map();for(const d of matchupDeliveries.filter(d=>d.batterId===batter&&d.bowlerId===bowler)){const key=d.batterId+"::"+d.bowlerId;if(!matchupRows.has(key))matchupRows.set(key,{runs:0,balls:0,dismissals:0,batChoices:[],bowlChoices:[],dismissalChoices:[]});const x=matchupRows.get(key);x.runs+=d.runs;x.balls++;x.batChoices.push(d.batChoice);x.bowlChoices.push(d.bowlChoice);if(d.out){x.dismissals++;x.dismissalChoices.push(d.batChoice);}}const m=matchupRows.values().next().value;
   body='<div class="hc-form-grid"><label>Batter<select id="analytics-match-batter">'+batters.map(id=>'<option value="'+id+'" '+(id===batter?"selected":"")+'>'+esc(player(id)?.nickname||"Player")+'</option>').join("")+'</select></label><label>Bowler<select id="analytics-match-bowler">'+bowlers.map(id=>'<option value="'+id+'" '+(id===bowler?"selected":"")+'>'+esc(player(id)?.nickname||"Player")+'</option>').join("")+'</select></label></div>';
   if(m){
    const batDist=analyticsDist(distributionFromChoices(m.batChoices)),bowlDist=analyticsDist(distributionFromChoices(m.bowlChoices));
