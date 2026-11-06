@@ -66,7 +66,7 @@ export function buildHandCricketAnalytics(state) {
     addStage(d.batterId, "batting", battingStage, d);
     addStage(d.bowlerId, "bowling", bowlingStage, d);
 
-    if (!seriesMap.has(inningKey)) seriesMap.set(inningKey, { key: inningKey, team: d.battingTeam, innings: d.innings, superOver: Boolean(d.superOver), playerId: teamMode ? null : d.batterId, points: [], runs: 0, wickets: 0 });
+    if (!seriesMap.has(inningKey)) seriesMap.set(inningKey, { key: inningKey, team: d.battingTeam, innings: d.innings, superOver: Boolean(d.superOver), round: d.superOverRound || 0, playerId: teamMode ? null : d.batterId, points: [], runs: 0, wickets: 0 });
     const series = seriesMap.get(inningKey);
     series.runs += d.runs;
     if (d.out) series.wickets += 1;
