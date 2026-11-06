@@ -3,7 +3,7 @@ import {setupGameLifecycle} from "../shared/game-lifecycle.js";
 const API=window.PLAYBLOX_API_BASE_URL||(["localhost","127.0.0.1"].includes(location.hostname)?"http://localhost:8787":"https://playblox-party-service.playblox-party.workers.dev");
 const params=new URLSearchParams(location.search),code=(params.get("party")||"").toUpperCase(),token=code?sessionStorage.getItem("playblox:"+code+":token"):null;
 const $=id=>document.getElementById(id);
-let room=null,state=null,privateState=null,myId=null,version=0,socket=null,reconnect=null,heartbeat=null,delay=1000,leaving=false,lastDeliveryAt=0,lastPhase=null,audioContext=null;
+let room=null,state=null,privateState=null,myId=null,version=0,socket=null,reconnect=null,heartbeat=null,delay=1000,leaving=false,lastDeliveryAt=0,lastPhase=null;
 const endpoint="/api/rooms/"+encodeURIComponent(code);
 $("back-to-lobby").href="../../../"+(code?"?party="+encodeURIComponent(code)+"&lobby=1":"");
 async function api(path,options={}){const r=await fetch(API+path,{...options,headers:{...(options.body?{"Content-Type":"application/json"}:{}),...(token?{Authorization:"Bearer "+token}:{}),...(options.headers||{})}});const d=await r.json().catch(()=>({}));if(!r.ok){const e=new Error(d.error||"Request failed");e.stateVersion=d.stateVersion;throw e;}return d;}
@@ -18,10 +18,14 @@ function setConnection(s,off=false){$("connection-status").textContent=s;$("conn
 function renderSettings(){
  const c=state.config,host=isHost(),teamMode=c.mode==="team",limits=teamMode?[1,2,3,5,10,20]:[6,12,18,30,60];
  $("setup-panel").hidden=false;$("match-panel").hidden=true;
- $("setup-panel").innerHTML='<div class="hc-section-label">MATCH SETTINGS</div><h2>Set up the match</h2><p class="hc-muted">The host sets the rules for everyone. Changes are shared live. Choose a format, then set the innings length and dismissal rules.</p><div class="hc-form-grid"><label>Match format<select id="mode" '+(!host?'disabled':'')+'><option value="team">Team-wise match</option><option value="individual">Individual tournament</option></select></label><label>Wickets per player<select id="wickets" '+(!host?'disabled':'')+'><option value="1">1 wicket</option><option value="2">2 wickets</option><option value="3">3 wickets</option></select></label><label id="odd-setting">Odd-player role<select id="odd" '+(!host?'disabled':'')+'><option value="bat-only">Bat only</option><option value="bowl-only">Bowl only</option><option value="bat-bowl">Bat and bowl</option></select></label><label>Allow Fist<select id="fist" '+(!host?'disabled':'')+'><option value="true">Yes</option><option value="false">No</option></select></label><label><span id="limit-label">'+(teamMode?'Overs per innings':'Balls per player')+'</span><select id="limit" '+(!host?'disabled':'')+'>'+limits.map(n=>'<option value="'+n+'">'+n+(teamMode?(n===1?' over':' overs'):(n===1?' ball':' balls'))+'</option>').join("")+'</select></label><label>Innings duration<select id="unlimited" '+(!host?'disabled':'')+'><option value="false">Limited</option><option value="true">Unlimited</option></select></label></div><div class="hc-setting-notes"><p><b>Limited:</b> team innings end after the selected overs; individual innings end after the selected balls.</p><p><b>Unlimited:</b> play until the batting side runs out of wickets. In a chase, the match can still end as soon as the target is passed.</p><p><b>Wickets:</b> each player can be dismissed the selected number of times. A dismissed player with wickets left returns later in the batting queue.</p></div>'+(host?'<div class="hc-actions"><button id="save-settings" class="hc-primary">Save settings</button><button id="start-match" class="hc-secondary">Continue →</button></div>':'<p class="hc-muted">Waiting for the host to configure and start the match.</p>');
+ $("setup-panel").innerHTML='<div class="hc-section-label">MATCH SETTINGS</div><h2>Set up the match</h2><p class="hc-muted">The host sets the rules for everyone. Changes are shared live. Choose a format, then set the innings length and dismissal rules.</p><div class="hc-form-grid"><label>Match format<select id="mode" '+(!host?'disabled':'')+'><option value="team">Team-wise match</option><option value="individual">Individual tournament</option></select></label><label>Wickets per player<select id="wickets" '+(!host?'disabled':'')+'><option value="1">1 wicket</option><option value="2">2 wickets</option><option value="3">3 wickets</option></select></label><label id="odd-setting">Odd-player role<select id="odd" '+(!host?'disabled':'')+'><option value="bat-only">Bat only</option><option value="bowl-only">Bowl only</option><option value="bat-bowl">Bat and bowl</option></select></label><label>Allow Fist<select id="fist" '+(!host?'disabled':'')+'><option value="true">Yes</option><option value="false">No</option></select></label><label><span id="limit-label">'+(teamMode?'Overs per innings':'Balls per player')+'</span><select id="limit" '+(!host?'disabled':'')+'>'+limits.map(n=>'<option value="'+n+'">'+n+(teamMode?(n===1?' over':' overs'):(n===1?' ball':' balls'))+'</option>').join("")+'</select></label><label>Innings duration<select id="unlimited" '+(!host?'disabled':'')+'><option value="false">Limited</option><option value="true">Unlimited</option></select></label></div><div class="hc-setting-notes"><p><b>Limited:</b> team innings end after the selected overs; individual innings end after the selected balls.</p><p><b>Unlimited:</b> play until the batting side runs out of wickets. In a chase, the match can still end as soon as the target is passed.</p><p><b>Wickets:</b> each player can be dismissed the selected number of times. A dismissed player with wickets left returns later in the batting queue.</p></div>'+(host?'<div class="hc-actions"><button id="save-settings" class="hc-secondary">Save settings</button><button id="start-match" class="hc-primary">Continue →</button></div>':'<p class="hc-muted">Waiting for the host to configure and start the match.</p>');
  $("mode").value=c.mode;$("wickets").value=String(c.wickets);$("odd").value=c.oddPlayerMode;$("fist").value=String(c.allowFist);$("limit").value=String(limits.includes(c.limit)?c.limit:limits[0]);$("unlimited").value=String(c.unlimited);$("odd-setting").hidden=!teamMode;
  $("mode").onchange=()=>{const team=$("mode").value==="team",opts=team?[1,2,3,5,10,20]:[6,12,18,30,60];$("odd-setting").hidden=!team;$("limit-label").textContent=team?"Overs per innings":"Balls per player";$("limit").innerHTML=opts.map(n=>'<option value="'+n+'">'+n+(team?(n===1?' over':' overs'):(n===1?' ball':' balls'))+'</option>').join("");};
- if(host){$("save-settings").onclick=()=>{const mode=$("mode").value;act({type:"update-settings",config:{mode,wickets:Number($("wickets").value),oddPlayerMode:$("odd").value,allowFist:$("fist").value==="true",unlimited:$("unlimited").value==="true",limit:Number($("limit").value)}});};$("start-match").onclick=()=>act({type:"start-match"});}
+ if(host){
+ const readConfig=()=>({mode:$("mode").value,wickets:Number($("wickets").value),oddPlayerMode:$("odd").value,allowFist:$("fist").value==="true",unlimited:$("unlimited").value==="true",limit:Number($("limit").value)});
+ $("save-settings").onclick=async()=>{try{const r=await send({type:"update-settings",config:readConfig()});version=r.stateVersion??version;await sync();showNotice("Settings saved and shared. You can still edit them before continuing.");}catch(e){showNotice(e.message);}};
+ $("start-match").onclick=async()=>{try{let r=await send({type:"update-settings",config:readConfig()});version=r.stateVersion??version;await sync();r=await send({type:"start-match"});version=r.stateVersion??version;await sync();}catch(e){showNotice(e.message);if(Number.isInteger(e.stateVersion))version=e.stateVersion;await sync().catch(()=>{});}};
+}
  showNotice("The host can change settings until continuing. Read the guide if this is your first match.");
 }
 function renderTeams(){
@@ -47,6 +51,7 @@ function renderScoreboard(){
  }else{const rank=state.playerOrder.map(id=>({id,r:state.stats[id]?.runs||0,b:state.stats[id]?.balls||0})).sort((a,b)=>b.r-a.r);$("scoreboard").innerHTML='<div class="hc-individual-head"><span>INDIVIDUAL TOURNAMENT</span><b>Live player standings</b></div><div class="hc-rank">'+rank.map((x,i)=>'<div><b>#'+(i+1)+' '+esc(player(x.id)?.nickname||"Player")+'</b><strong>'+x.r+' runs</strong><small>'+(x.b?x.r/x.b*100:0).toFixed(1)+' SR</small></div>').join("")+'</div>';}
 }
 function eligibleWicketsLeft(team){return state.playerOrder.filter(id=>(state.teams[id]===team||(id===state.wildcardId&&state.config.oddPlayerMode!=="bowl-only"))).reduce((n,id)=>n+Math.max(0,state.config.wickets-(state.wicketLosses[team]?.[id]||0)),0);}
+function handGesture(choice){if(choice==="fist")return "✊";const gestures={1:"☝️",2:"✌️",3:"🤟",4:"🖖",5:"🖐️",6:"🖐️☝️"};return gestures[Number(choice)]||"🖐️";}
 function renderPlay(){
  $("setup-panel").hidden=true;$("match-panel").hidden=false;$("result-panel").hidden=true;
  const bat=state.currentBatterId,bowl=state.currentBowlerId,batPlayer=player(bat),bowlPlayer=player(bowl),mine=privateState?.hasSubmitted||state.pendingPlayers?.includes(myId);
@@ -56,7 +61,7 @@ function renderPlay(){
  let choice='';
  if(myRole){
   const waiting=mine?'<p class="hc-locked">✓ Choice locked. Waiting for '+(myRole==="batter"?bowlPlayer?.nickname:batPlayer?.nickname)+'…</p>':'<p class="hc-muted">Choose your number. The reveal happens when both choices are locked.</p>';
-  choice='<div class="hc-choice"><h3>'+(myRole==="batter"?"Your batting choice":"Your bowling choice")+'</h3><div class="hc-numbers">'+[0,1,2,3,4,5,6].map(n=>'<button data-choice="'+n+'" '+(mine?'disabled':'')+'>'+n+'</button>').join("")+(state.config.allowFist?'<button class="fist" data-choice="fist" '+(mine?'disabled':'')+'>✊ Fist</button>':'')+'</div>'+waiting+'</div>';
+  choice='<div class="hc-choice"><h3>'+(myRole==="batter"?"Your batting choice":"Your bowling choice")+'</h3><div class="hc-numbers">'+[1,2,3,4,5,6].map(n=>'<button data-choice="'+n+'" '+(mine?'disabled':'')+'>'+n+'</button>').join("")+(state.config.allowFist?'<button class="fist" data-choice="fist" '+(mine?'disabled':'')+'>✊ Fist</button>':'')+'</div>'+waiting+'</div>';
   if(!mine)$("choice-area").innerHTML=choice;else $("choice-area").innerHTML=choice;
   $("choice-area").querySelectorAll("[data-choice]").forEach(b=>b.onclick=()=>act({type:"submit-ball",choice:b.dataset.choice==="fist"?"fist":Number(b.dataset.choice)}));
  }else $("choice-area").innerHTML='<div class="hc-waiting">Waiting for both players to lock their choices…<div class="hc-pips"><i></i><i></i><i></i></div></div>';
@@ -69,16 +74,15 @@ function renderPlay(){
  $("ball-history").innerHTML=(state.history||[]).slice().reverse().map((d)=>'<div class="hc-history-row"><b>'+esc(d.batterName)+'</b><span>'+d.batChoice+' vs '+d.bowlChoice+'</span><strong class="'+(d.out?'out-text':'')+'">'+(d.out?'OUT':d.runs+' run'+(d.runs===1?'':'s'))+'</strong><small>'+d.reason+'</small></div>').join("")||'<p class="hc-muted">No balls bowled yet.</p>';
  if(state.lastDelivery&&state.lastDelivery.at!==lastDeliveryAt){
   lastDeliveryAt=state.lastDelivery.at;
-  if($("motion-toggle").checked){$("notice").classList.remove("hc-reveal");void $("notice").offsetWidth;$("notice").classList.add("hc-reveal");}
+  $("notice").classList.remove("hc-reveal");void $("notice").offsetWidth;$("notice").classList.add("hc-reveal");
   const d=state.lastDelivery;
   const milestoneText=(state.lastEvents||[]).filter(e=>e.type==="milestone").map(e=>(e.team?e.team.toUpperCase():d.batterName)+" "+e.threshold).join(" · ");
   $("notice").innerHTML=(d.out?'<span class="hc-stumps">▥</span> WICKET! '+esc(d.batterName)+' is OUT':d.runs?esc(d.batterName)+" scores "+d.runs+" run"+(d.runs===1?"":"s"):"DOT BALL")+(milestoneText?" · "+esc(milestoneText):"");
   const reveal=$("delivery-reveal");
   reveal.hidden=false;reveal.classList.remove("hc-reveal");void reveal.offsetWidth;reveal.classList.add("hc-reveal");
-  reveal.innerHTML='<div class="hc-reveal-side"><small>🏏 BATTER · '+esc(d.batterName)+'</small><strong>'+esc(String(d.batChoice).toUpperCase())+'</strong></div><div class="hc-reveal-vs">VS</div><div class="hc-reveal-side"><small>🎯 BOWLER · '+esc(d.bowlerName)+'</small><strong>'+esc(String(d.bowlChoice).toUpperCase())+'</strong></div><div class="hc-reveal-result '+(d.out?'out-text':'')+'">'+(d.out?'OUT · '+esc(d.reason):d.runs?d.runs+' RUN'+(d.runs===1?'':'S'):'DOT BALL')+'</div>';
-  if($("motion-toggle").checked)document.querySelectorAll(".hc-score-team").forEach(el=>{el.classList.remove("hc-score-update");void el.offsetWidth;el.classList.add("hc-score-update");});
-  playSound(d.out?"wicket":d.runs?"run":"dot");
-  for(const event of state.lastEvents||[])if(event.type==="milestone")playSound("milestone");
+  reveal.innerHTML='<div class="hc-reveal-side"><small>🏏 BATTER · '+esc(d.batterName)+'</small><span class="hc-hand-gesture" aria-hidden="true">'+handGesture(d.batChoice)+'</span><strong>'+esc(String(d.batChoice).toUpperCase())+'</strong></div><div class="hc-reveal-vs">VS</div><div class="hc-reveal-side"><small>🎯 BOWLER · '+esc(d.bowlerName)+'</small><span class="hc-hand-gesture" aria-hidden="true">'+handGesture(d.bowlChoice)+'</span><strong>'+esc(String(d.bowlChoice).toUpperCase())+'</strong></div><div class="hc-delivery-reveal-result '+(d.out?'out-text':'')+'">'+(d.out?'OUT · '+esc(d.reason):d.runs?d.runs+' RUN'+(d.runs===1?'':'S'):'DOT BALL')+'</div>';
+  document.querySelectorAll(".hc-score-team").forEach(el=>{el.classList.remove("hc-score-update");void el.offsetWidth;el.classList.add("hc-score-update");});
+
 }
  renderGamePlayerPanel({container:$("game-players"),room,gameState:state,myPlayerId:myId});
 }
@@ -107,20 +111,6 @@ function renderFinished(){
  html+='<details class="hc-final-history"><summary>Full ball-by-ball history ('+(state.history||[]).length+' deliveries)</summary>'+((state.history||[]).slice().reverse().map(d=>'<div class="hc-history-row"><b>'+esc(d.batterName)+'</b><span>'+esc(String(d.batChoice))+' vs '+esc(String(d.bowlChoice))+'</span><strong class="'+(d.out?'out-text':'')+'">'+(d.out?'OUT':d.runs+' runs')+'</strong><small>'+esc(d.reason)+'</small></div>').join("")||'<p class="hc-muted">No balls bowled.</p>')+'</details>';
  html+='<div class="hc-awards"><div><small>TOP SCORER</small><b>'+esc(top?player(top.id)?.nickname||"Player":"—")+'</b><strong>'+(top?top.runs+" runs · best "+top.highestScore:"—")+'</strong></div><div><small>BEST BOWLING</small><b>'+esc(best?player(best.id)?.nickname||"Player":"—")+'</b><strong>'+(best?best.wicketsTaken+"/"+best.runsConceded+" · "+(best.ballsBowled?(best.runsConceded/(best.ballsBowled/6)).toFixed(2):"0.00")+" econ":"—")+'</strong></div></div><div class="hc-section-label">MILESTONES</div><div class="hc-milestone-list">'+((state.milestones||[]).map(k=>'<span>'+esc(k.replaceAll(":"," · "))+'</span>').join("")||'<p class="hc-muted">No milestones reached.</p>')+'</div><p class="hc-muted">No Player of the Match award is assigned. The complete ball-by-ball history is available in the match record.</p>';
  $("result-panel").innerHTML=html;renderGamePlayerPanel({container:$("game-players"),room,gameState:state,myPlayerId:myId});showNotice("Match complete. Final scores, individual figures and milestones are recorded.");
-}
-function playSound(kind){
- if(!$("sound-toggle").checked)return;
- try{
-  const Audio=window.AudioContext||window.webkitAudioContext;if(!Audio)return;
-  audioContext ||= new Audio();if(audioContext.state==="suspended")audioContext.resume();
-  const now=audioContext.currentTime,osc=audioContext.createOscillator(),gain=audioContext.createGain();
-  const tones={run:[620,.11],dot:[260,.07],wicket:[150,.24],milestone:[880,.18],victory:[1040,.32]};
-  const [frequency,duration]=tones[kind]||tones.dot;
-  osc.type=kind==="wicket"?"triangle":"sine";osc.frequency.setValueAtTime(frequency,now);
-  if(kind==="wicket")osc.frequency.exponentialRampToValueAtTime(75,now+duration);
-  gain.gain.setValueAtTime(.0001,now);gain.gain.exponentialRampToValueAtTime(.12,now+.015);gain.gain.exponentialRampToValueAtTime(.0001,now+duration);
-  osc.connect(gain);gain.connect(audioContext.destination);osc.start(now);osc.stop(now+duration+.02);
- }catch{}
 }
 function render(){
  if(!room||!state)return;
