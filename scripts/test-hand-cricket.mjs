@@ -135,7 +135,10 @@ assert.equal(oneEach.wicketLosses.blue.p2||0,0,"The second side starts with a se
 assert.equal(oneEach.currentBatterId,"p2");
 oneEach=playBall(pair,oneEach,4,4);
 assert.equal(oneEach.teamScores.blue.wickets,1,"The second side also gets only its own one wicket");
-assert.equal(oneEach.phase,"finished","Both one-player innings finish after one wicket");
+assert.equal(oneEach.phase,"super-over-vote","A tied match proceeds to captain Super Over voting");
+oneEach=action(pair,oneEach,"p1",{type:"vote-super-over",vote:"no"});
+oneEach=action(pair,oneEach,"p2",{type:"vote-super-over",vote:"yes"});
+assert.equal(oneEach.phase,"finished","One captain declining leaves the one-player match tied");
 
 // Individual format: balls are per player, no one bowls in their own innings.
 const two=[player("p1"),player("p2")];
