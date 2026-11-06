@@ -1,89 +1,128 @@
+const rate = (runs, balls) => balls ? runs * 100 / balls : null;
+const economy = (runs, balls) => balls ? runs * 6 / balls : null;
+const choiceKey = value => value === "fist" ? "fist" : String(value);
+function distribution(deliveries, field) {
+  const counts = Object.fromEntries(["1","2","3","4","5","6","fist"].map(k => [k, 0]));
+  for (const d of deliveries) {
+    const key = choiceKey(d[field]);
+    if (Object.hasOwn(counts, key)) counts[key]++;
+  }
+  const total = Object.values(counts).reduce((a,b) => a+b, 0);
+  return Object.entries(counts).map(([choice,count]) => ({choice,count,percent:total ? count*100/total : 0}));
+}
 export function buildHandCricketAnalytics(state) {
   const teamMode = state.config.mode === "team";
-  const config = state.config;
-  const deliveries = (state.history || []).map((d) => ({ ...d }));
-  const playerTotals = {};
-  const stageMap = new Map();
-  const seriesMap = new Map();
-  const overMap = new Map();
-  const sequenceByKey = new Map();
-  const batterSequence = new Map();
-  const bowlerSequence = new Map();
-
-  const stageFor = (position, limit, unlimited, prefix = "Stage") => {
-    if (unlimited) {
-      const block = Math.floor((position - 1) / 12);
-      const firstOver = block * 2 + 1;
-      return { key: String(block), label: `Overs ${firstOver}–${firstOver + 1}` };
+  const deliveries = (state.history || []).filter(d => !d.superOver).map((d, index) => ({
+    ...d, index, inningsKey: teamMode
+      ? `team:${d.innings}:${d.battingTeam || "unknown"}`
+      : `player:${d.batterId}:${d.innings}`
+  }));
+  const inningsMap = new Map();
+  const player = new Map();
+  const matchups = new Map();
+  const fallOfWickets = {red: [], blue: []};
+  const teamProgress = {red: [], blue: []};
+  const teamScore = {red: 0, blue: 0};
+  const teamBalls = {red: 0, blue: 0};
+  const overall = {runs: 0, balls: 0, wickets: 0, dismissedRuns: 0, dismissedBatters: 0};
+  const ensure = id => {
+    if (!player.has(id)) player.set(id, {
+      id, battingRuns:0, battingBalls:0, dismissals:0, bowlingRuns:0,
+      bowlingBalls:0, wickets:0, innings:[], victims:[],
+      battingChoices:[], bowlingChoices:[]
+    });
+    return player.get(id);
+  };
+  for (const d of deliveries) {
+    const batter = ensure(d.batterId), bowler = ensure(d.bowlerId);
+    batter.battingRuns += d.runs; batter.battingBalls++;
+    bowler.bowlingRuns += d.runs; bowler.bowlingBalls++;
+    batter.battingChoices.push(d); bowler.bowlingChoices.push(d);
+    overall.runs += d.runs; overall.balls++;
+    if (d.out) {
+      batter.dismissals++; bowler.wickets++; overall.wickets++;
+      overall.dismissedRuns += batter.innings.reduce((n,x)=>n+x.runs,0);
+      overall.dismissedBatters++;
     }
-    const total = Math.max(1, limit || 1);
-    const firstCut = Math.ceil(total / 3);
-    const secondCut = Math.ceil((total * 2) / 3);
-    if (position <= firstCut) return { key: "early", label: "Early" };
-    if (position <= secondCut) return { key: "middle", label: "Middle" };
-    return { key: "final", label: "Final" };
-  };
-  const addStage = (playerId, kind, stage, d, teamContext = null) => {
-    const key = playerId + "|" + kind + "|" + (teamContext || "all") + "|" + stage.key;
-    if (!stageMap.has(key)) stageMap.set(key, { playerId, kind, team: teamContext, stage: stage.label, runs: 0, balls: 0, wickets: 0, conceded: 0 });
-    const row = stageMap.get(key);
-    if (kind === "batting") {
-      row.runs += d.runs;
-      row.balls += 1;
-      if (d.out) row.wickets += 1;
-    } else {
-      row.conceded += d.runs;
-      row.balls += 1;
-      if (d.out) row.wickets += 1;
+    let inn = inningsMap.get(d.inningsKey);
+    if (!inn) {
+      inn = {key:d.inningsKey, innings:d.innings, team:d.battingTeam || null,
+        playerId:teamMode?null:d.batterId, deliveries:[], runs:0, wickets:0,
+        balls:0, points:[], batters:new Map()};
+      inningsMap.set(d.inningsKey, inn);
     }
-  };
-  const ensurePlayer = (id) => {
-    if (!playerTotals[id]) playerTotals[id] = { runs: 0, balls: 0, dismissals: 0, runsConceded: 0, ballsBowled: 0, wicketsTaken: 0 };
-    return playerTotals[id];
-  };
-
-  deliveries.forEach((d) => {
-    const inningKey = teamMode
-      ? [d.superOver ? "super-" + (d.superOverRound || 1) : "regular", d.innings, d.battingTeam || "unknown"].join("|")
-      : "player|" + d.batterId;
-    const sequence = (sequenceByKey.get(inningKey) || 0) + 1;
-    sequenceByKey.set(inningKey, sequence);
-    const batterPosition = (batterSequence.get(d.batterId) || 0) + 1;
-    batterSequence.set(d.batterId, batterPosition);
-    const bowlerPosition = (bowlerSequence.get(d.bowlerId) || 0) + 1;
-    bowlerSequence.set(d.bowlerId, bowlerPosition);
-    const stageLimit = teamMode ? config.limit * 6 : config.limit;
-    const battingStage = stageFor(teamMode ? sequence : batterPosition, stageLimit, config.unlimited);
-    const bowlingStage = teamMode ? battingStage : stageFor(bowlerPosition, 12, true);
-    d.sequence = sequence;
-    d.battingStage = battingStage.label;
-    d.bowlingStage = bowlingStage.label;
-
-    const batter = ensurePlayer(d.batterId);
-    const bowler = ensurePlayer(d.bowlerId);
-    batter.runs += d.runs; batter.balls += 1; if (d.out) batter.dismissals += 1;
-    bowler.runsConceded += d.runs; bowler.ballsBowled += 1; if (d.out) bowler.wicketsTaken += 1;
-    addStage(d.batterId, "batting", battingStage, d, teamMode ? d.battingTeam : null);
-    const bowlerTeam = state.teams?.[d.bowlerId];
-    addStage(d.bowlerId, "bowling", bowlingStage, d, teamMode ? (bowlerTeam === "wildcard" ? (d.battingTeam === "red" ? "blue" : "red") : bowlerTeam) : null);
-
-    if (!seriesMap.has(inningKey)) seriesMap.set(inningKey, { key: inningKey, team: d.battingTeam, innings: d.innings, superOver: Boolean(d.superOver), round: d.superOverRound || 0, playerId: teamMode ? null : d.batterId, points: [], runs: 0, wickets: 0 });
-    const series = seriesMap.get(inningKey);
-    series.runs += d.runs;
-    if (d.out) series.wickets += 1;
-    series.points.push({ ball: sequence, runs: series.runs, wickets: series.wickets, out: d.out });
-
-    const overKey = inningKey + "|over|" + Math.floor((sequence - 1) / 6);
-    if (!overMap.has(overKey)) overMap.set(overKey, { key: overKey, team: d.battingTeam, playerId: teamMode ? null : d.batterId, over: Math.floor((sequence - 1) / 6) + 1, runs: 0, wickets: 0, balls: 0 });
-    const over = overMap.get(overKey);
-    over.runs += d.runs; over.balls += 1; if (d.out) over.wickets += 1;
-  });
-
+    inn.deliveries.push(d); inn.runs += d.runs; inn.balls++;
+    if (!inn.batters.has(d.batterId)) inn.batters.set(d.batterId,{runs:0,balls:0,dismissed:false});
+    const battingLine=inn.batters.get(d.batterId);
+    battingLine.runs += d.runs; battingLine.balls++;
+    if (teamMode) {
+      const team=d.battingTeam;
+      if (team && teamScore[team] !== undefined) {
+        teamScore[team] += d.runs; teamBalls[team]++;
+        if (d.out) {
+          teamScore[team] = teamScore[team];
+          fallOfWickets[team].push({wicket:fallOfWickets[team].length+1,batterId:d.batterId,
+            batterName:d.batterName, batterRuns:battingLine.runs, teamRuns:teamScore[team],
+            balls:teamBalls[team], innings:d.innings});
+        }
+        teamProgress[team].push({ball:teamBalls[team],runs:teamScore[team],wickets:fallOfWickets[team].length,out:Boolean(d.out),innings:d.innings});
+      }
+    }
+    if (d.out) {
+      inn.wickets++; battingLine.dismissed=true;
+      batter.innings.push({key:inn.key,innings:d.innings,team:inn.team,runs:battingLine.runs,
+        balls:battingLine.balls,dismissed:true,dismissalTeamRuns:teamMode?teamScore[d.battingTeam]:null,
+        dismissalBall:inn.balls});
+      bowler.victims.push({batterId:d.batterId,batterName:d.batterName,batterRuns:battingLine.runs,
+        teamRuns:teamMode?teamScore[d.battingTeam]:null,innings:d.innings,reason:d.reason,ball:inn.balls});
+    }
+    inn.points.push({ball:inn.balls,runs:inn.runs,wickets:inn.wickets,out:Boolean(d.out)});
+    const key=`${d.batterId}::${d.bowlerId}`;
+    if (!matchups.has(key)) matchups.set(key,{key,batterId:d.batterId,bowlerId:d.bowlerId,runs:0,balls:0,dismissals:0,batChoices:[],bowlChoices:[],dismissalChoices:[]});
+    const m=matchups.get(key);m.runs+=d.runs;m.balls++;m.batChoices.push(d.batChoice);m.bowlChoices.push(d.bowlChoice);
+    if (d.out) {m.dismissals++;m.dismissalChoices.push(choiceKey(d.batChoice));}
+  }
+  // Retain not-out innings too, and merge batting records by innings/player.
+  for (const inn of inningsMap.values()) {
+    for (const [id,line] of inn.batters) {
+      const p=ensure(id);
+      if (!p.innings.some(x=>x.key===inn.key)) p.innings.push({key:inn.key,innings:inn.innings,team:inn.team,
+        runs:line.runs,balls:line.balls,dismissed:line.dismissed,dismissalTeamRuns:null,dismissalBall:null});
+    }
+    inn.series=inn.points;
+    inn.batters=Object.fromEntries(inn.batters);
+  }
+  for (const p of player.values()) {
+    p.battingRate=rate(p.battingRuns,p.battingBalls);
+    p.bowlingRate=economy(p.bowlingRuns,p.bowlingBalls);
+    p.overallChoices=distribution([...p.battingChoices,...p.bowlingChoices],"__unused");
+    p.battingDistribution=distribution(p.battingChoices,"batChoice");
+    p.bowlingDistribution=distribution(p.bowlingChoices,"bowlChoice");
+    p.overallDistribution=distribution([
+      ...p.battingChoices.map(d=>({...d,__choice:d.batChoice})),
+      ...p.bowlingChoices.map(d=>({...d,__choice:d.bowlChoice}))
+    ],"__choice");
+    p.innings.sort((a,b)=>a.key.localeCompare(b.key));
+  }
+  const allPlayerRows=[...player.values()];
+  const battingRows=allPlayerRows.filter(p=>p.battingBalls);
+  const bowlingRows=allPlayerRows.filter(p=>p.bowlingBalls);
+  const average = xs => xs.length ? xs.reduce((n,x)=>n+x,0)/xs.length : null;
+  const avgSR=average(battingRows.map(p=>p.battingRate));
+  const avgEconomy=average(bowlingRows.map(p=>p.bowlingRate));
   return {
-    deliveries,
-    playerTotals,
-    stages: [...stageMap.values()],
-    innings: [...seriesMap.values()],
-    overs: [...overMap.values()]
+    teamMode, deliveries, players:Object.fromEntries(player), playerRows:allPlayerRows,
+    innings:[...inningsMap.values()], matchups:[...matchups.values()],
+    fallOfWickets, teamProgress, overall:{
+      runs:overall.runs,balls:overall.balls,wickets:overall.wickets,
+      aggregateStrikeRate:rate(overall.runs,overall.balls),
+      averagePlayerStrikeRate:avgSR,aggregateEconomy:economy(overall.runs,overall.balls),
+      averagePlayerEconomy:avgEconomy,
+      ballsPerWicket:overall.wickets?overall.balls/overall.wickets:null,
+      runsPerDismissedBatter:overall.dismissedBatters?overall.dismissedRuns/overall.dismissedBatters:null,
+      choiceDistribution:distribution([...deliveries.map(d=>({...d,__choice:d.batChoice})),...deliveries.map(d=>({...d,__choice:d.bowlChoice}))],"__choice"),
+      battingChoiceDistribution:distribution(deliveries,"batChoice"),
+      bowlingChoiceDistribution:distribution(deliveries,"bowlChoice")
+    }
   };
 }
