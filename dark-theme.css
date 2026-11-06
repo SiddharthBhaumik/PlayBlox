@@ -211,3 +211,118 @@ footer{border-color:#a9b7ee33;color:#929dbd}footer a{color:#c8b2ff}
 .participant-option.selected{background:#17443f!important;border-color:#52d6b4!important}
 .game-launch-feedback{color:#ffb6bd!important}
 .game-launch-feedback.success{color:#8ce6c4!important}
+
+/* -------------------------------------------------------------------------
+   Shared UI dark-mode completion: lobby avatars, in-game roster, guides,
+   and the universal round-complete controls.
+   Keep these selectors explicit so game-specific CSS cannot leave pale cards.
+   ------------------------------------------------------------------------- */
+
+/* In-game player roster (used by every game through game-shell.js). */
+.game-roster{
+  background:linear-gradient(145deg,#192546,#0d152b)!important;
+  color:#f7f0e5!important;border:2px solid #a9b7ee55!important;
+  box-shadow:0 12px 30px #0005!important;
+}
+.game-roster h2{color:#ffe5a0!important}
+.game-roster ul{color:#f7f0e5!important}
+.game-roster .game-player{
+  background:#1b2949!important;color:#f7f0e5!important;
+  border:1px solid #66769d!important;
+}
+.game-roster .game-player.is-turn{
+  background:#17443f!important;outline:2px solid #52d6b4!important;
+}
+.game-roster .game-player-info strong{color:#fff3df!important}
+.game-roster .game-player-info small{color:#c3cde5!important}
+.game-roster .player-dot{background:#52d6b4!important;box-shadow:0 0 0 3px #52d6b433!important}
+.game-roster .player-dot.is-offline{background:#ff8795!important;box-shadow:0 0 0 3px #ff879533!important}
+
+/* Shared round-complete / replay panel. */
+.playblox-lifecycle{
+  background:linear-gradient(145deg,#192746,#101a34)!important;
+  color:#f7f0e5!important;border:2px solid #8192bd!important;
+  box-shadow:0 14px 32px #0005!important;
+}
+.playblox-lifecycle-kicker{color:#7fe0d2!important}
+.playblox-lifecycle-title{color:#fff1d8!important}
+.playblox-lifecycle-status{color:#d2d9ed!important}
+.playblox-lifecycle-votes{color:#bdc9e5!important}
+.playblox-lifecycle-actions button{
+  background:#ffc943!important;color:#211a25!important;
+  border:1px solid #ffe08a!important;box-shadow:0 3px 0 #8b6726!important;
+}
+.playblox-lifecycle-actions .playblox-lifecycle-lobby,
+.playblox-lifecycle-actions .playblox-lifecycle-leave{
+  background:#29385d!important;color:#f7f0e5!important;
+  border-color:#7586ad!important;box-shadow:0 3px 0 #101a32!important;
+}
+.playblox-lifecycle-actions .playblox-lifecycle-end{
+  background:#512b46!important;color:#ffdce5!important;
+  border-color:#b85d82!important;box-shadow:0 3px 0 #2a182b!important;
+}
+.playblox-lifecycle-actions button:disabled{opacity:.55!important}
+.playblox-lifecycle-manage summary{
+  background:#202e50!important;color:#f7f0e5!important;
+  border:1px solid #7181a8!important;
+}
+.playblox-kick-row{background:#202e50!important;color:#f7f0e5!important;border-color:#7181a8!important}
+.playblox-kick-row span{color:#f7f0e5!important}
+
+/* Guides are dynamically-created native dialogs; force their full subtree
+   onto the same palette rather than relying on inherited light-theme tokens. */
+dialog.playblox-guide-dialog{
+  color:#f7f0e5!important;
+  background:linear-gradient(145deg,#192746,#101a34)!important;
+  border:2px solid #8192bd!important;
+  box-shadow:0 18px 55px #0009!important;
+}
+dialog.playblox-guide-dialog::backdrop{background:#020510d9!important;backdrop-filter:blur(7px)}
+.playblox-guide-dialog .section-kicker{color:#7fe0d2!important}
+.playblox-guide-dialog h2,.playblox-guide-dialog .guide-dialog-title{color:#fff1d8!important}
+.playblox-guide-dialog .guide-dialog-copy{
+  background:#111c37!important;color:#e0e7f8!important;
+  border:1px solid #66769d!important;
+}
+.playblox-guide-dialog .guide-dialog-copy p,
+.playblox-guide-dialog .guide-dialog-copy li{color:#e0e7f8!important}
+.playblox-guide-dialog .guide-dialog-copy h3,
+.playblox-guide-dialog .guide-dialog-copy h4{color:#ffe1a0!important;border-color:#66769d!important}
+.playblox-guide-dialog .guide-dialog-copy strong{color:#fff0c8!important}
+.playblox-guide-dialog .guide-dialog-progress{color:#c5d0e9!important}
+.playblox-guide-dialog .guide-dialog-ready{
+  background:linear-gradient(135deg,#e9ad2e,#ffd65b)!important;
+  color:#211a25!important;border-color:#ffe08a!important;
+}
+
+/* Lobby player initials were inheriting white text on pastel avatar tiles. */
+.lobby-player .player-avatar{
+  color:#18223b!important;background:#dff3d3!important;
+  border-color:#f4e8c9!important;text-shadow:none!important;
+}
+.lobby-player:nth-child(2n) .player-avatar{background:#dff4fc!important;color:#18223b!important}
+.lobby-player.is-you .player-avatar{background:#c9f6df!important;color:#14513e!important}
+.lobby-player .player-details strong{color:#fff3df!important}
+.lobby-player .player-details small{color:#c6d1eb!important}
+.lobby-player .you-badge{background:#c9f6df!important;color:#14513e!important;border-color:#8be0b5!important}
+.lobby-player .host-badge{background:#ffc943!important;color:#211a25!important;border-color:#ffe08a!important}
+.lobby-player .kick-player-button{background:#512b46!important;color:#ffdce5!important;border-color:#b85d82!important}
+
+/* Game-picker icon tiles and status chips use readable foreground/background pairs. */
+.lobby-game-choice-emoji{background:#fff1d9!important;color:#211a25!important;border-color:#ffc943!important}
+.lobby-game-choice-emoji img{background:#fff1d9!important}
+.lobby-game-choice .game-choice-status{
+  background:#344467!important;color:#f7f0e5!important;border:1px solid #7181a8!important;
+}
+.lobby-game-choice.is-selected .game-choice-status{
+  background:#c9f6df!important;color:#14513e!important;border-color:#8be0b5!important;
+}
+.lobby-game-choice.needs-more-players .game-choice-status{
+  background:#49364b!important;color:#ffe4a2!important;border-color:#b58aff!important;
+}
+
+/* Lobby participant chips and the invite-code surface. */
+.participant-option strong{color:#fff3df!important}
+.participant-option small{color:#c6d1eb!important}
+.lobby-invite-box strong{color:#fff3df!important}
+.lobby-invite-box .lobby-code{color:#211a25!important}
