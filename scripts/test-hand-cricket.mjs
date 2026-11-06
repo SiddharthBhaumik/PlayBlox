@@ -460,16 +460,23 @@ assert.equal(individualResults.ranking[1].playerId,"p3","Bowling wickets break e
 
 // A one-wicket-per-player Super Over ends after one wicket when a team
 // has only one eligible batter, rather than waiting for a nonexistent second wicket.
-let onePlayerSuperOver=structuredClone(oneEach);
-onePlayerSuperOver=action(pair,onePlayerSuperOver,"p1",{type:"vote-super-over",vote:"yes"});
-onePlayerSuperOver=action(pair,onePlayerSuperOver,"p2",{type:"vote-super-over",vote:"yes"});
-assert.equal(onePlayerSuperOver.superOverWicketLimit,1,"A one-player team receives a one-wicket Super Over limit");
-onePlayerSuperOver=playBall(pair,onePlayerSuperOver,2,2);
-assert.equal(onePlayerSuperOver.innings,2,"One wicket ends a one-player Super Over innings immediately");
+const singleBatterPlayers=makePlayers(2);
+let singleBatterTie=handCricket.createInitialState(context("p1",singleBatterPlayers));
+singleBatterTie=action(singleBatterPlayers,singleBatterTie,"p1",{type:"update-settings",config:{mode:"team",wickets:1,oddPlayerMode:"bat-bowl",allowFist:false,unlimited:true,limit:1}});
+singleBatterTie=action(singleBatterPlayers,singleBatterTie,"p1",{type:"start-match"});
+singleBatterTie=await chooseTeams(singleBatterPlayers,singleBatterTie,[["p1","red"],["p2","blue"]]);
+singleBatterTie=playBall(singleBatterPlayers,singleBatterTie,3,3);
+singleBatterTie=playBall(singleBatterPlayers,singleBatterTie,4,4);
+assert.equal(singleBatterTie.phase,"super-over-vote");
+singleBatterTie=action(singleBatterPlayers,singleBatterTie,"p1",{type:"vote-super-over",vote:"yes"});
+singleBatterTie=action(singleBatterPlayers,singleBatterTie,"p2",{type:"vote-super-over",vote:"yes"});
+assert.equal(singleBatterTie.superOverWicketLimit,1,"A one-player team receives a one-wicket Super Over limit");
+singleBatterTie=playBall(singleBatterPlayers,singleBatterTie,2,2);
+assert.equal(singleBatterTie.innings,2,"One wicket ends a one-player Super Over innings immediately");
 
 // With two batters and one wicket per player, the dismissed batter cannot
 // return; the other batter gets the only remaining batting opportunity.
-let twoPerTeamSuperOver=structuredClone(so);
+let twoPerTeamSuperOver=structuredClone(declined);
 twoPerTeamSuperOver.config.wickets=1;
 twoPerTeamSuperOver=action(soPlayers,twoPerTeamSuperOver,"p1",{type:"vote-super-over",vote:"yes"});
 twoPerTeamSuperOver=action(soPlayers,twoPerTeamSuperOver,"p3",{type:"vote-super-over",vote:"yes"});
