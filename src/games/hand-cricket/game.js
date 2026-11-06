@@ -115,7 +115,7 @@ function renderFinished(){
 function render(){
  if(!room||!state)return;
  lifecycle();$("room-label").textContent=(room.name||"Party")+" · "+code;
- if(room.lifecycle==="results"||state.phase==="finished"){renderFinished();if(lastPhase!=="finished")playSound("victory");}
+ if(room.lifecycle==="results"||state.phase==="finished"){renderFinished();}
  else if(state.phase==="settings")renderSettings();
  else if(state.phase==="teams")renderTeams();
  else if(state.phase==="captains")renderCaptains();
