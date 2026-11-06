@@ -154,7 +154,7 @@ $("replay-game").addEventListener("click",async()=>{
 });
 async function endRound(button){if(!player(myPlayerId)?.isHost)return;if(!confirm("End this game and return everyone to the party lobby?"))return;button.disabled=true;try{await api("/api/rooms/"+encodeURIComponent(code)+"/game/reset",{method:"POST",body:"{}"});location.href=$("back-to-lobby").href}catch(e){help(e.message,true);button.disabled=false}}
 setupHostEndRound($("return-lobby"),{getRoom:()=>room,getPlayerId:()=>myPlayerId,onEnd:endRound});
-$("leave-game").addEventListener("click",async()=>{if(leaving||!confirm("Leave this game and party? You will need to rejoin to play again."))return;leaving=true;$("leave-game").disabled=true;try{await api("/api/rooms/"+encodeURIComponent(code)+"/leave",{method:"POST",body:"{}"});location.href="../../../"}catch(e){leaving=false;$("leave-game").disabled=false;help(e.message,true)}});
+$("leave-game").addEventListener("click",async()=>{if(leaving||!confirm("Leave this game and return to the party lobby? You will remain in the party."))return;leaving=true;$("leave-game").disabled=true;try{await api("/api/rooms/"+encodeURIComponent(code)+"/game/leave",{method:"POST",body:"{}"});location.href=$("back-to-lobby").href}catch(e){leaving=false;$("leave-game").disabled=false;help(e.message,true)}});
 function connect(){
  const gen=++generation;if(socket){try{socket.close()}catch{}}
  if(!code||!token){setConnection("Party session not found",true);help("Go back to the party lobby and join again to play.",true);return}
