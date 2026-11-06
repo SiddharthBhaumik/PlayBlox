@@ -2,9 +2,12 @@
 <html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#080d20"><title>Decrypto — PlayBlox</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Nunito:wght@500;600;700;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../../../styles.css">
-  <link rel="stylesheet" href="../../../dark-theme.css"><link rel="stylesheet" href="./game.css">
-  <link rel="stylesheet" href="../../../dark-theme.css"><script type="module" src="./game.js"></script></head>
-<body><div class="page-shell game-shell crypto-shell"><header class="topbar"><a class="brand" href="../../../" aria-label="PlayBlox home"><span class="brand-mark">🧸</span><span class="brand-name">Play<span>Blox</span></span></a></header>
+  <link rel="stylesheet" href="./game.css">
+  <link id="playblox-dark-theme" rel="stylesheet" href="../../../dark-theme.css" disabled>
+  <script type="module" src="./game.js"></script><script src="../../../theme.js" defer></script>
+</head>
+<body><div class="page-shell game-shell crypto-shell"><header class="topbar"><a class="brand" href="../../../" aria-label="PlayBlox home"><span class="brand-mark">🧸</span><span class="brand-name">Play<span>Blox</span></span></a><button class="theme-toggle" type="button" data-theme-toggle aria-pressed="false"><span aria-hidden="true">🌙</span><span>Dark mode</span></button>
+    </header>
 <main class="crypto-main"><div class="eyebrow">✦ PLAYBLOX PARTY GAME ✦</div><h1>🔐 Decrypto</h1><p class="intro">Communicate in code. Outsmart the other team.</p><div class="meta"><span id="room-label">Connecting…</span><span id="connection-status">Connecting…</span></div>
 <section class="board">
 <section id="team-panel" class="panel" hidden><p class="kicker">CHOOSE YOUR SIDE</p><h2>Pick Blue or Red</h2><p class="muted">Teams can be uneven, but each team needs at least two players. Choices lock once everyone has picked.</p><div class="team-buttons"><button id="choose-blue" class="team-button blue">🔵 Join Blue</button><button id="choose-red" class="team-button red">🔴 Join Red</button></div><div id="team-roster" class="team-roster"></div></section>
