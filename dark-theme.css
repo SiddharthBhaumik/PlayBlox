@@ -71,3 +71,62 @@ footer{border-color:#a9b7ee33;color:#929dbd}footer a{color:#c8b2ff}
 .playblox-lifecycle-error,.error,.error-message{color:#ff9cab}.playblox-lifecycle-manage summary{background:#202e50;color:#f7f0e5;border-color:#a9b7ee40}.playblox-kick-row{background:#202e50;color:#f7f0e5;border-color:#a9b7ee33}
 .kick-player-button,.playblox-kick-row button{background:#512b46;color:#ffd0dd;border-color:#bd6687}
 @media(max-width:680px){.game-roster{position:static}}@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+
+/* Game-specific contrast passes for components with intentionally colored surfaces. */
+.field-label strong{background:#49364b!important;color:#ffe4a2!important}
+.wave-panel blockquote,.shared-clue-panel blockquote{background:#1d2b4b!important;color:#fff1d8!important;border-left-color:#43d5bd}
+.waiting-orb{background:#29385d!important;color:#bcecff!important}
+.waiting-track,.spectrum-scale,.guess-value{color:#bdc8e2!important}
+.track{background:#293653!important}.track i{background:#43d5bd!important}
+.reveal-panel{background:#172342!important;border-color:#8d7651!important}
+.reveal-line{background:linear-gradient(90deg,#765a3e,#287b69)!important;border-color:#7883a4!important}
+.reveal-line b{background:#fff!important}.reveal-line i{background:#ff9c82!important}
+.round-points{background:#17443f!important;color:#d4fff1!important}
+.history-item,.history-section{background:#172342!important;border-color:#a9b7ee40!important}
+.history-item span,.history-item .history-prediction{color:#bdc8e2!important}
+.history-item b,.history-item .history-points.correct,.wait-note{color:#83e2c5!important}
+.wyr-title-row>span{background:#fff1d9!important;border-color:#ffc943!important}
+.your-score small,.slider-labels,.meter-caption,.history-heading>span,.history-empty,.history-prediction-detail,.history-points{color:#bac5df!important}
+.wyr-panel,.leaderboard-panel,.question-panel,.waiting-panel,.turn-reveal,.history-section{background:#111c37!important;border-color:#a9b7ee40!important}
+.leaderboard-row,.history-item,.history-split,.history-answer{background:#1c2a4a!important;border-color:#a9b7ee33!important;color:#f7f0e5!important}
+.question-source-row,.optional-prediction{background:#172342!important;border-color:#a9b7ee40!important}
+.question-category-label,.option-fields label span{color:#ffe0a2!important}
+.split-meter{background:#263553!important;border-color:#7180a7!important}
+.split-meter span:first-child{background:#bd874d!important}.split-meter span:last-child{background:#398d79!important}
+.choice-card,.answer-choice{background:#28324f!important;border-color:#63739a!important;color:#fff!important}
+.choice-card span,.answer-choice span{color:#ffe0a2!important}
+.choice-b,.answer-b{background:#203b3b!important}
+.answer-choice.selected{outline-color:#ffc943!important}
+.prediction-choice{background:#202e50!important;border-color:#66769d!important;color:#f7f0e5!important}
+.prediction-choice.selected{background:#ffc943!important;color:#211a25!important;border-color:#ffc943!important}
+.waiting-panel h2,.turn-reveal h2{color:#fff1d8!important}
+.waiting-track>span{color:#bac5df!important}
+.reveal-score-summary{color:#83e2c5!important}
+.history-master-points{color:#ffe0a2!important}
+.fleet-title>span{background:#fff1d9!important;border-color:#ffc943!important}
+.fleet-title h1{color:#fff1e5!important}.fleet-title h1 span{color:#79d8ee!important}
+.fleet-panel h2{color:#fff1d8!important}.placement-controls label{color:#d9e4f6!important}
+.placement-note{color:#a9e5d8!important}
+.axis-row{color:#c3d8e8!important}
+.ocean-cell,.ocean-cell:nth-child(n){background:#1c526d!important;color:#e8f8ff!important;border-color:#6da9c1!important}
+.ocean-cell.ship-cell{background:#6c849b!important;border-color:#a9c0d2!important}
+.ocean-cell.preview-cell{background:#287c64!important;border-color:#70d7ac!important}
+.ocean-cell.preview-invalid{background:#8a3e50!important;border-color:#f18a9a!important}
+.ocean-cell.hit-cell{background:#b64c58!important;border-color:#ff9b9b!important}
+.ocean-cell.miss-cell{background:#263e5a!important;color:#c8e5f0!important}
+.placement-bottom,.board-section h3,.board-section h3 small,.board-legend{color:#c5d7ec!important}
+.fleet-status span,.ship-progress span{background:#1b2d4b!important;border-color:#607697!important;color:#d6e3f4!important}
+.fleet-status .sunk{background:#512c43!important;color:#ffc2ca!important}
+.ship-progress span.placed{background:#17443f!important;color:#b8f6dd!important;border-color:#43b996!important}
+.ship-progress .ship-check{background:#29385d!important;color:#d7e2f3!important}
+.ship-progress .placed .ship-check{background:#43a989!important;color:#fff!important}
+.round-vote-row{background:#1b2949!important;border-color:#607397!important}
+.round-vote-row strong{color:#f7f0e5!important}
+.round-vote-choice{background:#29385d!important;color:#d6e0f2!important}
+.round-vote-choice.voted{background:#17443f!important;color:#b8f6dd!important}
+.navy-button.secondary{background:#29385d!important;color:#f7f0e5!important}
+.fleet-game .game-result{color:#d4fff1!important}
+.crypto-main .team-columns article,.crypto-main .clue-columns article{background:#1b2949!important}
+.crypto-main .members,.crypto-main .muted{color:#bdc8e2!important}
+.game-exit-actions #continue-round{background:#18765e!important;color:#fff!important;border-color:#43b996!important}
+.game-exit-actions #restart-game{background:#49364b!important;color:#ffe4a2!important;border-color:#b58aff!important}
