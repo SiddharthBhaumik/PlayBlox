@@ -54,3 +54,5 @@
 @keyframes hc-hand-arrive{0%{opacity:0;transform:translateY(22px) rotate(-14deg) scale(.72)}65%{opacity:1;transform:translateY(-4px) rotate(5deg) scale(1.08)}100%{opacity:1;transform:translateY(0) rotate(0) scale(1)}}
 .hc-result-margin{font:900 clamp(22px,4vw,32px) 'Barlow Condensed',sans-serif;color:var(--hc-gold);margin:8px 0 16px}.hc-final-history{max-height:420px;overflow:auto}
 @media(max-width:760px){.hc-score-team-tabs button,.hc-score-type-tabs button{flex:1}.hc-pagination{gap:7px}.hc-pagination button{padding:7px 9px}.hc-over-balls{grid-template-columns:repeat(6,minmax(0,28px))}}
+
+.hc-crease.hc-crease-revealed{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:stretch}.hc-crease.hc-crease-revealed .hc-inline-result{grid-column:1/-1}
