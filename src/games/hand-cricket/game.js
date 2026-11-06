@@ -90,7 +90,8 @@ function renderAnalytics(container){
    body+=series.length?analyticsLineChart(series):'<p class="hc-muted">Select one or more players to plot their batting runs.</p>';
   }
  }else if(analyticsTab==="matchups"){
-  const matchupDeliveries=analyticsTeam==="both"?data.deliveries:data.deliveries.filter(d=>d.battingTeam===analyticsTeam);\n  const batters=[...new Set(matchupDeliveries.map(d=>d.batterId))],bowlers=[...new Set(matchupDeliveries.map(d=>d.bowlerId))];
+  const matchupDeliveries=analyticsTeam==="both"?data.deliveries:data.deliveries.filter(d=>d.battingTeam===analyticsTeam);
+  const batters=[...new Set(matchupDeliveries.map(d=>d.batterId))],bowlers=[...new Set(matchupDeliveries.map(d=>d.bowlerId))];
   const batter=analyticsMatchBatter||batters[0]||"",bowler=analyticsMatchBowler||bowlers[0]||"";
   const matchupRows=new Map();for(const d of matchupDeliveries.filter(d=>d.batterId===batter&&d.bowlerId===bowler)){const key=d.batterId+"::"+d.bowlerId;if(!matchupRows.has(key))matchupRows.set(key,{runs:0,balls:0,dismissals:0,batChoices:[],bowlChoices:[],dismissalChoices:[]});const x=matchupRows.get(key);x.runs+=d.runs;x.balls++;x.batChoices.push(d.batChoice);x.bowlChoices.push(d.bowlChoice);if(d.out){x.dismissals++;x.dismissalChoices.push(d.batChoice);}}const m=matchupRows.values().next().value;
   body='<div class="hc-form-grid"><label>Batter<select id="analytics-match-batter">'+batters.map(id=>'<option value="'+id+'" '+(id===batter?"selected":"")+'>'+esc(player(id)?.nickname||"Player")+'</option>').join("")+'</select></label><label>Bowler<select id="analytics-match-bowler">'+bowlers.map(id=>'<option value="'+id+'" '+(id===bowler?"selected":"")+'>'+esc(player(id)?.nickname||"Player")+'</option>').join("")+'</select></label></div>';
