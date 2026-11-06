@@ -243,6 +243,8 @@ wicketLimit=action(wicketLimitPlayers,wicketLimit,"p1",{type:"start-match",confi
 wicketLimit=playBall(wicketLimitPlayers,wicketLimit,1,1);
 wicketLimit=playBall(wicketLimitPlayers,wicketLimit,1,1);
 wicketLimit=playBall(wicketLimitPlayers,wicketLimit,1,1);
+assert.equal(wicketLimit.currentBatterId,"p1","p1 returns for a second turn after the full rotation");
+wicketLimit=playBall(wicketLimitPlayers,wicketLimit,1,1);
 assert.equal(wicketLimit.individualQueue.includes("p1"),false,"A player is removed after exhausting the configured wicket allowance");
 assert.equal(wicketLimit.playerOrder.includes("p1"),true,"Wicket exhaustion does not remove a player from the tournament");
 
