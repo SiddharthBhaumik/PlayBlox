@@ -10,7 +10,7 @@ const chooseTeams=async(players,state,teams)=>{
  for(const [id,team] of teams){assert.equal((await handCricket.validateAction(context(id,players),state,{type:"choose-team",team})).ok,true);state=action(players,state,id,{type:"choose-team",team});}
  return state;
 };
-const playBall=(players,state,batChoice=1,bowlChoice=0)=>{
+const playBall=(players,state,batChoice=1,bowlChoice=2)=>{
  const batter=state.currentBatterId,bowler=state.currentBowlerId;
  state=submit(players,state,batter,batChoice);
  assert.equal(handCricket.getPublicState(state).pendingPlayers.length,1);
@@ -50,7 +50,7 @@ assert.equal((await handCricket.validateAction(context("p3",players),state,{type
   "A captain may lock one bowler choice at the start of an over");
 
 // A complete over stays with its bowler; the next over cannot use that bowler again.
-for(let i=0;i<6;i++)state=playBall(players,state,1,0);
+for(let i=0;i<6;i++)state=playBall(players,state,1,2);
 assert.equal(state.teamScores.red.runs,6);
 assert.equal(state.teamScores.red.balls,6);
 assert.equal(state.completedOvers.length,1);
@@ -111,7 +111,7 @@ let fair=handCricket.createInitialState(context("p1",four));
 fair=action(four,fair,"p1",{type:"update-settings",config:{mode:"individual",wickets:2,oddPlayerMode:"bat-bowl",allowFist:false,unlimited:false,limit:6}});
 fair=action(four,fair,"p1",{type:"start-match"});
 assert.equal(fair.currentBowlerId,"p2");
-for(let i=0;i<6;i++)fair=playBall(four,fair,1,0);
+for(let i=0;i<6;i++)fair=playBall(four,fair,1,2);
 assert.equal(fair.currentBatterId,"p2");
 assert.equal(fair.currentBowlerId,"p1","The previous batter joins the current bowling round once they become eligible");
 
@@ -120,5 +120,8 @@ const noFist=handCricket.createInitialState(context("p1",two));
 const started=action(two,noFist,"p1",{type:"update-settings",config:{mode:"individual",wickets:1,oddPlayerMode:"bat-bowl",allowFist:false,unlimited:false,limit:6}});
 const playing=action(two,started,"p1",{type:"start-match"});
 assert.equal((await handCricket.validateAction(context("p1",two),playing,{type:"submit-ball",choice:"fist"})).ok,false);
+assert.equal((await handCricket.validateAction(context("p1",two),playing,{type:"submit-ball",choice:0})).ok,false,"Zero is not selectable");
+assert.equal((await handCricket.validateAction(context("p1",two),playing,{type:"submit-ball",choice:1})).ok,true,"One is selectable");
+assert.equal((await handCricket.validateAction(context("p1",two),playing,{type:"submit-ball",choice:6})).ok,true,"Six is selectable");
 
 console.log("Hand Cricket extended rules tests passed.");
