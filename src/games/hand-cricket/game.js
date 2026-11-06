@@ -63,7 +63,7 @@ function statRows(ids,kind){return ids.map(id=>{const s=state.stats[id]||{},ball
 function renderScorecard(target=$("scorecard")){const teamMode=state.config.mode==="team",team=teamMode?scoreTeamTab:null,kind=scoreTypeTab;const ids=teamMode?state.playerOrder.filter(id=>state.teams[id]===team||(id===state.wildcardId&&((kind==="batting"&&state.config.oddPlayerMode!=="bowl-only")||(kind==="bowling"&&state.config.oddPlayerMode!=="bat-only")))):state.playerOrder;const tabs=(teamMode?'<div class="hc-score-team-tabs"><button data-score-team="red" class="'+(team==="red"?"active":"")+'">🔴 Red</button><button data-score-team="blue" class="'+(team==="blue"?"active":"")+'">🔵 Blue</button></div>':"")+'<div class="hc-score-type-tabs"><button data-score-type="batting" class="'+(kind==="batting"?"active":"")+'">Batting</button><button data-score-type="bowling" class="'+(kind==="bowling"?"active":"")+'">Bowling</button></div>';const head=kind==="batting"?'<tr><th>Player</th><th>R</th><th>B</th><th>HS</th><th>W</th><th>SR</th></tr>':'<tr><th>Bowler</th><th>O</th><th>RC</th><th>W</th><th>Econ</th></tr>';target.innerHTML=tabs+'<div class="hc-table-wrap"><table><thead>'+head+'</thead><tbody>'+statRows(ids,kind)+'</tbody></table></div><p class="hc-key">'+(kind==="batting"?"R runs · B balls faced · HS highest score · W wickets lost · SR strike rate":"O overs bowled · RC runs conceded · W wickets taken · Econ economy")+'</p>';target.querySelectorAll("[data-score-team]").forEach(x=>x.onclick=()=>{scoreTeamTab=x.dataset.scoreTeam;renderScorecard(target);});target.querySelectorAll("[data-score-type]").forEach(x=>x.onclick=()=>{scoreTypeTab=x.dataset.scoreType;renderScorecard(target);});}
 
 let analyticsTab="overview",analyticsTeam="both",analyticsSelected=[];
-function analyticsRate(r,b){return b?(r*600/b).toFixed(1):"—";}
+function analyticsRate(r,b){return b?(r*100/b).toFixed(1):"—";}
 function analyticsBarChart(rows,labelKey,valueKey){
  const max=Math.max(1,...rows.map(x=>Number(x[valueKey])||0));
  return '<div class="hc-analytics-bars">'+rows.map(x=>'<div class="hc-analytics-bar-row"><span>'+esc(x[labelKey])+'</span><div><i style="width:'+Math.max(0,(Number(x[valueKey])||0)/max*100)+'%"></i></div><b>'+x[valueKey]+'</b></div>').join("")+'</div>';
@@ -80,10 +80,13 @@ function analyticsLineChart(series){
 function renderAnalytics(container){
  if(!container||!state)return;
  const teamMode=state.config.mode==="team",data=buildHandCricketAnalytics(state);
- const visibleDeliveries=teamMode&&analyticsTeam!=="both"?data.deliveries.filter(d=>d.battingTeam===analyticsTeam):data.deliveries;
- const visibleIds=teamMode?state.playerOrder.filter(id=>analyticsTeam==="both"||state.teams[id]===analyticsTeam||visibleDeliveries.some(d=>(d.batterId===id||d.bowlerId===id)&&d.battingTeam===analyticsTeam)):state.playerOrder.slice();
+ const teamBattingDeliveries=teamMode&&analyticsTeam!=="both"?data.deliveries.filter(d=>d.battingTeam===analyticsTeam):data.deliveries;
+ const teamBowlingDeliveries=teamMode&&analyticsTeam!=="both"?data.deliveries.filter(d=>{const side=state.teams[d.bowlerId];return side===analyticsTeam||(side==="wildcard"&&(d.battingTeam==="red"?"blue":"red")===analyticsTeam);}):data.deliveries;
+ const visibleDeliveries=teamMode&&analyticsTeam!=="both"?[...teamBattingDeliveries,...teamBowlingDeliveries.filter(d=>!teamBattingDeliveries.includes(d))]:data.deliveries;
+ const visibleIds=teamMode?state.playerOrder.filter(id=>analyticsTeam==="both"||state.teams[id]===analyticsTeam||state.teams[id]==="wildcard"):state.playerOrder.slice();
  const totalsFor=(id,kind)=>{
-  const ds=visibleDeliveries.filter(d=>kind==="batting"?d.batterId===id:d.bowlerId===id),runs=ds.reduce((n,d)=>n+d.runs,0),wickets=ds.filter(d=>d.out).length;
+  const source=teamMode&&analyticsTeam!=="both"?(kind==="batting"?teamBattingDeliveries:teamBowlingDeliveries):data.deliveries;
+  const ds=source.filter(d=>kind==="batting"?d.batterId===id:d.bowlerId===id),runs=ds.reduce((n,d)=>n+d.runs,0),wickets=ds.filter(d=>d.out).length;
   return kind==="batting"?{runs,balls:ds.length,wickets,rate:analyticsRate(runs,ds.length)}:{runs,balls:ds.length,wickets,rate:ds.length?(runs*6/ds.length).toFixed(2):"—"};
  };
  const series=data.innings.filter(s=>!teamMode||analyticsTeam==="both"||s.team===analyticsTeam).map(s=>({label:(s.superOver?"Super Over "+s.round+" ":"Innings ")+(s.team?s.team.toUpperCase():player(s.playerId)?.nickname||"Player"),points:s.points}));
@@ -105,7 +108,7 @@ function renderAnalytics(container){
   }
  }else if(analyticsTab==="graph")body=series.length?analyticsLineChart(series):'<p class="hc-muted">Run progression will appear after the first delivery.</p>';
  else if(analyticsTab==="stages"){
-  const rows=data.stages.filter(x=>visibleIds.includes(x.playerId));
+  const rows=data.stages.filter(x=>visibleIds.includes(x.playerId)&&(!teamMode||analyticsTeam==="both"||x.team===analyticsTeam));
   const makeTable=(items,kind)=>'<h4>'+kind+'</h4><div class="hc-table-wrap"><table><thead><tr><th>Player</th><th>Stage</th><th>'+(kind==="Batting"?"Runs":"Conceded")+'</th><th>Balls</th><th>'+(kind==="Batting"?"SR":"Wickets")+'</th></tr></thead><tbody>'+items.map(x=>'<tr><td>'+esc(player(x.playerId)?.nickname||"Player")+'</td><td>'+esc(x.stage)+'</td><td>'+(kind==="Batting"?x.runs:x.conceded)+'</td><td>'+x.balls+'</td><td>'+(kind==="Batting"?analyticsRate(x.runs,x.balls):x.wickets)+'</td></tr>').join("")+'</tbody></table></div>';
   body=makeTable(rows.filter(x=>x.kind==="batting"),"Batting")+makeTable(rows.filter(x=>x.kind==="bowling"),"Bowling")+'<p class="hc-muted">'+(state.config.unlimited?"Unlimited matches use two-over / twelve-ball stage blocks.":"Limited matches are divided into Early, Middle and Final thirds.")+'</p>';
  }else if(analyticsTab==="batting"||analyticsTab==="bowling"){
