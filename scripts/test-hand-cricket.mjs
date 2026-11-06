@@ -4,7 +4,17 @@ import { handCricket } from "../worker/src/games/hand-cricket.js";
 const player=id=>({id,nickname:"Player "+id,isHost:id==="p1",connected:true,role:"player"});
 const makePlayers=n=>Array.from({length:n},(_,i)=>player("p"+(i+1)));
 const context=(id,players)=>({player:players.find(p=>p.id===id),players,room:{gameId:"hand-cricket",lifecycle:"playing"}});
-const action=(players,state,id,a)=>handCricket.reduceAction(context(id,players),state,a);
+const rawAction=(players,state,id,a)=>handCricket.reduceAction(context(id,players),state,a);
+const completeToss=(players,state,call="heads",preferredBattingTeam="red")=>{
+ const caller=state.tossCallerId;
+ state=rawAction(players,state,caller,{type:"call-toss",call});
+ const winner=state.tossWinnerTeam,choice=winner===preferredBattingTeam?"bat":"bowl";
+ return rawAction(players,state,state.captains[winner],{type:"choose-toss",choice});
+};
+const action=(players,state,id,a)=>{
+ const next=rawAction(players,state,id,a);
+ return next.phase==="toss-call"?completeToss(players,next):next;
+};
 const submit=(players,state,id,choice)=>action(players,state,id,{type:"submit-ball",choice});
 const chooseTeams=async(players,state,teams)=>{
  for(const [id,team] of teams){assert.equal((await handCricket.validateAction(context(id,players),state,{type:"choose-team",team})).ok,true);state=action(players,state,id,{type:"choose-team",team});}
@@ -38,6 +48,36 @@ const playBall=(players,state,batChoice=1,bowlChoice=2)=>{
  state=submit(players,state,bowler,bowlChoice);
  return state;
 };
+
+// Team-match coin toss: caller selection, captain-only actions and server result.
+{
+ const tossPlayers=makePlayers(4);
+ let toss=handCricket.createInitialState(context("p1",tossPlayers));
+ toss=rawAction(tossPlayers,toss,"p1",{type:"start-match",config:{mode:"team",wickets:2,oddPlayerMode:"bat-bowl",allowFist:true,unlimited:false,limit:2}});
+ toss=await chooseTeams(tossPlayers,toss,[["p1","red"],["p2","red"],["p3","blue"],["p4","blue"]]);
+ toss=rawAction(tossPlayers,toss,"p1",{type:"vote-captain",candidateId:"p1"});
+ toss=rawAction(tossPlayers,toss,"p2",{type:"vote-captain",candidateId:"p1"});
+ toss=rawAction(tossPlayers,toss,"p3",{type:"vote-captain",candidateId:"p3"});
+ toss=rawAction(tossPlayers,toss,"p4",{type:"vote-captain",candidateId:"p3"});
+ assert.equal(toss.phase,"toss-call");
+ assert.ok([toss.captains.red,toss.captains.blue].includes(toss.tossCallerId));
+ const caller=toss.tossCallerId,callerTeam=Object.keys(toss.captains).find(team=>toss.captains[team]===caller);
+ const otherCaptain=toss.captains[callerTeam==="red"?"blue":"red"];
+ assert.equal((await handCricket.validateAction(context(otherCaptain,tossPlayers),toss,{type:"call-toss",call:"heads"})).ok,false);
+ assert.equal((await handCricket.validateAction(context(caller,tossPlayers),toss,{type:"call-toss",call:"sideways"})).ok,false);
+ assert.equal((await handCricket.validateAction(context(caller,tossPlayers),toss,{type:"call-toss",call:"heads"})).ok,true);
+ toss=rawAction(tossPlayers,toss,caller,{type:"call-toss",call:"heads"});
+ assert.equal(toss.phase,"toss-choice");
+ assert.ok(["heads","tails"].includes(toss.tossResult));
+ assert.equal(toss.tossWinnerTeam,toss.tossResult==="heads"?callerTeam:(callerTeam==="red"?"blue":"red"));
+ const winner=toss.tossWinnerTeam,loser=winner==="red"?"blue":"red";
+ assert.equal((await handCricket.validateAction(context(toss.captains[loser],tossPlayers),toss,{type:"choose-toss",choice:"bat"})).ok,false);
+ assert.equal((await handCricket.validateAction(context(toss.captains[winner],tossPlayers),toss,{type:"choose-toss",choice:"bowl"})).ok,true);
+ toss=rawAction(tossPlayers,toss,toss.captains[winner],{type:"choose-toss",choice:"bowl"});
+ assert.equal(toss.phase,"playing");
+ assert.equal(toss.battingTeam,loser);
+ assert.equal(toss.tossBattingTeam,loser);
+}
 
 // Host-only settings and balanced teams.
 const players=makePlayers(4);
