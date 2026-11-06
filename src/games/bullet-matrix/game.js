@@ -41,7 +41,7 @@ function render(){
  if(done){
   $("winner-title").textContent=gameState.winnerId?"🏆 "+(room.players.find(p=>p.id===gameState.winnerId)?.nickname||"A player")+" wins!": "Everyone was eliminated";
   $("winner-copy").textContent=gameState.isDraw?"No player survived this round.": "The last surviving player wins Bullet Matrix.";
-  $("rematch-prompt").hidden=!(gameState.playerOrder||[]).includes(myPlayerId);
+  $("rematch-prompt").hidden=!(gameState.playerOrder||[]).includes(myPlayerId);$("no-rematch").hidden=true;
   const votes=room.rematchVotes||{},voted=Boolean(votes[myPlayerId]);
   $("play-again").disabled=voted;$("play-again").textContent=voted?"Waiting for others…":"Play again";
   $("rematch-status").textContent=voted?"Your rematch vote is in. Waiting for the other players.":"Everyone from the match must agree to play again.";
