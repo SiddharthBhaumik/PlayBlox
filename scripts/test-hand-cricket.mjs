@@ -164,6 +164,30 @@ assert.equal((await handCricket.validateAction(context("p2",players),wicketState
   "The next ball is blocked until the next batter is confirmed");
 
 
+// Highest Score is the maximum of separate batting turns, while Runs remains cumulative.
+{
+ const hsPlayers=makePlayers(4);
+ let hs=handCricket.createInitialState(context("p1",hsPlayers));
+ hs=action(hsPlayers,hs,"p1",{type:"update-settings",config:{mode:"team",wickets:2,oddPlayerMode:"bat-bowl",allowFist:false,unlimited:true,limit:1}});
+ hs=action(hsPlayers,hs,"p1",{type:"start-match"});
+ hs=await chooseTeams(hsPlayers,hs,[["p1","red"],["p2","red"],["p3","blue"],["p4","blue"]]);
+ hs=action(hsPlayers,hs,"p1",{type:"vote-captain",candidateId:"p1"});
+ hs=action(hsPlayers,hs,"p2",{type:"vote-captain",candidateId:"p1"});
+ hs=action(hsPlayers,hs,"p3",{type:"vote-captain",candidateId:"p3"});
+ hs=action(hsPlayers,hs,"p4",{type:"vote-captain",candidateId:"p3"});
+ hs=playBall(hsPlayers,hs,5,2);
+ assert.equal(hs.stats.p1.runs,5);
+ assert.equal(hs.stats.p1.highestScore,5);
+ hs=playBall(hsPlayers,hs,3,3);
+ assert.equal(hs.currentBatterId,"p2");
+ hs=playBall(hsPlayers,hs,4,4);
+ assert.equal(hs.currentBatterId,"p1","A player with wickets remaining may return for another batting turn");
+ assert.equal(hs.currentInningsRuns.p1,0,"The returning player's new innings starts at zero");
+ hs=playBall(hsPlayers,hs,2,1);
+ assert.equal(hs.stats.p1.runs,7,"Runs remain cumulative across the player's batting turns");
+ assert.equal(hs.stats.p1.highestScore,5,"High Score remains the best single batting turn, not the sum of turns");
+}
+
 // Team selection remains editable until all players have selected, and the
 // explicit wildcard place keeps Red and Blue equal for odd player counts.
 const five=makePlayers(5);
