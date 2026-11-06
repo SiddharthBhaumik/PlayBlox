@@ -25,6 +25,8 @@ export const wavelength = {
   color: "#d9f0e7",
   entry: "./src/games/wavelength/index.html",
   players: { min: 2, max: 8 },
+  rematchChoices: ["continue", "restart"],
+  defaultRematchChoice: "continue",
   interactionModel: "simultaneous",
   lateJoinPolicy: "spectate",
   spectators: { supported: true },
