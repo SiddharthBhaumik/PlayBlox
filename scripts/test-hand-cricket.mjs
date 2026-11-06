@@ -353,7 +353,9 @@ let wildcardPriority=handCricket.createInitialState(context("p1",wildcardPriorit
 wildcardPriority=action(wildcardPriorityPlayers,wildcardPriority,"p1",{type:"update-settings",config:{mode:"team",wickets:2,oddPlayerMode:"bat-bowl",allowFist:true,unlimited:false,limit:1}});
 wildcardPriority=action(wildcardPriorityPlayers,wildcardPriority,"p1",{type:"start-match"});
 wildcardPriority=await chooseTeams(wildcardPriorityPlayers,wildcardPriority,[["p1","red"],["p2","blue"],["p3","wildcard"]]);
-assert.equal(wildcardPriority.currentBowlerId,"p3","The wildcard may initially be auto-assigned as bowler");
+// Model the collision case: the bowling captain's current assignment is the wildcard.
+wildcardPriority.currentBowlerId="p3";
+wildcardPriority.overBowlerId="p3";
 wildcardPriority=action(wildcardPriorityPlayers,wildcardPriority,"p1",{type:"select-batter",playerId:"p3"});
 assert.equal(wildcardPriority.currentBatterId,"p3","The wildcard remains the selected batter when roles conflict");
 assert.notEqual(wildcardPriority.currentBowlerId,"p3","Batting priority removes the wildcard from the conflicting bowling role");
