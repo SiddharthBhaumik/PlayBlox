@@ -60,6 +60,7 @@ function render() {
   const rematchPrompt = $("rematch-prompt");
   const canVoteRematch = finished && activeIds.has(myPlayerId);
   rematchPrompt.hidden = !canVoteRematch;
+  $("no-rematch").hidden = true;
   $("return-lobby").hidden = !isHost;
   $("leave-game").hidden = false;
   $("leave-game").disabled = leaving;
