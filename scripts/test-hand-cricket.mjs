@@ -92,6 +92,25 @@ assert.equal(odd.wildcardId,"p1");
 assert.ok(odd.battingQueue.blue.includes("p1"));
 assert.ok(odd.battingQueue.red.includes("p1"));
 
+// With one batter per team and one wicket each, one dismissal ends that team's innings.
+// The wicket count must not leak into the opposing team's separate allowance.
+const pair=[player("p1"),player("p2")];
+let oneEach=handCricket.createInitialState(context("p1",pair));
+oneEach=action(pair,oneEach,"p1",{type:"update-settings",config:{mode:"team",wickets:1,oddPlayerMode:"bat-bowl",allowFist:false,unlimited:true,limit:1}});
+oneEach=action(pair,oneEach,"p1",{type:"start-match"});
+oneEach=await chooseTeams(pair,oneEach,[["p1","red"],["p2","blue"]]);
+assert.equal(oneEach.phase,"playing");
+assert.equal(oneEach.currentBatterId,"p1");
+oneEach=playBall(pair,oneEach,3,3);
+assert.equal(oneEach.innings,2,"A one-player batting side is all out after its one allowed wicket");
+assert.equal(oneEach.teamScores.red.wickets,1,"The first side records exactly one wicket");
+assert.equal(oneEach.wicketLosses.red.p1,1);
+assert.equal(oneEach.wicketLosses.blue.p2||0,0,"The second side starts with a separate wicket allowance");
+assert.equal(oneEach.currentBatterId,"p2");
+oneEach=playBall(pair,oneEach,4,4);
+assert.equal(oneEach.teamScores.blue.wickets,1,"The second side also gets only its own one wicket");
+assert.equal(oneEach.phase,"finished","Both one-player innings finish after one wicket");
+
 // Individual format: balls are per player, no one bowls in their own innings.
 const two=[player("p1"),player("p2")];
 let individual=handCricket.createInitialState(context("p1",two));
