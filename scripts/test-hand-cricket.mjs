@@ -324,6 +324,45 @@ assert.equal(so.phase,"finished");
 assert.equal(so.winnerTeam,"blue","The second Super Over breaks the tie");
 assert.equal(so.superOverRounds.length,2);
 
+// Super Over batting order reverses after the tied regulation innings, and
+// the Super Over is capped at two team wickets even when the match setting allows more.
+const superOverOrderPlayers=makePlayers(4);
+let superOverOrder=handCricket.createInitialState(context("p1",superOverOrderPlayers));
+superOverOrder=action(superOverOrderPlayers,superOverOrder,"p1",{type:"update-settings",config:{mode:"team",wickets:3,oddPlayerMode:"bat-bowl",allowFist:false,unlimited:true,limit:1}});
+superOverOrder=action(superOverOrderPlayers,superOverOrder,"p1",{type:"start-match"});
+superOverOrder=await chooseTeams(superOverOrderPlayers,superOverOrder,[["p1","red"],["p2","red"],["p3","blue"],["p4","blue"]]);
+superOverOrder=action(superOverOrderPlayers,superOverOrder,"p1",{type:"vote-captain",candidateId:"p1"});
+superOverOrder=action(superOverOrderPlayers,superOverOrder,"p2",{type:"vote-captain",candidateId:"p1"});
+superOverOrder=action(superOverOrderPlayers,superOverOrder,"p3",{type:"vote-captain",candidateId:"p3"});
+superOverOrder=action(superOverOrderPlayers,superOverOrder,"p4",{type:"vote-captain",candidateId:"p3"});
+for(let i=0;i<6;i++)superOverOrder=playBall(superOverOrderPlayers,superOverOrder,1,2);
+for(let i=0;i<6;i++)superOverOrder=playBall(superOverOrderPlayers,superOverOrder,1,2);
+assert.equal(superOverOrder.battingTeam,"blue","The regular match's second-innings team bats first in the Super Over");
+superOverOrder=action(superOverOrderPlayers,superOverOrder,"p1",{type:"vote-super-over",vote:"yes"});
+superOverOrder=action(superOverOrderPlayers,superOverOrder,"p3",{type:"vote-super-over",vote:"yes"});
+assert.equal(superOverOrder.battingTeam,"blue","Super Over starts with the team that batted second in the regular match");
+assert.equal(superOverOrder.superOverActive,true);
+superOverOrder=playBall(superOverOrderPlayers,superOverOrder,1,1);
+superOverOrder=playBall(superOverOrderPlayers,superOverOrder,1,1);
+assert.equal(superOverOrder.innings,2,"Two wickets end a Super Over innings even when the match allows three wickets");
+assert.equal(superOverOrder.battingTeam,"red","The other team bats second in the Super Over");
+
+// Wildcard batting has priority over a conflicting preselected bowling role.
+const wildcardPriorityPlayers=makePlayers(3);
+let wildcardPriority=handCricket.createInitialState(context("p1",wildcardPriorityPlayers));
+wildcardPriority=action(wildcardPriorityPlayers,wildcardPriority,"p1",{type:"update-settings",config:{mode:"team",wickets:2,oddPlayerMode:"bat-bowl",allowFist:true,unlimited:false,limit:1}});
+wildcardPriority=action(wildcardPriorityPlayers,wildcardPriority,"p1",{type:"start-match"});
+wildcardPriority=await chooseTeams(wildcardPriorityPlayers,wildcardPriority,[["p1","red"],["p2","blue"],["p3","wildcard"]]);
+assert.equal(wildcardPriority.currentBowlerId,"p3","The wildcard may initially be auto-assigned as bowler");
+wildcardPriority=action(wildcardPriorityPlayers,wildcardPriority,"p1",{type:"select-batter",playerId:"p3"});
+assert.equal(wildcardPriority.currentBatterId,"p3","The wildcard remains the selected batter when roles conflict");
+assert.notEqual(wildcardPriority.currentBowlerId,"p3","Batting priority removes the wildcard from the conflicting bowling role");
+assert.equal(wildcardPriority.bowlerSelectionOpen,true,"The bowling captain must confirm a replacement bowler");
+assert.equal(wildcardPriority.wildcardBowlerReplacementRequired,true,"The replacement is marked as a wildcard-priority conflict");
+wildcardPriority=action(wildcardPriorityPlayers,wildcardPriority,"p2",{type:"select-bowler",playerId:"p2"});
+assert.equal(wildcardPriority.currentBowlerId,"p2","The bowling captain can confirm a replacement bowler");
+assert.equal(wildcardPriority.wildcardBowlerReplacementRequired,false);
+
 // Individual tournament ranking uses the requested bowling-based tie-breaks.
 const ranked=handCricket.createInitialState(context("p1",soPlayers));
 ranked.config.mode="individual";
