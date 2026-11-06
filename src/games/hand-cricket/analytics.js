@@ -41,7 +41,7 @@ export function buildHandCricketAnalytics(state) {
     overall.runs += d.runs; overall.balls++;
     if (d.out) {
       batter.dismissals++; bowler.wickets++; overall.wickets++;
-      overall.dismissedRuns += batter.innings.reduce((n,x)=>n+x.runs,0);
+      overall.dismissedRuns += inn.batters.get(d.batterId).runs;
       overall.dismissedBatters++;
     }
     let inn = inningsMap.get(d.inningsKey);
@@ -95,7 +95,6 @@ export function buildHandCricketAnalytics(state) {
   for (const p of player.values()) {
     p.battingRate=rate(p.battingRuns,p.battingBalls);
     p.bowlingRate=economy(p.bowlingRuns,p.bowlingBalls);
-    p.overallChoices=distribution([...p.battingChoices,...p.bowlingChoices],"__unused");
     p.battingDistribution=distribution(p.battingChoices,"batChoice");
     p.bowlingDistribution=distribution(p.bowlingChoices,"bowlChoice");
     p.overallDistribution=distribution([
