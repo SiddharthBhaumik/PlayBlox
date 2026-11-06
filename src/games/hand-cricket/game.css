@@ -18,3 +18,22 @@
 @media(max-width:760px){.hc-history #ball-history{max-height:300px}.hc-game .playblox-lifecycle{padding:14px}}
 
 /* Animations are part of the game presentation and stay enabled for every player. */
+
+/* Hand Cricket scoreboard, pagination and inline reveal refinements */
+.hc-score-team .hc-active-player{display:block;margin-top:7px;color:#e8c878;font-size:11px;font-weight:800;letter-spacing:0}
+.hc-score-team-tabs,.hc-score-type-tabs{display:flex;gap:8px;margin:8px 0;flex-wrap:wrap}
+.hc-score-team-tabs button,.hc-score-type-tabs button,.hc-pagination button{border:1px solid #49645b;border-radius:9px;padding:8px 14px;background:#172a25;color:#dbe8df;font-weight:800;cursor:pointer}
+.hc-score-team-tabs button.active,.hc-score-type-tabs button.active{background:#e5b85c;color:#17211c;border-color:#e5b85c}
+.hc-pagination{display:flex;align-items:center;justify-content:center;gap:12px;padding:10px 0 2px;color:var(--hc-muted);font-size:12px;font-weight:800}
+.hc-pagination button:disabled{opacity:.35;cursor:not-allowed}
+.hc-over-history,.hc-history{max-height:380px;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;scrollbar-gutter:stable}
+.hc-over-balls{display:grid!important;grid-template-columns:repeat(6,minmax(0,31px));justify-content:start;gap:5px!important}.hc-over-balls .hc-ball{margin:0}
+#over-summary{display:grid;grid-template-columns:repeat(6,minmax(0,31px));justify-content:start;gap:5px}#over-summary .hc-ball{margin:0}#over-summary>b{grid-column:1/-1;margin:7px 0 0}
+.hc-role-reveal{align-items:center;text-align:center;min-height:140px;display:flex;flex-direction:column;justify-content:center;gap:4px}
+.hc-role-reveal small{font-size:10px}.hc-role-reveal .hc-hand-gesture{font-size:clamp(42px,7vw,62px);line-height:1.05}.hc-role-reveal b{font:900 32px 'Barlow Condensed',sans-serif;color:var(--hc-gold)}
+.hc-inline-result{grid-column:1/-1;text-align:center;padding:10px 12px;border-top:1px solid var(--hc-line);color:#b8f0ca;font-weight:1000;font-size:18px;letter-spacing:.06em}.hc-inline-result.out-text{color:#ff8c83}
+.hc-role-reveal .hc-hand-gesture{animation:hc-hand-arrive .62s cubic-bezier(.2,.8,.2,1) both}
+@keyframes hc-hand-arrive{0%{opacity:0;transform:translateY(22px) rotate(-14deg) scale(.72)}65%{opacity:1;transform:translateY(-4px) rotate(5deg) scale(1.08)}100%{opacity:1;transform:translateY(0) rotate(0) scale(1)}}
+.hc-result-margin{font:900 clamp(22px,4vw,32px) 'Barlow Condensed',sans-serif;color:var(--hc-gold);margin:8px 0 16px}
+.hc-final-history{max-height:420px;overflow:auto}
+@media(max-width:760px){.hc-score-team-tabs button,.hc-score-type-tabs button{flex:1}.hc-pagination{gap:7px}.hc-pagination button{padding:7px 9px}.hc-over-balls{grid-template-columns:repeat(6,minmax(0,28px))}}
