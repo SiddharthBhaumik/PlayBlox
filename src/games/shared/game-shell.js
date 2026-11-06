@@ -84,7 +84,7 @@ function renderGuideMarkup(container, source) {
     if (!line) { flushParagraph(); flushList(); continue; }
     const heading = line.match(/^(#{1,3})\s+(.+)$/);
     if (heading) { flushParagraph(); flushList(); const h = document.createElement(heading[1].length === 1 ? "h3" : heading[1].length === 2 ? "h4" : "h5"); appendGuideInline(h, heading[2]); container.append(h); continue; }
-    const bullet = line.match(/^[-*]\s+(.+)$/);
+    const bullet = line.match(/^(?:[-*]|•)\s+(.+)$/);
     const numbered = line.match(/^\d+\.\s+(.+)$/);
     if (bullet || numbered) {
       flushParagraph(); const type = bullet ? "ul" : "ol";
