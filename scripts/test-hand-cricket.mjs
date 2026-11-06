@@ -249,8 +249,8 @@ assert.equal(wicketLimit.individualQueue.includes("p1"),false,"A player is remov
 assert.equal(wicketLimit.playerOrder.includes("p1"),true,"Wicket exhaustion does not remove a player from the tournament");
 
 // 
-// Individual tournaments always advance on the first wicket, even if the
-// settings retain a two- or three-wicket allowance for team matches.
+// Individual dismissals end the current turn, but a player with wickets
+// remaining returns to the back of the batting queue.
 const threeWicket=makePlayers(3);
 let oneDismissal=handCricket.createInitialState(context("p1",threeWicket));
 oneDismissal=action(threeWicket,oneDismissal,"p1",{type:"update-settings",config:{mode:"individual",wickets:3,oddPlayerMode:"bat-bowl",allowFist:true,unlimited:true,limit:6}});
@@ -259,8 +259,8 @@ assert.equal(oneDismissal.currentBatterId,"p1");
 oneDismissal=playBall(threeWicket,oneDismissal,4,4);
 assert.equal(oneDismissal.stats.p1.wickets,1);
 assert.equal(oneDismissal.individualWickets,0,"The next player's innings starts with a fresh wicket count");
-assert.equal(oneDismissal.individualIndex,1,"The first dismissal immediately advances the tournament to the next player");
-assert.equal(oneDismissal.currentBatterId,"p2","The dismissed player must not continue batting");
+assert.equal(oneDismissal.individualIndex,2,"The next batting turn begins after the first dismissal");
+assert.equal(oneDismissal.currentBatterId,"p2","The next eligible player bats before the dismissed player returns");
 assert.equal(oneDismissal.currentBowlerId,"p1","The previous batter can bowl in the next player's innings");
 assert.equal(oneDismissal.completedOvers.at(-1).complete,false,"The interrupted over is saved when the innings changes");
 
