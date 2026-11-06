@@ -274,7 +274,7 @@ export const handCricket={
     if(s.phase==="finished")return {ok:false,reason:"The match has finished."};
     if(a.type==="update-settings"){
       if(s.phase!=="settings"||!host)return {ok:false,reason:"Only the host can change match settings."};
-      const c=a.config||{},limitList=c.mode==="team"?TEAM_OVERS:INDIVIDUAL_BALLS;
+      const c=a.config||{};
       if(!["team","individual"].includes(c.mode)||!WICKETS.includes(c.wickets)||!["bat-only","bowl-only","bat-bowl"].includes(c.oddPlayerMode)||typeof c.allowFist!=="boolean"||typeof c.unlimited!=="boolean"||(!c.unlimited&&(!Number.isInteger(c.limit)||c.limit<1||c.limit>120)))return {ok:false,reason:"One or more settings are invalid."};
       return {ok:true};
     }
