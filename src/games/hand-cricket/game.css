@@ -56,3 +56,8 @@
 @media(max-width:760px){.hc-score-team-tabs button,.hc-score-type-tabs button{flex:1}.hc-pagination{gap:7px}.hc-pagination button{padding:7px 9px}.hc-over-balls{grid-template-columns:repeat(6,minmax(0,28px))}}
 
 .hc-crease.hc-crease-revealed{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:stretch}.hc-crease.hc-crease-revealed .hc-inline-result{grid-column:1/-1}
+
+/* Keep scrolling on the log contents themselves, not nested outer panels. */
+.hc-over-history,.hc-history{max-height:none;overflow:visible}
+.hc-over-history #over-history{max-height:320px;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;scrollbar-gutter:stable}
+.hc-history #ball-history{max-height:340px;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;scrollbar-gutter:stable}
