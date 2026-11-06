@@ -23,9 +23,9 @@ export function buildHandCricketAnalytics(state) {
     if (position <= secondCut) return { key: "middle", label: "Middle" };
     return { key: "final", label: "Final" };
   };
-  const addStage = (playerId, kind, stage, d) => {
-    const key = playerId + "|" + kind + "|" + stage.key;
-    if (!stageMap.has(key)) stageMap.set(key, { playerId, kind, stage: stage.label, runs: 0, balls: 0, wickets: 0, conceded: 0 });
+  const addStage = (playerId, kind, stage, d, teamContext = null) => {
+    const key = playerId + "|" + kind + "|" + (teamContext || "all") + "|" + stage.key;
+    if (!stageMap.has(key)) stageMap.set(key, { playerId, kind, team: teamContext, stage: stage.label, runs: 0, balls: 0, wickets: 0, conceded: 0 });
     const row = stageMap.get(key);
     if (kind === "batting") {
       row.runs += d.runs;
@@ -63,8 +63,9 @@ export function buildHandCricketAnalytics(state) {
     const bowler = ensurePlayer(d.bowlerId);
     batter.runs += d.runs; batter.balls += 1; if (d.out) batter.dismissals += 1;
     bowler.runsConceded += d.runs; bowler.ballsBowled += 1; if (d.out) bowler.wicketsTaken += 1;
-    addStage(d.batterId, "batting", battingStage, d);
-    addStage(d.bowlerId, "bowling", bowlingStage, d);
+    addStage(d.batterId, "batting", battingStage, d, teamMode ? d.battingTeam : null);
+    const bowlerTeam = state.teams?.[d.bowlerId];
+    addStage(d.bowlerId, "bowling", bowlingStage, d, teamMode ? (bowlerTeam === "wildcard" ? (d.battingTeam === "red" ? "blue" : "red") : bowlerTeam) : null);
 
     if (!seriesMap.has(inningKey)) seriesMap.set(inningKey, { key: inningKey, team: d.battingTeam, innings: d.innings, superOver: Boolean(d.superOver), round: d.superOverRound || 0, playerId: teamMode ? null : d.batterId, points: [], runs: 0, wickets: 0 });
     const series = seriesMap.get(inningKey);
