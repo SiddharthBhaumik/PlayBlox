@@ -61,3 +61,8 @@
 .hc-over-history,.hc-history{max-height:none;overflow:visible}
 .hc-over-history #over-history{max-height:320px;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;scrollbar-gutter:stable}
 .hc-history #ball-history{max-height:340px;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;scrollbar-gutter:stable}
+
+/* Hand Cricket settings and guide readability */
+#setup-panel input[type=number]{width:100%;min-width:0;padding:12px 14px;border:1px solid var(--hc-line);border-radius:10px;background:#10221d;color:#f4f2e8;font:700 16px inherit;}
+#setup-panel label[hidden],#limit-wrap[hidden]{display:none!important}
+.playblox-guide-copy h3,.playblox-guide-copy h4{margin:22px 0 9px;color:#e8bf70;line-height:1.2}.playblox-guide-copy p{margin:8px 0;line-height:1.65}.playblox-guide-copy ul,.playblox-guide-copy ol{padding-left:23px;margin:8px 0 16px}.playblox-guide-copy li{padding:3px 0;line-height:1.55}
