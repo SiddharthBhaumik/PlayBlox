@@ -414,6 +414,9 @@ export const handCricket={
     }
     if(a.type==="select-batter"){
       n.currentBatterId=a.playerId;n.batterSelectionOpen=false;
+      // A player may return after a dismissal; start a fresh batting turn
+      // without changing their match-total runs or previously recorded HS.
+      n.currentInningsRuns[a.playerId]=0;
       if(a.playerId===n.wildcardId&&n.currentBowlerId===a.playerId){
         // Batting has priority when the wildcard is selected for both roles.
         n.currentBowlerId=nextTeamBowler(n,a.playerId,n.bowlingTeam);
