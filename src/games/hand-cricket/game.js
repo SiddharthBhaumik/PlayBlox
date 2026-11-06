@@ -106,6 +106,21 @@ function renderCaptainControls(){
  if($("pick-batter"))$("pick-batter").onclick=()=>act({type:"select-batter",playerId:$("next-batter").value});
  if($("pick-bowler"))$("pick-bowler").onclick=()=>act({type:"select-bowler",playerId:$("next-bowler").value});
 }
+function renderToss(){
+ $("setup-panel").hidden=false;$("match-panel").hidden=true;$("result-panel").hidden=true;
+ if(state.phase==="toss-call"){
+  const caller=player(state.tossCallerId)?.nickname||"the selected captain",isCaller=myId===state.tossCallerId;
+  $("setup-panel").innerHTML='<div class="hc-section-label">BEFORE THE FIRST INNINGS</div><h2>Coin toss</h2><p class="hc-muted">'+(isCaller?'You have been selected to call the toss. Choose Heads or Tails.':esc(caller)+' has been selected to call the toss. Waiting for their choice.')+'</p>'+(isCaller?'<div class="hc-actions"><button class="hc-primary" data-toss-call="heads">Heads</button><button class="hc-secondary" data-toss-call="tails">Tails</button></div>':'<p class="hc-muted">The toss caller will choose one side of the coin.</p>');
+  $("setup-panel").querySelectorAll("[data-toss-call]").forEach(b=>b.onclick=()=>act({type:"call-toss",call:b.dataset.tossCall}));
+  showNotice(isCaller?"Call Heads or Tails to start the coin toss.":"Waiting for the selected captain to call Heads or Tails.");
+  return;
+ }
+ const winner=state.tossWinnerTeam,winningCaptain=winner?player(state.captains[winner])?.nickname||"The winning captain":"The winning captain",isWinnerCaptain=winner&&myId===state.captains[winner];
+ const result=String(state.tossResult||"").toUpperCase(),call=String(state.tossCall||"").toUpperCase();
+ $("setup-panel").innerHTML='<div class="hc-section-label">COIN TOSS RESULT</div><h2>'+result+'</h2><p class="hc-muted">'+esc(player(state.tossCallerId)?.nickname||"The toss caller")+' called '+call+'. '+winner.toUpperCase()+' wins the toss.</p><div class="hc-final-scores"><b>'+(winner==="red"?"🔴 RED":"🔵 BLUE")+' WON THE TOSS</b></div>'+(isWinnerCaptain?'<h3>Choose your innings</h3><p class="hc-muted">Would your team like to bat or bowl first?</p><div class="hc-actions"><button class="hc-primary" data-toss-choice="bat">Bat first</button><button class="hc-secondary" data-toss-choice="bowl">Bowl first</button></div>':'<p class="hc-muted">Waiting for '+esc(winningCaptain)+' to choose whether '+winner.toUpperCase()+' bats or bowls first.</p>');
+ $("setup-panel").querySelectorAll("[data-toss-choice]").forEach(b=>b.onclick=()=>act({type:"choose-toss",choice:b.dataset.tossChoice}));
+ showNotice(isWinnerCaptain?"You won the toss. Choose whether your team bats or bowls first.":"The toss is complete. Waiting for the winning captain to choose Bat or Bowl.");
+}
 function renderSuperOverVote(){
  $("setup-panel").hidden=false;$("match-panel").hidden=true;$("result-panel").hidden=true;
  const team=state.captains.red===myId?"red":state.captains.blue===myId?"blue":null,cast=team&&Boolean(state.superOverVotesCast?.[team]),round=(state.superOverRound||0)+1;
@@ -167,6 +182,7 @@ function render(){
  else if(state.phase==="settings")renderSettings();
  else if(state.phase==="teams")renderTeams();
  else if(state.phase==="captains")renderCaptains();
+ else if(state.phase==="toss-call"||state.phase==="toss-choice")renderToss();
  else renderPlay();
 
  renderGameGuide({room,code,token,apiBaseUrl:API,myPlayerId:myId});
