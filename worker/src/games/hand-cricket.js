@@ -260,8 +260,8 @@ export const handCricket={
       next.overBowlerId=next.currentBowlerId;
       if(!next.currentBowlerId)finish(next,next.config.mode==="team"&&next.innings===2?next.bowlingTeam:null);
     }
-    if(next.captains.red===id)next.captains.red=next.playerOrder.find(x=>next.teams[x]==="red")||null;
-    if(next.captains.blue===id)next.captains.blue=next.playerOrder.find(x=>next.teams[x]==="blue")||null;
+    if(next.captains.red===id){next.captains.red=next.playerOrder.find(x=>next.teams[x]==="red")||null;if(next.phase==="super-over-vote")next.superOverVote.red=null;}
+    if(next.captains.blue===id){next.captains.blue=next.playerOrder.find(x=>next.teams[x]==="blue")||null;if(next.phase==="super-over-vote")next.superOverVote.blue=null;}
     if(next.config.mode==="team"&&(!next.playerOrder.some(x=>next.teams[x]==="red")||!next.playerOrder.some(x=>next.teams[x]==="blue")))return null;
     if(next.phase==="captains"&&oldTeam&&next.captains[oldTeam])next.teamVotes[oldTeam]={};
     return next;
