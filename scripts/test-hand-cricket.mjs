@@ -190,8 +190,8 @@ assert.equal((await handCricket.validateAction(context("p2",players),wicketState
  assert.equal(hs.stats.p1.highestScore,5,"High Score remains the best single batting turn, not the sum of turns");
 }
 
-// Individual tournament High Score spans the player's full batting innings,
-// including runs scored before and after an earlier wicket.
+// Individual tournament High Score is the best score between wickets,
+// not the cumulative total across all wickets.
 {
  const hsPlayers=makePlayers(3);
  let hs=handCricket.createInitialState(context("p1",hsPlayers));
@@ -200,12 +200,12 @@ assert.equal((await handCricket.validateAction(context("p2",players),wicketState
  assert.equal(hs.stats.p1.highestScore,5,"Individual High Score updates while the player is batting");
  hs=playBall(hsPlayers,hs,3,3);
  assert.equal(hs.currentBatterId,"p1","An individual batter remains in the same innings after the first of two wickets");
- assert.equal(hs.currentInningsRuns.p1,5,"An individual innings score is not reset after a wicket");
+ assert.equal(hs.currentInningsRuns.p1,0,"An individual scoring attempt resets after a wicket");
  hs=playBall(hsPlayers,hs,2,1);
  hs=playBall(hsPlayers,hs,4,4);
  assert.equal(hs.currentBatterId,"p2","The individual innings ends after the configured second wicket");
  assert.equal(hs.stats.p1.runs,7,"Individual total runs include both scoring deliveries");
- assert.equal(hs.stats.p1.highestScore,7,"Individual High Score is the total from that player's full batting innings");
+ assert.equal(hs.stats.p1.highestScore,5,"Individual High Score is the maximum score between wickets, not cumulative runs");
 }
 
 // Team selection remains editable until all players have selected, and the
@@ -369,6 +369,26 @@ assert.equal(fair.currentBowlerId,"p2");
 for(let i=0;i<6;i++)fair=playBall(four,fair,1,2);
 assert.equal(fair.currentBatterId,"p2");
 assert.equal(fair.currentBowlerId,"p1","The previous batter joins the current bowling round once they become eligible");
+
+
+// Individual bowling prioritizes players who have participated less recently
+// (batting or bowling) before applying the existing bowling workload hierarchy.
+{
+ const rotationPlayers=makePlayers(5);
+ let rotation=handCricket.createInitialState(context("p1",rotationPlayers));
+ rotation=action(rotationPlayers,rotation,"p1",{type:"start-match",config:{mode:"individual",wickets:1,oddPlayerMode:"bat-bowl",allowFist:false,unlimited:true,limit:1}});
+ assert.equal(rotation.currentBatterId,"p1");
+ assert.equal(rotation.currentBowlerId,"p2");
+ rotation=playBall(rotationPlayers,rotation,1,2); // p1 scores
+ rotation=playBall(rotationPlayers,rotation,3,3); // p1 out; p2 bats, p3 bowls
+ assert.equal(rotation.currentBatterId,"p2");
+ assert.equal(rotation.currentBowlerId,"p3","A recently batting player is deprioritized behind less recently active bowlers");
+ rotation=playBall(rotationPlayers,rotation,4,4); // p2 out; p3 bats
+ assert.equal(rotation.currentBatterId,"p3");
+ assert.equal(rotation.currentBowlerId,"p4","An unused/less-recently-active player gets the next opportunity before recently batting p1");
+ assert.ok(rotation.lastParticipatedAt.p1<rotation.lastParticipatedAt.p3);
+ assert.ok(rotation.lastParticipatedAt.p3<rotation.lastParticipatedAt.p4);
+}
 
 // Invalid actions cannot choose Fist when disabled or submit twice.
 const noFist=handCricket.createInitialState(context("p1",two));
