@@ -368,7 +368,7 @@ fair=action(four,fair,"p1",{type:"start-match"});
 assert.equal(fair.currentBowlerId,"p2");
 for(let i=0;i<6;i++)fair=playBall(four,fair,1,2);
 assert.equal(fair.currentBatterId,"p2");
-assert.equal(fair.currentBowlerId,"p1","The previous batter joins the current bowling round once they become eligible");
+assert.equal(fair.currentBowlerId,"p3","The previous batter is deprioritized behind players who have participated less recently");
 
 
 // Individual bowling prioritizes players who have participated less recently
