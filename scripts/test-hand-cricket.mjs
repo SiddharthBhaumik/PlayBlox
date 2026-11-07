@@ -355,7 +355,7 @@ oneDismissal=playBall(threeWicket,oneDismissal,4,4);
 oneDismissal=playBall(threeWicket,oneDismissal,4,4);
 assert.equal(oneDismissal.currentBatterId,"p2","The next player's innings starts only after all three wickets are used");
 assert.equal(oneDismissal.individualIndex,2);
-assert.equal(oneDismissal.currentBowlerId,"p1","The previous batter can bowl in the next player's innings");
+assert.equal(oneDismissal.currentBowlerId,"p3","A player who has participated less recently gets bowling priority over the previous batter");
 assert.equal(oneDismissal.completedOvers.length,1);
 assert.equal(oneDismissal.completedOvers[0].complete,false,"The interrupted over is saved when the innings changes");
 
