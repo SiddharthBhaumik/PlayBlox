@@ -30,10 +30,16 @@ function nextTeamBowler(s,batterId,team){
   return (nonConsecutive.length?nonConsecutive:pool).slice().sort((a,b)=>
     (s.stats[a].ballsBowled-s.stats[b].ballsBowled)||s.playerOrder.indexOf(a)-s.playerOrder.indexOf(b))[0];
 }
+function markIndividualParticipation(s,id){
+  s.participationSequence=(s.participationSequence||0)+1;
+  s.lastParticipatedAt=s.lastParticipatedAt||{};
+  s.lastParticipatedAt[id]=s.participationSequence;
+}
 function nextIndividualBowler(s,batterId){
   const pool=s.playerOrder.filter(id=>id!==batterId);
   if(!pool.length)return null;
   const rank=(a,b)=>
+    (s.lastParticipatedAt?.[a]||0)-(s.lastParticipatedAt?.[b]||0)||
     Math.floor(s.stats[a].ballsBowled/6)-Math.floor(s.stats[b].ballsBowled/6)||
     (s.stats[a].lastBowledAt||0)-(s.stats[b].lastBowledAt||0)||
     s.playerOrder.indexOf(a)-s.playerOrder.indexOf(b);
@@ -50,7 +56,10 @@ function nextIndividualBowler(s,batterId){
   const candidates=s.roundOrder.filter(id=>pool.includes(id)&&!s.bowlingRound[id]);
   const noRepeat=s.playerOrder.length<=2?candidates:candidates.filter(id=>id!==s.lastBowlerId);
   const chosen=(noRepeat.length?noRepeat:candidates)[0]||null;
-  if(chosen)s.bowlingRound[chosen]=true;
+  if(chosen){
+    s.bowlingRound[chosen]=true;
+    markIndividualParticipation(s,chosen);
+  }
   return chosen;
 }
 function milestoneEvents(s,before,after,team,playerId){
@@ -137,6 +146,7 @@ function startIndividualInnings(s,batterId,{keepOver=false}={}){
   if(!batterId||!s.playerOrder.includes(batterId)||!individualEligible(s,batterId)){finish(s,null);return;}
   s.individualBatterId=batterId;s.currentBatterId=batterId;
   s.individualIndex=(s.individualIndex||0)+1;
+  markIndividualParticipation(s,batterId);
   s.currentInningsRuns[batterId]=0;
   s.individualBalls=s.stats[batterId]?.balls||0;
   s.individualWickets=s.stats[batterId]?.wickets||0;
@@ -188,7 +198,12 @@ function resolveDelivery(s,ctx){
   if(out){
     batterStats.wickets++;bowlerStats.wicketsTaken++;
     if(team){s.wicketLosses[team][batter]=(s.wicketLosses[team][batter]||0)+1;s.teamScores[team].wickets++;}
-    else s.individualWickets++;
+    else{
+      s.individualWickets++;
+      // In an individual tournament, each wicket ends one scoring attempt.
+      // Preserve its maximum in highestScore, then start the next attempt at zero.
+      s.currentInningsRuns[batter]=0;
+    }
   }
   if(team){s.teamScores[team].runs+=runs;s.teamScores[team].balls++;}
   const personalBefore=batterStats.runs-runs;
@@ -246,7 +261,7 @@ export const handCricket={
     const ids=activeIds(ctx);
     return {phase:"settings",playerOrder:ids,config:{mode:"team",wickets:2,oddPlayerMode:"bat-bowl",allowFist:true,unlimited:false,limit:5},
       teams:{},teamVotes:{red:{},blue:{}},captains:{red:null,blue:null},runoff:{red:[],blue:[]},wildcardId:null,tossCallerId:null,tossCall:null,tossResult:null,tossWinnerTeam:null,tossChoice:null,tossBattingTeam:null,superOverActive:false,superOverRound:0,superOverVote:{red:null,blue:null},superOverRounds:[],regulationScores:null,
-      stats:makeStats(ids),bowlingSequence:0,teamScores:{red:{runs:0,wickets:0,balls:0},blue:{runs:0,wickets:0,balls:0}},
+      stats:makeStats(ids),bowlingSequence:0,participationSequence:0,lastParticipatedAt:{},teamScores:{red:{runs:0,wickets:0,balls:0},blue:{runs:0,wickets:0,balls:0}},
       wicketLosses:{red:{},blue:{}},battingQueue:{red:[],blue:[]},history:[],completedOvers:[],overBalls:[],
       milestones:[],pending:{},innings:1,individualIndex:0,individualBalls:0,individualWickets:0,individualQueue:[],
       currentInningsRuns:{},bowlingRound:{},roundOrder:[],lastBowlerId:null,overBowlerId:null,
