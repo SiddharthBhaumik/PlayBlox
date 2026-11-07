@@ -62,7 +62,7 @@ function renderCaptains(){
 function statRows(ids,kind){return ids.map(id=>{const s=state.stats[id]||{},balls=s.balls||0,bowled=s.ballsBowled||0,economy=bowled?(s.runsConceded/(bowled/6)).toFixed(2):"—";return kind==="batting"?'<tr><td>'+esc(player(id)?.nickname||"Player")+'</td><td>'+s.runs+'</td><td>'+balls+'</td><td>'+s.highestScore+'</td><td>'+s.wickets+'</td><td>'+(balls?(s.runs/balls*100).toFixed(1):"—")+'</td></tr>':'<tr><td>'+esc(player(id)?.nickname||"Player")+'</td><td>'+Math.floor(bowled/6)+'.'+bowled%6+'</td><td>'+s.runsConceded+'</td><td>'+s.wicketsTaken+'</td><td>'+economy+'</td></tr>';}).join("");}
 function renderScorecard(target=$("scorecard")){const teamMode=state.config.mode==="team",team=teamMode?scoreTeamTab:null,kind=scoreTypeTab;const ids=teamMode?state.playerOrder.filter(id=>state.teams[id]===team||(id===state.wildcardId&&((kind==="batting"&&state.config.oddPlayerMode!=="bowl-only")||(kind==="bowling"&&state.config.oddPlayerMode!=="bat-only")))):state.playerOrder;const tabs=(teamMode?'<div class="hc-score-team-tabs"><button data-score-team="red" class="'+(team==="red"?"active":"")+'">🔴 Red</button><button data-score-team="blue" class="'+(team==="blue"?"active":"")+'">🔵 Blue</button></div>':"")+'<div class="hc-score-type-tabs"><button data-score-type="batting" class="'+(kind==="batting"?"active":"")+'">Batting</button><button data-score-type="bowling" class="'+(kind==="bowling"?"active":"")+'">Bowling</button></div>';const head=kind==="batting"?'<tr><th>Player</th><th>R</th><th>B</th><th>HS</th><th>W</th><th>SR</th></tr>':'<tr><th>Bowler</th><th>O</th><th>RC</th><th>W</th><th>Econ</th></tr>';target.innerHTML=tabs+'<div class="hc-table-wrap"><table><thead>'+head+'</thead><tbody>'+statRows(ids,kind)+'</tbody></table></div><p class="hc-key">'+(kind==="batting"?"R runs · B balls faced · HS highest score · W wickets lost · SR strike rate":"O overs bowled · RC runs conceded · W wickets taken · Econ economy")+'</p>';target.querySelectorAll("[data-score-team]").forEach(x=>x.onclick=()=>{scoreTeamTab=x.dataset.scoreTeam;renderScorecard(target);});target.querySelectorAll("[data-score-type]").forEach(x=>x.onclick=()=>{scoreTypeTab=x.dataset.scoreType;renderScorecard(target);});}
 
-let analyticsTab="graph",analyticsTeam="both",analyticsPlayer=null,analyticsGraphPlayers=[],analyticsGraphInnings="all",analyticsMatchBatter="",analyticsMatchBowler="";
+let analyticsTab="graph",analyticsTeam="both",analyticsPlayer=null,analyticsGraphPlayers=[],analyticsGraphView="teams",analyticsGraphAppearances=null,analyticsMatchBatter="",analyticsMatchBowler="";
 function analyticsRate(r,b){return b?(r*100/b).toFixed(1):"—";}
 function analyticsEconomy(r,b){return b?(r*6/b).toFixed(2):"—";}
 function analyticsDist(rows){
@@ -88,17 +88,37 @@ function renderAnalytics(container){
  if(analyticsTab==="graph"){
   let series=[];
   if(teamMode){
-   const choices=analyticsTeam==="both"?["red","blue"]:[analyticsTeam];
-   series=choices.filter(t=>data.teamProgress[t].length).map(t=>({label:t.toUpperCase(),points:data.teamProgress[t].map(p=>({ball:p.ball,runs:p.runs,out:p.out}))}));
-   body='<div class="hc-analytics-team-filter">'+["both","red","blue"].map(t=>'<button data-analytics-team="'+t+'" class="'+(analyticsTeam===t?"active":"")+'">'+(t==="both"?"Both Teams":t.toUpperCase())+'</button>').join("")+'</div>';
-   if(series.length){
-    body+=analyticsLineChart(series)+'<div class="hc-analytics-team-cards">'+choices.filter(t=>data.teamProgress[t].length).map(t=>{const points=data.teamProgress[t],last=points[points.length-1],score={runs:last.runs,wickets:last.wickets,balls:last.ball};return '<article><small>'+t.toUpperCase()+' · REGULAR INNINGS</small><strong>'+score.runs+'/'+score.wickets+'</strong><span>'+Math.floor(score.balls/6)+'.'+score.balls%6+' overs</span></article>';}).join("")+'</div><p class="hc-muted">Each team line stops at its last recorded regular-innings delivery. Teams are aligned by their own ball count.</p>';
-   }else body+='<p class="hc-muted hc-analytics-empty">No regular-innings deliveries for '+(analyticsTeam==="both"?"either team":analyticsTeam.toUpperCase()+" yet")+'. The graph will appear when that team bats.</p>';
+   body='<div class="hc-analytics-graph-modes"><button data-graph-view="teams" class="'+(analyticsGraphView==="teams"?"active":"")+'">Team scores</button><button data-graph-view="appearances" class="'+(analyticsGraphView==="appearances"?"active":"")+'">Batting appearances</button></div>';
+   if(analyticsGraphView==="teams"){
+    const choices=analyticsTeam==="both"?["red","blue"]:[analyticsTeam];
+    series=choices.filter(t=>data.teamProgress[t].length).map(t=>({label:t.toUpperCase(),points:data.teamProgress[t].map(p=>({ball:p.ball,runs:p.runs,out:p.out}))}));
+    body+='<div class="hc-analytics-team-filter">'+["both","red","blue"].map(t=>'<button data-analytics-team="'+t+'" class="'+(analyticsTeam===t?"active":"")+'">'+(t==="both"?"Both Teams":t.toUpperCase())+'</button>').join("")+'</div>';
+    if(series.length){
+     body+=analyticsLineChart(series)+'<div class="hc-analytics-team-cards">'+choices.filter(t=>data.teamProgress[t].length).map(t=>{const points=data.teamProgress[t],last=points[points.length-1],score={runs:last.runs,wickets:last.wickets,balls:last.ball};return '<article><small>'+t.toUpperCase()+' · REGULAR INNINGS</small><strong>'+score.runs+'/'+score.wickets+'</strong><span>'+Math.floor(score.balls/6)+'.'+score.balls%6+' overs</span></article>';}).join("")+'</div><p class="hc-muted">Each team line stops at its last recorded regular-innings delivery. Teams are aligned by their own ball count.</p>';
+    }else body+='<p class="hc-muted hc-analytics-empty">No regular-innings deliveries for '+(analyticsTeam==="both"?"either team":analyticsTeam.toUpperCase()+" yet")+'. The graph will appear when that team bats.</p>';
+   }else{
+    const appearances=[];const counts=new Map();let current=null;
+    for(const d of data.deliveries){
+     const inningsKey=d.inningsKey,identity=inningsKey+"::"+d.batterId;
+     if(!current||current.identity!==identity){
+      const turn=(counts.get(identity)||0)+1;counts.set(identity,turn);
+      current={identity,key:identity+"::"+turn,playerId:d.batterId,innings:d.innings,team:d.battingTeam,turn,points:[],runs:0};
+      appearances.push(current);
+     }
+     current.runs+=d.runs;current.points.push({ball:current.points.length+1,runs:current.runs,out:Boolean(d.out)});
+     if(d.out)current=null;
+    }
+    const available=new Set(appearances.map(x=>x.key));
+    if(analyticsGraphAppearances)analyticsGraphAppearances=analyticsGraphAppearances.filter(key=>available.has(key));
+    const selectedKeys=analyticsGraphAppearances===null?appearances.map(x=>x.key):analyticsGraphAppearances;
+    body+='<p class="hc-muted">Choose one or more batting appearances to compare. Each appearance ends when that batter is dismissed.</p><label class="hc-muted hc-appearance-label">Batting appearances <select id="analytics-graph-appearances" multiple size="5">'+appearances.map(x=>'<option value="'+esc(x.key)+'" '+(selectedKeys.includes(x.key)?"selected":"")+'>'+esc((player(x.playerId)?.nickname||"Player")+" · "+String(x.team||"").toUpperCase()+" · Wicket/turn "+x.turn+" · innings "+x.innings)+'</option>').join("")+'</select></label>';
+    series=appearances.filter(x=>selectedKeys.includes(x.key)).map(x=>({label:(player(x.playerId)?.nickname||"Player")+" · Turn "+x.turn,points:x.points}));
+    body+=series.length?analyticsLineChart(series):'<p class="hc-muted hc-analytics-empty">Select one or more batting appearances to plot.</p>';
+   }
   }else{
-   const options=data.innings.map(x=>'<option value="'+esc(x.key)+'">'+esc((player(x.playerId)?.nickname||"Player")+" · innings "+x.innings)+'</option>').join("");
-   body='<p class="hc-muted">Choose multiple players and either combine their innings or inspect one selected innings per player.</p><div class="hc-compare-select">'+ids.map(id=>'<label><input type="checkbox" data-graph-player="'+id+'" '+(analyticsGraphPlayers.includes(id)?"checked":"")+'><span>'+esc(player(id)?.nickname||"Player")+'</span></label>').join("")+'</div><label class="hc-muted">Innings <select id="analytics-graph-innings"><option value="all">Combine all innings</option>'+options+'</select></label>';
+   body='<p class="hc-muted">Choose multiple players to compare their individual tournament innings.</p><div class="hc-compare-select">'+ids.map(id=>'<label><input type="checkbox" data-graph-player="'+id+'" '+(analyticsGraphPlayers.includes(id)?"checked":"")+'><span>'+esc(player(id)?.nickname||"Player")+'</span></label>').join("")+'</div>';
    const selected=analyticsGraphPlayers.length?analyticsGraphPlayers:ids.slice(0,1);
-   series=data.innings.filter(x=>selected.includes(x.playerId)&&(analyticsGraphInnings==="all"||x.key===analyticsGraphInnings)).map(x=>({label:(player(x.playerId)?.nickname||"Player")+" · Innings "+x.innings,points:x.points}));
+   series=data.innings.filter(x=>selected.includes(x.playerId)).map(x=>({label:(player(x.playerId)?.nickname||"Player")+" · Innings "+x.innings,points:x.points}));
    body+=series.length?analyticsLineChart(series):'<p class="hc-muted">Select one or more players to plot their batting runs.</p>';
   }
  }else if(analyticsTab==="matchups"){
@@ -128,7 +148,8 @@ function renderAnalytics(container){
  container.querySelectorAll("[data-analytics-team]").forEach(b=>b.onclick=()=>{analyticsTeam=b.dataset.analyticsTeam;renderAnalytics(container);});
  container.querySelectorAll("[data-analytics-tab]").forEach(b=>b.onclick=()=>{analyticsTab=b.dataset.analyticsTab;renderAnalytics(container);});
  container.querySelectorAll("[data-graph-player]").forEach(b=>b.onchange=()=>{analyticsGraphPlayers=b.checked?[...new Set([...analyticsGraphPlayers,b.dataset.graphPlayer])]:analyticsGraphPlayers.filter(x=>x!==b.dataset.graphPlayer);renderAnalytics(container);});
- const graphSelect=container.querySelector("#analytics-graph-innings");if(graphSelect){graphSelect.value=analyticsGraphInnings;graphSelect.onchange=()=>{analyticsGraphInnings=graphSelect.value;renderAnalytics(container);};}
+ container.querySelectorAll("[data-graph-view]").forEach(b=>b.onclick=()=>{analyticsGraphView=b.dataset.graphView;renderAnalytics(container);});
+ const appearanceSelect=container.querySelector("#analytics-graph-appearances");if(appearanceSelect)appearanceSelect.onchange=()=>{analyticsGraphAppearances=[...appearanceSelect.selectedOptions].map(option=>option.value);renderAnalytics(container);};
  const matchBat=container.querySelector("#analytics-match-batter");if(matchBat)matchBat.onchange=()=>{analyticsMatchBatter=matchBat.value;renderAnalytics(container);};
  const matchBowl=container.querySelector("#analytics-match-bowler");if(matchBowl)matchBowl.onchange=()=>{analyticsMatchBowler=matchBowl.value;renderAnalytics(container);};
  const profile=container.querySelector("#analytics-profile-player");if(profile)profile.onchange=()=>{analyticsPlayer=profile.value;renderAnalytics(container);};
