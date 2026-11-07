@@ -182,10 +182,30 @@ assert.equal((await handCricket.validateAction(context("p2",players),wicketState
  assert.equal(hs.currentBatterId,"p2");
  hs=playBall(hsPlayers,hs,4,4);
  assert.equal(hs.currentBatterId,"p1","A player with wickets remaining may return for another batting turn");
- assert.equal(hs.currentInningsRuns.p1,0,"The returning player's new innings starts at zero");
+ assert.equal(hs.currentInningsRuns.p1,5,"The previous score remains until the captain confirms the returning batter");
+ hs=confirmTeamSelections(hsPlayers,hs);
+ assert.equal(hs.currentInningsRuns.p1,0,"The returning player's new batting turn starts at zero after confirmation");
  hs=playBall(hsPlayers,hs,2,1);
  assert.equal(hs.stats.p1.runs,7,"Runs remain cumulative across the player's batting turns");
  assert.equal(hs.stats.p1.highestScore,5,"High Score remains the best single batting turn, not the sum of turns");
+}
+
+// Individual tournament High Score spans the player's full batting innings,
+// including runs scored before and after an earlier wicket.
+{
+ const hsPlayers=makePlayers(3);
+ let hs=handCricket.createInitialState(context("p1",hsPlayers));
+ hs=action(hsPlayers,hs,"p1",{type:"start-match",config:{mode:"individual",wickets:2,oddPlayerMode:"bat-bowl",allowFist:false,unlimited:true,limit:1}});
+ hs=playBall(hsPlayers,hs,5,2);
+ assert.equal(hs.stats.p1.highestScore,5,"Individual High Score updates while the player is batting");
+ hs=playBall(hsPlayers,hs,3,3);
+ assert.equal(hs.currentBatterId,"p1","An individual batter remains in the same innings after the first of two wickets");
+ assert.equal(hs.currentInningsRuns.p1,5,"An individual innings score is not reset after a wicket");
+ hs=playBall(hsPlayers,hs,2,1);
+ hs=playBall(hsPlayers,hs,4,4);
+ assert.equal(hs.currentBatterId,"p2","The individual innings ends after the configured second wicket");
+ assert.equal(hs.stats.p1.runs,7,"Individual total runs include both scoring deliveries");
+ assert.equal(hs.stats.p1.highestScore,7,"Individual High Score is the total from that player's full batting innings");
 }
 
 // Team selection remains editable until all players have selected, and the
