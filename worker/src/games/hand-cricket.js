@@ -53,7 +53,7 @@ function nextIndividualBowler(s,batterId){
     // to the live round without giving already-used bowlers another turn.
     s.roundOrder=[...current,...added].sort(rank);
   }
-  const candidates=s.roundOrder.filter(id=>pool.includes(id)&&!s.bowlingRound[id]);
+  const candidates=s.roundOrder.filter(id=>pool.includes(id)&&!s.bowlingRound[id]).sort(rank);
   const noRepeat=s.playerOrder.length<=2?candidates:candidates.filter(id=>id!==s.lastBowlerId);
   const chosen=(noRepeat.length?noRepeat:candidates)[0]||null;
   if(chosen){
