@@ -60,21 +60,24 @@ assert.equal(matchup.predictionAccuracy, 0.2);
 assert.equal(matchup.batterChoiceGivenBowlerChoice["3"].total, 2);
 assert.equal(matchup.batterChoiceGivenBowlerChoice["3"].counts["6"], 1);
 assert.equal(matchup.batterChoiceGivenBowlerChoice["3"].counts["3"], 1);
-assert.equal(matchup.batterChoiceAfterBowlerPreviousChoice["2"].counts["5"], 1);
+assert.equal(matchup.batterChoiceAfterPreviousSameMatchupBowlerChoice["2"].counts["5"], 1);
 
 const empty = buildHandCricketInsights({config:{mode:"individual",allowFist:false},history:[]});
+assert.equal(empty.enabled, false);
+assert.equal(empty.teamMode, false);
 assert.equal(empty.deliveryCount, 0);
+assert.equal(empty.overall.runs, 0);
 assert.equal(empty.overall.runsPerDelivery, null);
-assert.equal(empty.overall.battingSelectionEntropy.bits, 0);
-assert.equal(empty.players.a, undefined);
+assert.equal(Object.keys(empty.players).length, 0);
 
 const withFist = buildHandCricketInsights({
-  config:{mode:"individual",allowFist:true},
+  config:{mode:"team",allowFist:true},
   history:[
-    {batterId:"a",bowlerId:"b",batChoice:"fist",bowlChoice:3,runs:3,out:false},
-    {batterId:"a",bowlerId:"b",batChoice:"fist",bowlChoice:"fist",runs:0,out:true}
+    {innings:1,battingTeam:"red",batterId:"a",bowlerId:"b",batChoice:"fist",bowlChoice:3,runs:3,out:false},
+    {innings:1,battingTeam:"red",batterId:"a",bowlerId:"b",batChoice:"fist",bowlChoice:"fist",runs:0,out:true}
   ]
 }, roster);
+assert.equal(withFist.enabled, true);
 assert.equal(withFist.overall.uniformRandomPredictionBaseline, 1/7);
 assert.equal(withFist.players.a.batting.fistRate, 1);
 assert.equal(withFist.players.a.batting.selectionDistribution.find(x=>x.choice==="fist").count, 2);
@@ -87,9 +90,11 @@ const individual = buildHandCricketInsights({
     {innings:2,batterId:"b",bowlerId:"a",batChoice:6,bowlChoice:2,runs:6,out:false}
   ]
 }, roster);
+assert.equal(individual.enabled, false);
 assert.equal(individual.teamMode, false);
-assert.equal(individual.players.a.batting.deliveries, 2);
-assert.equal(individual.players.a.bowling.deliveries, 1);
+assert.equal(individual.deliveryCount, 0);
+assert.equal(Object.keys(individual.players).length, 0);
+assert.equal(individual.matchups.length, 0);
 
 
 const separatedAppearances = buildHandCricketInsights({
