@@ -24,19 +24,47 @@ function setConnection(s,off=false){$("connection-status").textContent=s;$("conn
 function renderSettings(){
  const c=state.config,host=isHost(),teamMode=c.mode==="team";
  $("setup-panel").hidden=false;$("match-panel").hidden=true;
- $("setup-panel").innerHTML='<div class="hc-section-label">MATCH SETTINGS</div><h2>Set up the match</h2><p class="hc-muted">The host configures the rules for everyone. Settings are applied when the host continues.</p><div class="hc-form-grid"><label>Match format<select id="mode" '+(!host?'disabled':'')+'><option value="team">Team-wise match</option><option value="individual">Individual tournament</option></select></label><label id="wickets-wrap">Wickets per player<select id="wickets" '+(!host?'disabled':'')+'><option value="1">1 wicket</option><option value="2">2 wickets</option><option value="3">3 wickets</option></select></label><label id="odd-setting">Odd-player role<select id="odd" '+(!host?'disabled':'')+'><option value="bat-only">Bat only</option><option value="bowl-only">Bowl only</option><option value="bat-bowl">Bat and bowl</option></select></label><label>Allow Fist<select id="fist" '+(!host?'disabled':'')+'><option value="true">Yes</option><option value="false">No</option></select></label><label>Innings duration<select id="unlimited" '+(!host?'disabled':'')+'><option value="false">Limited</option><option value="true">Unlimited</option></select></label><label id="limit-wrap"><span id="limit-label">'+(teamMode?'Overs per innings':'Balls per player')+'</span><input id="limit" type="number" min="1" max="120" step="1" value="'+c.limit+'" '+(!host?'disabled':'')+' /></label></div><div class="hc-setting-notes"><p><b>Limited:</b> team innings end after the selected overs; each individual player stops batting after their selected total balls or configured wickets are exhausted.</p><p><b>Unlimited:</b> team matches continue until the batting side runs out of wickets; individual tournaments continue until every player exhausts their configured wickets. A chase can still end when the target is passed.</p><p><b>Wickets:</b> in an individual tournament, every dismissal ends the current batting turn. Players with wickets and balls remaining return to the back of the batting queue; exhausted players can still bowl.</p></div>'+(host?'<div class="hc-actions"><button id="start-match" class="hc-primary">Continue →</button></div>':'<p class="hc-muted">Waiting for the host to configure and continue.</p>');
+ $("setup-panel").innerHTML='<div class="hc-section-label">MATCH SETTINGS</div><h2>Set up the match</h2><p class="hc-muted">The host configures the rules for everyone. Changes appear for all players as they are made; settings lock when the host continues.</p><div class="hc-form-grid"><label>Match format<select id="mode" '+(!host?'disabled':'')+'><option value="team">Team-wise match</option><option value="individual">Individual tournament</option></select></label><label id="wickets-wrap">Wickets per player<select id="wickets" '+(!host?'disabled':'')+'><option value="1">1 wicket</option><option value="2">2 wickets</option><option value="3">3 wickets</option></select></label><label id="odd-setting">Odd-player role<select id="odd" '+(!host?'disabled':'')+'><option value="bat-only">Bat only</option><option value="bowl-only">Bowl only</option><option value="bat-bowl">Bat and bowl</option></select></label><label>Allow Fist<select id="fist" '+(!host?'disabled':'')+'><option value="true">Yes</option><option value="false">No</option></select></label><label>Innings duration<select id="unlimited" '+(!host?'disabled':'')+'><option value="false">Limited</option><option value="true">Unlimited</option></select></label><label id="limit-wrap"><span id="limit-label">'+(teamMode?'Overs per innings':'Balls per player')+'</span><input id="limit" type="number" min="1" max="120" step="1" value="'+c.limit+'" '+(!host?'disabled':'')+' /></label></div><div class="hc-setting-notes"><p><b>Limited:</b> team innings end after the selected overs; each individual player stops batting after their selected total balls or configured wickets are exhausted.</p><p><b>Unlimited:</b> team matches continue until the batting side runs out of wickets; individual tournaments continue until every player exhausts their configured wickets. A chase can still end when the target is passed.</p><p><b>Wickets:</b> in an individual tournament, every dismissal ends the current batting turn. Players with wickets and balls remaining return to the back of the batting queue; exhausted players can still bowl.</p></div>'+(host?'<div class="hc-actions"><button id="start-match" class="hc-primary">Continue →</button></div>':'<p class="hc-muted">Waiting for the host to configure and continue.</p>');
  $("mode").value=c.mode;$("wickets").value=String(c.wickets);$("odd").value=c.oddPlayerMode;$("fist").value=String(c.allowFist);$("unlimited").value=String(c.unlimited);$("limit").value=String(c.limit);$("odd-setting").hidden=!teamMode;$("limit-wrap").hidden=c.unlimited;
  const updateVisibility=()=>{$("odd-setting").hidden=$("mode").value!=="team";$("limit-label").textContent=$("mode").value==="team"?"Overs per innings":"Balls per player";$("limit-wrap").hidden=$("unlimited").value==="true";};
  $("mode").onchange=updateVisibility;$("unlimited").onchange=updateVisibility;
  if(host){
+  let settingsSave=Promise.resolve();
+  const readConfig=()=>({mode:$("mode").value,wickets:Number($("wickets").value),oddPlayerMode:$("odd").value,allowFist:$("fist").value==="true",unlimited:$("unlimited").value==="true",limit:Number($("limit").value)});
+  const validateConfig=config=>{
+   if(!["team","individual"].includes(config.mode))return "Choose a valid match format.";
+   if(![1,2,3].includes(config.wickets))return "Choose between 1 and 3 wickets per player.";
+   if(config.mode==="team"&&!["bat-only","bowl-only","bat-bowl"].includes(config.oddPlayerMode))return "Choose a valid wildcard role.";
+   if(!config.unlimited&&(!Number.isInteger(config.limit)||config.limit<1||config.limit>120))return "Enter a whole number of balls or overs between 1 and 120.";
+   return "";
+  };
+  const saveSettings=()=>{
+   const config=readConfig(),error=validateConfig(config);
+   if(error){showNotice(error);return Promise.resolve(false);}
+   settingsSave=settingsSave.catch(()=>{}).then(async()=>{
+    const r=await send({type:"update-settings",config});
+    version=r.stateVersion??version;
+    await sync();
+    return true;
+   }).catch(async e=>{
+    showNotice(e.message);
+    if(Number.isInteger(e.stateVersion))version=e.stateVersion;
+    await sync().catch(()=>{});
+    return false;
+   });
+   return settingsSave;
+  };
+  ["mode","wickets","odd","fist","unlimited","limit"].forEach(id=>{
+   $(id).addEventListener("change",()=>{updateVisibility();saveSettings();});
+  });
   $("start-match").onclick=async()=>{
-   const config={mode:$("mode").value,wickets:Number($("wickets").value),oddPlayerMode:$("odd").value,allowFist:$("fist").value==="true",unlimited:$("unlimited").value==="true",limit:Number($("limit").value)};
-   if(!["team","individual"].includes(config.mode)){showNotice("Choose a valid match format.");return;}
-   if(![1,2,3].includes(config.wickets)){showNotice("Choose between 1 and 3 wickets per player.");return;}
-   if(config.mode==="team"&&!["bat-only","bowl-only","bat-bowl"].includes(config.oddPlayerMode)){showNotice("Choose a valid wildcard role.");return;}
-   if(!config.unlimited&&(!Number.isInteger(config.limit)||config.limit<1||config.limit>120)){showNotice("Enter a whole number of balls or overs between 1 and 120.");return;}
-   try{const r=await send({type:"start-match",config});version=r.stateVersion??version;await sync();}
-   catch(e){showNotice(e.message);if(Number.isInteger(e.stateVersion))version=e.stateVersion;await sync().catch(()=>{});}
+   const config=readConfig(),error=validateConfig(config);
+   if(error){showNotice(error);return;}
+   try{
+    await settingsSave;
+    const r=await send({type:"start-match"});
+    version=r.stateVersion??version;await sync();
+   }catch(e){showNotice(e.message);if(Number.isInteger(e.stateVersion))version=e.stateVersion;await sync().catch(()=>{});}
   };
  }
  showNotice("The host can change settings until continuing. Read the guide if this is your first match.");
@@ -76,8 +104,12 @@ function analyticsDist(rows){
 }
 function analyticsLineChart(series){
  const all=series.flatMap(s=>s.points),maxBall=Math.max(1,...all.map(p=>p.ball)),maxRuns=Math.max(1,...all.map(p=>p.runs)),colors=["#e7bd65","#62a8e8","#86c99a","#d98bd0","#d78b68","#8dcbd0"];
- const paths=series.map((s,i)=>{const pts=s.points.map(p=>(42+p.ball/maxBall*510)+","+(178-p.runs/maxRuns*145)).join(" ");const marks=s.points.filter(p=>p.out).map(p=>'<circle cx="'+(42+p.ball/maxBall*510)+'" cy="'+(178-p.runs/maxRuns*145)+'" r="4" fill="#f07870"><title>Wicket at ball '+p.ball+'</title></circle>').join("");return '<polyline points="'+pts+'" fill="none" stroke="'+colors[i%colors.length]+'" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>'+marks;}).join("");
- return '<div class="hc-analytics-chart"><svg viewBox="0 0 580 215" role="img" aria-label="Cumulative runs by ball"><path d="M42 18V178H560" fill="none" stroke="#63766d"/><path d="M42 98H560M42 58H560" stroke="#40554b" stroke-dasharray="4 5"/><text x="8" y="22" fill="#aebfb4" font-size="10">'+maxRuns+'</text><text x="23" y="182" fill="#aebfb4" font-size="10">0</text>'+paths+'<text x="42" y="202" fill="#aebfb4" font-size="10">Start</text><text x="530" y="202" fill="#aebfb4" font-size="10">Balls</text></svg></div><div class="hc-analytics-legend">'+series.map((s,i)=>'<span><i style="background:'+colors[i%colors.length]+'"></i>'+esc(s.label)+'</span>').join("")+'</div>';
+ const x=ball=>42+ball/maxBall*510,y=runs=>178-runs/maxRuns*145,step=Math.max(1,Math.ceil(maxBall/5)),ticks=[];
+ for(let ball=0;ball<=maxBall;ball+=step)ticks.push(ball);
+ if(ticks[ticks.length-1]!==maxBall)ticks.push(maxBall);
+ const grid=ticks.map(ball=>'<path d="M'+x(ball)+' 18V178" stroke="#40554b" stroke-dasharray="3 5"/><text x="'+x(ball)+'" y="195" text-anchor="middle" fill="#aebfb4" font-size="10">'+ball+'</text>').join("");
+ const paths=series.map((s,i)=>{const pts=s.points.map(p=>x(p.ball)+","+y(p.runs)).join(" ");const marks=s.points.filter(p=>p.out).map(p=>'<circle cx="'+x(p.ball)+'" cy="'+y(p.runs)+'" r="4" fill="#f07870"><title>Wicket at ball '+p.ball+'</title></circle>').join("");return '<polyline points="'+pts+'" fill="none" stroke="'+colors[i%colors.length]+'" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>'+marks;}).join("");
+ return '<div class="hc-analytics-chart"><svg viewBox="0 0 580 215" role="img" aria-label="Cumulative runs by ball"><path d="M42 18V178H560" fill="none" stroke="#63766d"/><path d="M42 98H560M42 58H560" stroke="#40554b" stroke-dasharray="4 5"/>'+grid+'<text x="8" y="22" fill="#aebfb4" font-size="10">'+maxRuns+'</text><text x="23" y="182" fill="#aebfb4" font-size="10">0</text>'+paths+'<text x="300" y="212" text-anchor="middle" fill="#aebfb4" font-size="10">Balls faced</text></svg></div><div class="hc-analytics-legend">'+series.map((s,i)=>'<span><i style="background:'+colors[i%colors.length]+'"></i>'+esc(s.label)+'</span>').join("")+'</div>';
 }
 function renderAnalytics(container){
  if(!container||!state)return;
