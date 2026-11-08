@@ -53,27 +53,29 @@ function conditionalTable(rows, contextField, outcomeField) {
   }));
 }
 
-function transitionStats(deliveries) {
+function transitionStats(segments) {
   const counts = Object.fromEntries(CHOICES.map(choice => [choice, emptyCounts()]));
   let transitions = 0, repeats = 0, switches = 0, upward = 0, downward = 0;
   let numericTransitions = 0;
-  let previous = null;
 
-  for (const delivery of deliveries) {
-    const current = choiceOf(delivery.batChoice);
-    if (!current) continue;
-    if (previous) {
-      counts[previous][current]++;
-      transitions++;
-      if (previous === current) repeats++;
-      else switches++;
-      if (NUMERIC_CHOICES.includes(previous) && NUMERIC_CHOICES.includes(current)) {
-        numericTransitions++;
-        if (Number(current) > Number(previous)) upward++;
-        if (Number(current) < Number(previous)) downward++;
+  for (const deliveries of segments) {
+    let previous = null;
+    for (const delivery of deliveries) {
+      const current = choiceOf(delivery.batChoice);
+      if (!current) continue;
+      if (previous) {
+        counts[previous][current]++;
+        transitions++;
+        if (previous === current) repeats++;
+        else switches++;
+        if (NUMERIC_CHOICES.includes(previous) && NUMERIC_CHOICES.includes(current)) {
+          numericTransitions++;
+          if (Number(current) > Number(previous)) upward++;
+          if (Number(current) < Number(previous)) downward++;
+        }
       }
+      previous = current;
     }
-    previous = current;
   }
 
   const matrix = Object.fromEntries(CHOICES.map(from => {
@@ -110,15 +112,17 @@ function outcomeContext(delivery) {
   return "after-other-outcome";
 }
 
-function selectionsAfterPreviousOutcome(deliveries) {
+function selectionsAfterPreviousOutcome(segments) {
   const groups = new Map();
-  for (let index = 1; index < deliveries.length; index++) {
-    const previous = deliveries[index - 1];
-    const current = choiceOf(deliveries[index].batChoice);
-    if (!current) continue;
-    const key = outcomeContext(previous);
-    if (!groups.has(key)) groups.set(key, emptyCounts());
-    groups.get(key)[current]++;
+  for (const deliveries of segments) {
+    for (let index = 1; index < deliveries.length; index++) {
+      const previous = deliveries[index - 1];
+      const current = choiceOf(deliveries[index].batChoice);
+      if (!current) continue;
+      const key = outcomeContext(previous);
+      if (!groups.has(key)) groups.set(key, emptyCounts());
+      groups.get(key)[current]++;
+    }
   }
   return Object.fromEntries([...groups].map(([context, counts]) => {
     const total = sum(Object.values(counts));
@@ -152,14 +156,14 @@ function recentDistributionShift(deliveries, windowSize = 8) {
   };
 }
 
-function playerProfile(id, battingDeliveries, bowlingDeliveries, roster, allowFist) {
+function playerProfile(id, battingDeliveries, battingSegments, bowlingDeliveries, roster, allowFist) {
   const battingDistribution = distribution(battingDeliveries, "batChoice");
   const bowlingDistribution = distribution(bowlingDeliveries, "bowlChoice");
   const numericChoices = battingDeliveries.map(delivery => choiceOf(delivery.batChoice)).filter(choice => NUMERIC_CHOICES.includes(choice)).map(Number);
   const numericCount = numericChoices.length;
   const battingRuns = sum(battingDeliveries.map(delivery => delivery.runs || 0));
   const wickets = bowlingDeliveries.filter(delivery => delivery.out).length;
-  const transitions = transitionStats(battingDeliveries);
+  const transitions = transitionStats(battingSegments);
   const numericChoiceMean = mean(numericChoices);
   const numericChoiceVariance = numericCount
     ? mean(numericChoices.map(choice => (choice - numericChoiceMean) ** 2))
@@ -186,7 +190,7 @@ function playerProfile(id, battingDeliveries, bowlingDeliveries, roster, allowFi
       fistRate: rate(battingDistribution.find(row => row.choice === "fist").count, battingDeliveries.length),
       entropy: entropy(battingDistribution, allowFist ? 7 : 6),
       transitions,
-      selectionsAfterPreviousOutcome: selectionsAfterPreviousOutcome(battingDeliveries),
+      selectionsAfterPreviousOutcome: selectionsAfterPreviousOutcome(battingSegments),
       recentDistributionShift: recentDistributionShift(battingDeliveries)
     },
     bowling: {
@@ -244,8 +248,10 @@ export function buildHandCricketInsights(state, roster = []) {
 
   const playerIds = new Set();
   const battingByPlayer = new Map();
+  const battingSegmentsByPlayer = new Map();
   const bowlingByPlayer = new Map();
   const matchupMap = new Map();
+  let previousAppearanceKey = null;
   const overallRuns = [];
   const numericBatChoices = [];
   let correctPredictions = 0;
@@ -255,8 +261,15 @@ export function buildHandCricketInsights(state, roster = []) {
     playerIds.add(delivery.batterId);
     playerIds.add(delivery.bowlerId);
     if (!battingByPlayer.has(delivery.batterId)) battingByPlayer.set(delivery.batterId, []);
+    if (!battingSegmentsByPlayer.has(delivery.batterId)) battingSegmentsByPlayer.set(delivery.batterId, []);
     if (!bowlingByPlayer.has(delivery.bowlerId)) bowlingByPlayer.set(delivery.bowlerId, []);
+    const appearanceKey = [delivery.batterId, delivery.innings ?? "", delivery.battingTeam ?? ""].join("::");
+    if (appearanceKey !== previousAppearanceKey) {
+      battingSegmentsByPlayer.get(delivery.batterId).push([]);
+      previousAppearanceKey = appearanceKey;
+    }
     battingByPlayer.get(delivery.batterId).push(delivery);
+    battingSegmentsByPlayer.get(delivery.batterId).at(-1).push(delivery);
     bowlingByPlayer.get(delivery.bowlerId).push(delivery);
     const key = delivery.batterId + "::" + delivery.bowlerId;
     if (!matchupMap.has(key)) matchupMap.set(key, []);
@@ -269,7 +282,7 @@ export function buildHandCricketInsights(state, roster = []) {
 
   const players = Object.fromEntries([...playerIds].map(id => [
     id,
-    playerProfile(id, battingByPlayer.get(id) || [], bowlingByPlayer.get(id) || [], roster, fistEnabled)
+    playerProfile(id, battingByPlayer.get(id) || [], battingSegmentsByPlayer.get(id) || [], bowlingByPlayer.get(id) || [], roster, fistEnabled)
   ]));
   const matchups = [...matchupMap.values()].map(rows =>
     matchupProfile(rows[0].batterId, rows[0].bowlerId, rows, roster)
