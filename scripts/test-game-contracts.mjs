@@ -216,14 +216,23 @@ assert.equal(s67.total, 67);
 assert.equal(s67.winnerId, "p1");
 assert.equal(sixtySeven.getStatus(ctx67, s67), "finished");
 
-// A secret Glitch changes only the owner's private rules until its effect is used.
+// Glitch is queued privately during activation and takes effect only after the owner's turn ends.
 let glitch67 = sixtySeven.createInitialState(ctx67);
 glitch67.hands.p1.special = "glitch";
+glitch67.hands.p1.actions = ["addition"];
+glitch67.dice = [2, 3];
 glitch67 = sixtySeven.reduceAction(ctx67, glitch67, { type: "activate-special", swap: ["addition", "multiplication"] });
-assert.equal(glitch67.effects.glitches.length, 1);
+assert.equal(glitch67.effects.glitches.length, 0, "Glitch must not alter rules during its owner's current turn.");
+assert.equal(glitch67.pendingGlitches.length, 1, "Glitch activation must be queued privately.");
+assert.equal(sixtySeven.getPrivateState(glitch67, "p1").glitchMappings.length, 0);
+glitch67 = sixtySeven.reduceAction(ctx67, glitch67, { type: "select-action", card: "addition", dieIndex: 0 });
+glitch67 = sixtySeven.reduceAction(ctx67, glitch67, { type: "confirm-action" });
+assert.equal(glitch67.effects.glitches.length, 1, "Glitch must activate after the owner's action resolves.");
 assert.equal(sixtySeven.getPublicState(glitch67).lastEvent.type, "turn-started");
-assert.equal(sixtySeven.getPrivateState(glitch67, "p1").glitchMappings.length, 1);
-assert.equal(sixtySeven.getPrivateState(glitch67, "p2").glitchMappings.length, 0);
+assert.equal(sixtySeven.getPrivateState(glitch67, "p1").glitchMappings.length, 0,
+  "The owner's own next turn begins with their Glitch expired.");
+assert.equal(sixtySeven.getPrivateState(glitch67, "p2").glitchMappings.length, 0,
+  "Glitch mappings must remain private from other players.");
 
 // Delayed Fate stores the original card before Glitch transforms it.
 let delayed67 = sixtySeven.createInitialState(ctx67);
