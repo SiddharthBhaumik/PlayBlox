@@ -114,17 +114,23 @@ function outcomeContext(delivery) {
   return "after-other-outcome";
 }
 
-function selectionsAfterPreviousOutcome(segments) {
+function selectionsAfterPreviousOutcome(deliveries) {
+  // This feature tracks a player's previous batting outcome within the same
+  // team innings, even when another batter faced deliveries in between.
+  // Unlike transition analysis, a dismissal does not erase that context:
+  // the batter may return later in the innings with another wicket available.
   const groups = new Map();
-  for (const deliveries of segments) {
-    for (let index = 1; index < deliveries.length; index++) {
-      const previous = deliveries[index - 1];
-      const current = choiceOf(deliveries[index].batChoice);
-      if (!current) continue;
+  const previousByInnings = new Map();
+  for (const delivery of deliveries) {
+    const inningsKey = `team:${delivery.innings}:${delivery.battingTeam}`;
+    const previous = previousByInnings.get(inningsKey);
+    const current = choiceOf(delivery.batChoice);
+    if (previous && current) {
       const key = outcomeContext(previous);
       if (!groups.has(key)) groups.set(key, emptyCounts());
       groups.get(key)[current]++;
     }
+    previousByInnings.set(inningsKey, delivery);
   }
   return Object.fromEntries([...groups].map(([context, counts]) => {
     const total = sum(Object.values(counts));
@@ -192,7 +198,7 @@ function playerProfile(id, battingDeliveries, battingSegments, bowlingDeliveries
       fistRate: rate(battingDistribution.find(row => row.choice === "fist").count, battingDeliveries.length),
       entropy: entropy(battingDistribution, allowFist ? 7 : 6),
       transitions,
-      selectionsAfterPreviousOutcome: selectionsAfterPreviousOutcome(battingSegments),
+      selectionsAfterPreviousOutcome: selectionsAfterPreviousOutcome(battingDeliveries),
       recentDistributionShift: recentDistributionShift(battingDeliveries)
     },
     bowling: {
