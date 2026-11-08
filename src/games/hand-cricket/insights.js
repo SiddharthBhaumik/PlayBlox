@@ -345,6 +345,7 @@ export function buildHandCricketInsights(state, roster = []) {
   return {
     version: 1,
     teamMode,
+    enabled: true,
     scope: "regular-innings",
     deliveryCount: deliveries.length,
     choiceLabels: CHOICES,
