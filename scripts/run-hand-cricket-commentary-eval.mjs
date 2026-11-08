@@ -1,7 +1,8 @@
 import { readFile, writeFile } from "node:fs/promises";
 
 const MODEL = process.env.OLLAMA_MODEL || "qwen3:4b-instruct-2507-q4_K_M";
-const BASE_URL = (process.env.OLLAMA_HOST || "http://localhost:11434").replace(/\\/$/, "");
+const RAW_HOST = process.env.OLLAMA_HOST || "http://localhost:11434";
+const BASE_URL = RAW_HOST.endsWith("/") ? RAW_HOST.slice(0, -1) : RAW_HOST;
 const KEEP_ALIVE = process.env.OLLAMA_KEEP_ALIVE || "10m";
 const NUM_PREDICT = Number.parseInt(process.env.OLLAMA_NUM_PREDICT || "80", 10);
 const OUTPUT = process.env.RESULTS_PATH || "/tmp/playblox-hand-cricket-commentary-eval-results.json";
@@ -72,13 +73,13 @@ async function askOllama(messages, label) {
 }
 
 const dataset = JSON.parse(await readFile(datasetUrl, "utf8"));
-if (!Array.isArray(dataset.scenarios) || dataset.scenarios.length !== 30) {
-  throw new Error("Expected exactly 30 evaluation scenarios.");
+if (!Array.isArray(dataset.scenarios) || dataset.scenarios.length !== 32) {
+  throw new Error("Expected exactly 32 evaluation scenarios.");
 }
 const silence = dataset.scenarios.filter(s=>s.mode==="silence");
 const generation = dataset.scenarios.filter(s=>s.mode==="single" || s.mode==="exchange");
-if (generation.length !== 24 || silence.length !== 6) {
-  throw new Error("Expected 24 generation scenarios and 6 silence-gate scenarios.");
+if (generation.length !== 26 || silence.length !== 6) {
+  throw new Error("Expected 26 generation scenarios and 6 silence-gate scenarios.");
 }
 
 console.log("PlayBlox Hand Cricket Commentary Quality Evaluation");
