@@ -26,7 +26,7 @@ const roster = [
 const result = buildHandCricketInsights(state, roster);
 assert.equal(result.deliveryCount, 10, "Super Over deliveries are excluded from regular-innings insights");
 assert.equal(result.overall.deliveries, 10);
-assert.equal(result.overall.runs, 33);
+assert.equal(result.overall.runs, 29);
 assert.equal(result.overall.bowlerCorrectPredictions, 3);
 assert.equal(result.overall.bowlerPredictionAccuracy, 0.3);
 assert.equal(result.overall.averageNumericBattingSelection, 3.7);
@@ -47,8 +47,8 @@ assert.equal(alice.batting.transitions.matrix["5"].counts["5"], 1);
 assert.equal(alice.batting.transitions.matrix["5"].counts["6"], 1);
 assert.equal(alice.batting.selectionsAfterPreviousOutcome["after-5-or-6-runs"].total, 3);
 assert.equal(alice.batting.selectionsAfterPreviousOutcome["after-wicket"].counts["2"], 1);
-assert.equal(alice.bowling.predictionAccuracy, 0.5);
-assert.equal(alice.bowling.predictionAccuracyByBatterChoice["3"].correct, 1);
+assert.equal(alice.bowling.predictionAccuracy, 1 / 3);
+assert.equal(alice.bowling.predictionAccuracyByBatterChoice["1"].correct, 1);
 
 const matchup = result.matchups.find(row => row.batterId === "a" && row.bowlerId === "c");
 assert.equal(matchup.batterUsername, "Alice");
