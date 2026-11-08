@@ -229,7 +229,10 @@ function matchupProfile(batterId, bowlerId, deliveries, roster) {
     batterChoiceGivenBowlerChoice: conditionalTable(deliveries, "bowlChoice", "batChoice"),
     // This is sequential context: the batter's next selection after the same
     // bowler's previous selection in this specific matchup.
-    batterChoiceAfterBowlerPreviousChoice: conditionalTable(
+    // The previous row is the previous delivery in this batter/bowler matchup,
+    // not necessarily the immediately preceding match delivery (other batters
+    // may have faced the bowler in between).
+    batterChoiceAfterPreviousSameMatchupBowlerChoice: conditionalTable(
       deliveries.slice(1).map((delivery, index) => ({
         previousBowlerChoice: deliveries[index].bowlChoice,
         currentBatterChoice: delivery.batChoice
@@ -242,11 +245,52 @@ function matchupProfile(batterId, bowlerId, deliveries, roster) {
 
 export function buildHandCricketInsights(state, roster = []) {
   const teamMode = state?.config?.mode === "team";
-  // Keep the same regular-innings scope as the existing detailed-statistics
-  // module. Super Overs remain separately represented in the match history.
-  const deliveries = (state?.history || []).filter(delivery => !delivery.superOver)
+
+  // Commentary insights are deliberately team-mode only. Do not merely tag
+  // individual-mode results: return an empty, explicit disabled result so
+  // individual history can never leak into team-mode prediction features.
+  if (!teamMode) {
+    return {
+      version: 1,
+      teamMode: false,
+      enabled: false,
+      disabledReason: "Hand Cricket commentary insights are available in team mode only.",
+      scope: "regular-innings",
+      deliveryCount: 0,
+      choiceLabels: CHOICES,
+      players: {},
+      matchups: [],
+      overall: {
+        runs: 0,
+        deliveries: 0,
+        runsPerDelivery: null,
+        runVariance: null,
+        runStandardDeviation: null,
+        numericBattingSelectionCount: 0,
+        averageNumericBattingSelection: null,
+        highNumberRate: null,
+        battingSelectionDistribution: distribution([], "batChoice"),
+        bowlingSelectionDistribution: distribution([], "bowlChoice"),
+        battingSelectionEntropy: entropy(distribution([], "batChoice"), 6),
+        bowlingSelectionEntropy: entropy(distribution([], "bowlChoice"), 6),
+        bowlerPredictionAccuracy: null,
+        bowlerCorrectPredictions: 0,
+        uniformRandomPredictionBaseline: null,
+        scoringVarianceIsPopulationVariance: true
+      }
+    };
+  }
+
+  // A team-mode delivery must carry the authoritative team/innings fields
+  // produced by the Worker. Reject malformed or individual-style records.
+  // Super Overs remain outside the regular-innings analytics scope.
+  const deliveries = (state?.history || [])
+    .filter(delivery => !delivery.superOver
+      && ["red", "blue"].includes(delivery.battingTeam)
+      && [1, 2].includes(delivery.innings))
     .map((delivery, index) => ({ ...delivery, index }))
-    .filter(delivery => choiceOf(delivery.batChoice) && choiceOf(delivery.bowlChoice));
+    .filter(delivery => delivery.batterId && delivery.bowlerId
+      && choiceOf(delivery.batChoice) && choiceOf(delivery.bowlChoice));
 
   const playerIds = new Set();
   const battingByPlayer = new Map();
