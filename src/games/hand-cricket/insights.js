@@ -122,15 +122,15 @@ function selectionsAfterPreviousOutcome(deliveries) {
   const groups = new Map();
   const previousByInnings = new Map();
   for (const delivery of deliveries) {
-    const inningsKey = `team:${delivery.innings}:${delivery.battingTeam}`;
-    const previous = previousByInnings.get(inningsKey);
+    const playerInningsKey = `team:${delivery.innings}:${delivery.battingTeam}:batter:${delivery.batterId}`;
+    const previous = previousByInnings.get(playerInningsKey);
     const current = choiceOf(delivery.batChoice);
     if (previous && current) {
       const key = outcomeContext(previous);
       if (!groups.has(key)) groups.set(key, emptyCounts());
       groups.get(key)[current]++;
     }
-    previousByInnings.set(inningsKey, delivery);
+    previousByInnings.set(playerInningsKey, delivery);
   }
   return Object.fromEntries([...groups].map(([context, counts]) => {
     const total = sum(Object.values(counts));
