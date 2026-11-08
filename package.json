@@ -11,6 +11,7 @@
     "test:hand-cricket-insights": "node scripts/test-hand-cricket-insights.mjs",
     "test:hand-cricket-predictions": "node scripts/test-hand-cricket-predictions.mjs",
     "test:hand-cricket-insight-evaluator": "node scripts/test-hand-cricket-insight-evaluator.mjs",
-    "test:hand-cricket-commentary-director": "node scripts/test-hand-cricket-commentary-director.mjs"
+    "test:hand-cricket-commentary-director": "node scripts/test-hand-cricket-commentary-director.mjs",
+    "eval:hand-cricket-commentary": "node scripts/run-hand-cricket-commentary-eval.mjs"
   }
 }
