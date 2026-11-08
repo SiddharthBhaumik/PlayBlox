@@ -110,4 +110,14 @@ const separatedAppearances = buildHandCricketInsights({
 assert.equal(separatedAppearances.players.a.batting.transitions.transitions, 0,
   "A returning batter's separate appearance must not create a false transition from their earlier turn");
 
+const sameBatterAfterDismissal = buildHandCricketInsights({
+  config:{mode:"team",allowFist:false},
+  history:[
+    {innings:1,battingTeam:"red",batterId:"a",bowlerId:"c",batChoice:2,bowlChoice:2,runs:0,out:true},
+    {innings:1,battingTeam:"red",batterId:"a",bowlerId:"c",batChoice:6,bowlChoice:3,runs:6,out:false}
+  ]
+}, roster);
+assert.equal(sameBatterAfterDismissal.players.a.batting.transitions.transitions, 0,
+  "A dismissal must split batting appearances even if the same batter returns immediately");
+
 console.log("Hand Cricket phase-one insights tests passed.");
