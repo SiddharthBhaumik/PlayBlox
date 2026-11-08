@@ -24,6 +24,8 @@ const roster = [
 ];
 
 const result = buildHandCricketInsights(state, roster);
+assert.equal(result.enabled, true);
+assert.equal(result.teamMode, true);
 assert.equal(result.deliveryCount, 10, "Super Over deliveries are excluded from regular-innings insights");
 assert.equal(result.overall.deliveries, 10);
 assert.equal(result.overall.runs, 29);
