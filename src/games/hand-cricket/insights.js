@@ -298,6 +298,7 @@ export function buildHandCricketInsights(state, roster = []) {
   const bowlingByPlayer = new Map();
   const matchupMap = new Map();
   let previousAppearanceKey = null;
+  let previousDeliveryWasOut = false;
   const overallRuns = [];
   const numericBatChoices = [];
   let correctPredictions = 0;
@@ -310,10 +311,11 @@ export function buildHandCricketInsights(state, roster = []) {
     if (!battingSegmentsByPlayer.has(delivery.batterId)) battingSegmentsByPlayer.set(delivery.batterId, []);
     if (!bowlingByPlayer.has(delivery.bowlerId)) bowlingByPlayer.set(delivery.bowlerId, []);
     const appearanceKey = [delivery.batterId, delivery.innings ?? "", delivery.battingTeam ?? ""].join("::");
-    if (appearanceKey !== previousAppearanceKey) {
+    if (appearanceKey !== previousAppearanceKey || previousDeliveryWasOut) {
       battingSegmentsByPlayer.get(delivery.batterId).push([]);
-      previousAppearanceKey = appearanceKey;
     }
+    previousAppearanceKey = appearanceKey;
+    previousDeliveryWasOut = Boolean(delivery.out);
     battingByPlayer.get(delivery.batterId).push(delivery);
     battingSegmentsByPlayer.get(delivery.batterId).at(-1).push(delivery);
     bowlingByPlayer.get(delivery.bowlerId).push(delivery);
