@@ -25,7 +25,9 @@ function distribution(deliveries, field) {
 
 function entropy(distributionRows, possibleChoices) {
   const probabilities = distributionRows.map(row => row.probability).filter(value => value > 0);
-  const bits = -sum(probabilities.map(probability => probability * Math.log2(probability)));
+  const bits = probabilities.length
+    ? -sum(probabilities.map(probability => probability * Math.log2(probability)))
+    : 0;
   const maximumBits = Math.log2(possibleChoices);
   return {
     bits,
