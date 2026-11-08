@@ -1,0 +1,612 @@
+{
+  "title": "PlayBlox Hand Cricket Commentary Quality Evaluation",
+  "version": 1,
+  "note": "All match facts are constructed test fixtures, not claims about real players or matches. Silence scenarios are director-gate tests and are intentionally not sent to Ollama.",
+  "scenarioCount": 32,
+  "generationScenarioCount": 26,
+  "silenceScenarioCount": 6,
+  "scenarios": [
+    {
+      "id": "repeat-01",
+      "category": "repeated-choice",
+      "mode": "single",
+      "speakers": [
+        "dev"
+      ],
+      "facts": [
+        "Constructed evaluation scenario, not a live match.",
+        "In the current innings, the batter chose 5 on 8 of their last 12 deliveries (66.7%).",
+        "The bowler's choices are varied; no reliable bowler pattern is established."
+      ],
+      "assignment": "Explain the repeated-choice pattern without predicting the next choice.",
+      "qualityChecks": [
+        "States 5 is frequent and gives the correct sample/share if useful.",
+        "Does not call the choice safe, defensive or intentional.",
+        "Does not predict the next choice."
+      ]
+    },
+    {
+      "id": "repeat-02",
+      "category": "repeated-choice",
+      "mode": "single",
+      "speakers": [
+        "arjun"
+      ],
+      "facts": [
+        "Constructed evaluation scenario, not a live match.",
+        "The batter chose 2 on 9 of their last 12 deliveries (75%).",
+        "The latest delivery also used 2."
+      ],
+      "assignment": "Give one lively but restrained live-commentary line.",
+      "qualityChecks": [
+        "Recognises the sustained repetition.",
+        "Sounds like live commentary, not a statistical report.",
+        "Does not invent the batter's intention."
+      ]
+    },
+    {
+      "id": "repeat-03",
+      "category": "repeated-choice",
+      "mode": "single",
+      "speakers": [
+        "mira"
+      ],
+      "facts": [
+        "Constructed evaluation scenario, not a live match.",
+        "The batter chose 4 on 7 of 10 deliveries in this innings (70%).",
+        "There are 10 observations in this batter's current innings."
+      ],
+      "assignment": "Report the tendency accurately, making the sample size clear.",
+      "qualityChecks": [
+        "Correctly reports 7/10 or 70%.",
+        "Does not imply certainty or a permanent player trait.",
+        "No fabricated comparisons."
+      ]
+    },
+    {
+      "id": "repeat-04",
+      "category": "repeated-choice",
+      "mode": "single",
+      "speakers": [
+        "kabir"
+      ],
+      "facts": [
+        "Constructed evaluation scenario, not a live match.",
+        "The batter has chosen 6 on 6 of the last 9 deliveries (66.7%).",
+        "The bowler has not shown a stable choice pattern."
+      ],
+      "assignment": "Make a brief, playful observation about the repeated choice. The joke must target the pattern, not the player.",
+      "qualityChecks": [
+        "Wit is subtle and relevant to the repeated 6s.",
+        "Does not insult the player or force a metaphor.",
+        "Does not claim the bowler has a pattern."
+      ]
+    },
+    {
+      "id": "repeat-05",
+      "category": "repeated-choice",
+      "mode": "single",
+      "speakers": [
+        "dev"
+      ],
+      "facts": [
+        "Constructed evaluation scenario, not a live match.",
+        "Across 14 recent deliveries, the batter's choices were: 1:3, 2:3, 3:2, 4:2, 5:2, 6:2.",
+        "No choice exceeds 22% of the sample."
+      ],
+      "assignment": "Explain that the batter's choices are spread out and there is no clear favourite.",
+      "qualityChecks": [
+        "Recognises the lack of a dominant choice.",
+        "Does not invent a pattern.",
+        "Keeps the observation concise."
+      ]
+    },
+    {
+      "id": "switch-01",
+      "category": "sudden-switch",
+      "mode": "single",
+      "speakers": [
+        "arjun"
+      ],
+      "facts": [
+        "Constructed evaluation scenario, not a live match.",
+        "The batter chose 5 on 6 of their previous 8 deliveries.",
+        "On the latest delivery, the batter switched to 2 for the first time in that 8-delivery window.",
+        "The bowler has chosen 1 frequently, but no exact count is available."
+      ],
+      "assignment": "Notice the switch and leave its meaning open.",
+      "qualityChecks": [
+        "Mentions the change from 5 to 2.",
+        "Does not call it a deliberate strategy or a safe choice.",
+        "Does not fabricate the bowler's count."
+      ]
+    },
+    {
+      "id": "switch-02",
+      "category": "sudden-switch",
+      "mode": "single",
+      "speakers": [
+        "dev"
+      ],
+      "facts": [
+        "Constructed evaluation scenario, not a live match.",
+        "The batter chose 1 on 5 of their last 7 deliveries.",
+        "The latest choice was 6.",
+        "There is only one observation of the new choice so far."
+      ],
+      "assignment": "Give a measured tactical observation about the change.",
+      "qualityChecks": [
+        "Separates the old pattern from the single new observation.",
+        "Does not announce that a new trend has begun.",
+        "No prediction."
+      ]
+    },
+    {
+      "id": "switch-03",
+      "category": "sudden-switch",
+      "mode": "single",
+      "speakers": [
+        "mira"
+      ],
+      "facts": [
+        "Constructed evaluation scenario, not a live match.",
+        "In the previous 10 deliveries, the batter chose 3 six times.",
+        "In the next 5 deliveries, the batter chose 3 only once and chose 1 four times."
+      ],
+      "assignment": "Describe the recent distribution shift with the two sample windows.",
+      "qualityChecks": [
+        "Reports both windows correctly.",
+        "Does not merge the windows or exaggerate certainty.",
+        "Uses clear, natural language."
+      ]
+    },
+    {
+      "id": "switch-04",
+      "category": "sudden-switch",
+      "mode": "exchange",
+      "speakers": [
+        "arjun",
+        "dev"
+      ],
+      "facts": [
+        "Constructed evaluation scenario, not a live match.",
+        "The batter chose 5 on 6 of the last 8 deliveries.",
+        "The latest choice was 2, the first 2 in that window.",
+        "No evidence establishes why the batter changed."
+      ],
+      "assignment": "Create a two-line exchange: Arjun notices the change; Dev adds a cautious interpretation. One line per speaker.",
+      "qualityChecks": [
+        "Two distinct voices and exactly two lines.",
+        "Arjun is lively; Dev is measured.",
+        "Neither invents intent or predicts the next choice."
+      ]
+    },
+    {
+      "id": "switch-05",
+      "category": "sudden-switch",
+      "mode": "single",
+      "speakers": [
+        "kabir"
+      ],
+      "facts": [
+        "Constructed evaluation scenario, not a live match.",
+        "The batter had repeated 4 on 5 consecutive deliveries.",
+        "The latest choice was 1.",
+        "No further evidence is available."
+      ],
+      "assignment": "Make one dry, light observation about the abrupt change, without overdramatizing it.",
+      "qualityChecks": [
+        "Humour is about the sequence, not the player.",
+        "No random analogy or generic hype.",
+        "Does not infer a plan."
+      ]
+    },
+    {
+      "id": "battle-01",
+      "category": "batter-bowler-pattern",
+      "mode": "single",
+      "speakers": [
+        "dev"
+      ],
+      "facts": [
+        "Constructed evaluation scenario, not a live match.",
+        "The batter chose 5 on 7 of 10 recent deliveries.",
+        "This bowler chose 1 on 8 of 12 recent deliveries.",
+        "These are separate overall tendencies, not proof of what either will choose next."
+      ],
+      "assignment": "Frame the two tendencies as an interesting batter-versus-bowler contest, without claiming a prediction.",
+      "qualityChecks": [
+        "Accurately states both tendencies.",
+        "Does not claim the choices are causally linked.",
+        "No certainty about the next delivery."
+      ]
+    },
+    {
+      "id": "battle-02",
+      "category": "batter-bowler-pattern",
+      "mode": "single",
+      "speakers": [
+        "mira"
+      ],
+      "facts": [
+        "Constructed evaluation scenario, not a live match.",
+        "In 8 previous cases where this bowler chose 1 against this batter, the batter chose 2 on 5 occasions.",
+        "This is a small, matchup-specific sample."
+      ],
+      "assignment": "Explain the conditional pattern and explicitly qualify the small sample.",
+      "qualityChecks": [
+        "Correctly states 5 of 8.",
+        "Makes clear this is specific to this matchup.",
+        "Does not treat it as a guaranteed response."
+      ]
+    },
+    {
+      "id": "battle-03",
+      "category": "batter-bowler-pattern",
+      "mode": "single",
+      "speakers": [
+        "arjun"
+      ],
+      "facts": [
+        "Constructed evaluation scenario, not a live match.",
+        "The batter's most frequent recent choice is 3 (6 of 9).",
+        "The bowler's most frequent recent choice is 6 (7 of 11).",
+        "The patterns come from different samples."
+      ],
+      "assignment": "Give a concise live line that brings both tendencies into the same moment.",
+      "qualityChecks": [
+        "Mentions the relevant choices accurately.",
+        "Does not imply the bowler knows or controls the batter's choice.",
+        "Natural spoken rhythm."
+      ]
+    },
+    {
+      "id": "battle-04",
+      "category": "batter-bowler-pattern",
+      "mode": "single",
+      "speakers": [
+        "kabir"
+      ],
+      "facts": [
+        "Constructed evaluation scenario, not a live match.",
+        "This bowler has selected 1 on 9 of their last 12 deliveries.",
+        "The batter has selected 1 on only 2 of their last 12 deliveries."
+      ],
+      "assignment": "Give a short witty observation about the contrast between their habits.",
+      "qualityChecks": [
+        "Joke is grounded in the contrast.",
+        "Does not ridicule either player.",
+        "No invented matchup history."
+      ]
+    },
+    {
+      "id": "battle-05",
+      "category": "batter-bowler-pattern",
+      "mode": "exchange",
+      "speakers": [
+        "mira",
+        "dev"
+      ],
+      "facts": [
+        "Constructed evaluation scenario, not a live match.",
+        "A matchup model evaluated 52 earlier deliveries in chronological order.",
+        "It achieved 8% lower log loss than the uniform baseline and 4% lower log loss than the global baseline.",
+        "Its Brier score was also lower than both baselines.",
+        "Historical performance does not guarantee the next prediction."
+      ],
+      "assignment": "Two-line exchange: Mira reports the model evidence; Dev explains the limitation in plain language.",
+      "qualityChecks": [
+        "Preserves both percentages and the 52-delivery sample.",
+        "Does not claim the model knows the next choice.",
+        "Exactly two speakers, distinct roles."
+      ]
+    },
+    {
+      "id": "event-01",
+      "category": "game-event",
+      "mode": "single",
+      "speakers": [
+        "arjun"
+      ],
+      "facts": [
+        "Constructed evaluation scenario, not a live match.",
+        "On the latest delivery, both batter and bowler selected 4.",
+        "Equal numeric choices cause the batter to be dismissed in Hand Cricket."
+      ],
+      "assignment": "React to the dismissal as a live commentator. Keep it punchy.",
+      "qualityChecks": [
+        "Correctly identifies the dismissal caused by matching 4s.",
+        "No conventional cricket terminology.",
+        "Does not invent the score or match situation."
+      ]
+    },
+    {
+      "id": "event-02",
+      "category": "game-event",
+      "mode": "single",
+      "speakers": [
+        "dev"
+      ],
+      "facts": [
+        "Constructed evaluation scenario, not a live match.",
+        "Both players selected Fist on the latest delivery.",
+        "Fist against Fist is a dismissal in this game."
+      ],
+      "assignment": "Explain the outcome in a calm, concise line.",
+      "qualityChecks": [
+        "Correctly says Fist against Fist caused the dismissal.",
+        "Does not confuse it with a numeric run outcome.",
+        "No invented context."
+      ]
+    },
+    {
+      "id": "event-03",
+      "category": "game-event",
+      "mode": "single",
+      "speakers": [
+        "arjun"
+      ],
+      "facts": [
+        "Constructed evaluation scenario, not a live match.",
+        "The batter selected Fist and the bowler selected 4.",
+        "Fist against a numeric choice scores the numeric value; this delivery scored 4 runs."
+      ],
+      "assignment": "Call the result naturally and with a little energy.",
+      "qualityChecks": [
+        "Correctly reports 4 runs.",
+        "Does not say the batter was dismissed.",
+        "Avoids conventional cricket phrases."
+      ]
+    },
+    {
+      "id": "event-04",
+      "category": "game-event",
+      "mode": "single",
+      "speakers": [
+        "kabir"
+      ],
+      "facts": [
+        "Constructed evaluation scenario, not a live match.",
+        "The batter selected 6 and the bowler selected 2.",
+        "The delivery scored 6 runs; neither player was dismissed."
+      ],
+      "assignment": "Give a light one-line reaction to the result. Do not use a conventional cricket scoring metaphor.",
+      "qualityChecks": [
+        "Correctly reports 6 runs and no dismissal.",
+        "No boundary/shot/over-the-rope language.",
+        "Humour is not forced."
+      ]
+    },
+    {
+      "id": "event-05",
+      "category": "game-event",
+      "mode": "exchange",
+      "speakers": [
+        "arjun",
+        "mira"
+      ],
+      "facts": [
+        "Constructed evaluation scenario, not a live match.",
+        "The batter has scored 18 runs from 9 deliveries in this innings.",
+        "The batter has chosen 6 on 3 of those 9 deliveries.",
+        "No other scorecard information is available."
+      ],
+      "assignment": "Two-line exchange: Arjun comments on the scoring, Mira adds the relevant choice statistic. Do not infer a strike rate or other missing statistic.",
+      "qualityChecks": [
+        "18 from 9 and 3 of 9 sixes are accurate.",
+        "Exactly two lines.",
+        "No invented scorecard facts."
+      ]
+    },
+    {
+      "id": "event-06",
+      "category": "game-event",
+      "mode": "single",
+      "speakers": [
+        "dev"
+      ],
+      "facts": [
+        "Constructed evaluation scenario, not a live match.",
+        "The match is in unlimited-overs mode.",
+        "The batting side has scored 36 runs from 24 deliveries."
+      ],
+      "assignment": "Comment on the score without discussing run rate, required run rate or urgency.",
+      "qualityChecks": [
+        "Does not mention run rate or chase pressure.",
+        "Does not invent a target or innings state.",
+        "Sounds like natural commentary."
+      ]
+    },
+    {
+      "id": "nuance-01",
+      "category": "statistical-nuance",
+      "mode": "single",
+      "speakers": [
+        "mira"
+      ],
+      "facts": [
+        "Constructed evaluation scenario, not a live match.",
+        "The batter chose 6 on 4 of 10 recent deliveries (40%).",
+        "The batter chose 5 on 3 of 10; all other choices appeared once or not at all."
+      ],
+      "assignment": "Describe the distribution without automatically praising 6 as a good choice.",
+      "qualityChecks": [
+        "Accurate counts and percentages.",
+        "Does not call 6 inherently good, powerful or aggressive.",
+        "Distinguishes frequency from effectiveness."
+      ]
+    },
+    {
+      "id": "nuance-02",
+      "category": "statistical-nuance",
+      "mode": "single",
+      "speakers": [
+        "dev"
+      ],
+      "facts": [
+        "Constructed evaluation scenario, not a live match.",
+        "The batter's repeat rate after a previous choice is 58% across 19 eligible transitions.",
+        "The sample is descriptive and does not establish a fixed habit."
+      ],
+      "assignment": "Explain what the repeat rate says and what it does not say.",
+      "qualityChecks": [
+        "Correctly states 58% across 19 transitions.",
+        "Does not claim the next choice will repeat.",
+        "Clear explanation without jargon."
+      ]
+    },
+    {
+      "id": "nuance-03",
+      "category": "statistical-nuance",
+      "mode": "single",
+      "speakers": [
+        "kabir"
+      ],
+      "facts": [
+        "Constructed evaluation scenario, not a live match.",
+        "A contextual prediction model has 31 evaluated deliveries.",
+        "Its accuracy is 29%; the global baseline is 27%.",
+        "The difference is small and the sample is limited."
+      ],
+      "assignment": "Make a restrained, slightly witty comment about how close the model and baseline are.",
+      "qualityChecks": [
+        "Accurately conveys 29% vs 27% and 31 deliveries.",
+        "Does not claim the model is clearly superior.",
+        "No joke that obscures the numbers."
+      ]
+    },
+    {
+      "id": "nuance-04",
+      "category": "statistical-nuance",
+      "mode": "single",
+      "speakers": [
+        "mira"
+      ],
+      "facts": [
+        "Constructed evaluation scenario, not a live match.",
+        "The batter has 20 eligible deliveries in this innings.",
+        "The most frequent choice occurred 6 times (30%).",
+        "The other 14 deliveries were spread across five choices."
+      ],
+      "assignment": "Explain why the most frequent choice is not necessarily a strong tendency.",
+      "qualityChecks": [
+        "Correctly reports 6/20 and 30%.",
+        "Recognises the distribution is spread out.",
+        "Does not overstate the favourite."
+      ]
+    },
+    {
+      "id": "nuance-05",
+      "category": "statistical-nuance",
+      "mode": "exchange",
+      "speakers": [
+        "kabir",
+        "dev"
+      ],
+      "facts": [
+        "Constructed evaluation scenario, not a live match.",
+        "The batter repeated the previous choice on 11 of 20 eligible transitions (55%).",
+        "The repeat rate is only slightly above half."
+      ],
+      "assignment": "Two-line exchange: Kabir makes a restrained joke about the near-even pattern; Dev clarifies its limited meaning.",
+      "qualityChecks": [
+        "Correctly reports 11/20 and 55%.",
+        "Joke is mild and grounded.",
+        "Dev does not overstate the pattern."
+      ]
+    },
+    {
+      "id": "silence-01",
+      "category": "insufficient-evidence",
+      "mode": "silence",
+      "speakers": [],
+      "facts": [
+        "Constructed evaluation scenario, not a live match.",
+        "The batter has made only 3 deliveries.",
+        "The choices were 2, 5 and 2.",
+        "No other relevant evidence exists."
+      ],
+      "assignment": "The commentary director should remain silent. Do not call the language model.",
+      "qualityChecks": [
+        "No commentary is generated."
+      ]
+    },
+    {
+      "id": "silence-02",
+      "category": "no-clear-pattern",
+      "mode": "silence",
+      "speakers": [],
+      "facts": [
+        "Constructed evaluation scenario, not a live match.",
+        "Across 18 recent deliveries, the batter's choices are evenly spread.",
+        "No choice exceeds 3 occurrences.",
+        "There is no notable event on the latest delivery."
+      ],
+      "assignment": "The commentary director should remain silent rather than manufacture a pattern.",
+      "qualityChecks": [
+        "No commentary is generated."
+      ]
+    },
+    {
+      "id": "silence-03",
+      "category": "stale-evidence",
+      "mode": "silence",
+      "speakers": [],
+      "facts": [
+        "Constructed evaluation scenario, not a live match.",
+        "A batter tendency was observed 15 deliveries ago.",
+        "The last 8 deliveries show no continuation of that tendency.",
+        "No current event or fresh insight exists."
+      ],
+      "assignment": "The commentary director should not recycle stale evidence.",
+      "qualityChecks": [
+        "No commentary is generated."
+      ]
+    },
+    {
+      "id": "silence-04",
+      "category": "weak-model-evidence",
+      "mode": "silence",
+      "speakers": [],
+      "facts": [
+        "Constructed evaluation scenario, not a live match.",
+        "A prediction model has evaluated only 8 deliveries.",
+        "Its accuracy is 37.5%; no meaningful comparison with baselines is available."
+      ],
+      "assignment": "The commentary director should remain silent about model performance.",
+      "qualityChecks": [
+        "No commentary is generated."
+      ]
+    },
+    {
+      "id": "silence-05",
+      "category": "duplicate-topic",
+      "mode": "silence",
+      "speakers": [],
+      "facts": [
+        "Constructed evaluation scenario, not a live match.",
+        "The same batter-choice tendency was already discussed 2 deliveries ago.",
+        "No new evidence or meaningful change has occurred."
+      ],
+      "assignment": "The commentary director should suppress the repeated topic.",
+      "qualityChecks": [
+        "No commentary is generated."
+      ]
+    },
+    {
+      "id": "silence-06",
+      "category": "unsupported-claim",
+      "mode": "silence",
+      "speakers": [],
+      "facts": [
+        "Constructed evaluation scenario, not a live match.",
+        "Only the latest batter choice is known: 6.",
+        "No player history, bowler history, score context or outcome is supplied."
+      ],
+      "assignment": "The commentary director should remain silent; one isolated choice is not an insight.",
+      "qualityChecks": [
+        "No commentary is generated."
+      ]
+    }
+  ]
+}
