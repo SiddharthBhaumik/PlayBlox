@@ -79,7 +79,8 @@ export function selectHandCricketCommentary(candidates, memoryInput = {}, option
     return { selected:false, reason:"delivery-cooldown", memory };
   }
 
-  const recent = new Set(memory.recentTopics.slice(-settings.candidateCooldown));
+  const recent = new Set(settings.candidateCooldown > 0
+    ? memory.recentTopics.slice(-settings.candidateCooldown) : []);
   const eligible = (Array.isArray(candidates) ? candidates : [])
     .filter(candidate => candidate && typeof candidate.id === "string"
       && candidate.id.length > 0 && candidate.id.length <= 180
@@ -102,7 +103,8 @@ export function selectHandCricketCommentary(candidates, memoryInput = {}, option
     nextMemory.speakerCounts[speaker.id] = (nextMemory.speakerCounts[speaker.id] || 0) + 1;
     nextMemory.commentaryCount++;
     nextMemory.recentTopics.push(candidate.type);
-    nextMemory.recentTopics = nextMemory.recentTopics.slice(-Math.max(1, settings.candidateCooldown));
+    nextMemory.recentTopics = settings.candidateCooldown > 0
+      ? nextMemory.recentTopics.slice(-settings.candidateCooldown) : [];
 
     return {
       selected:true,
