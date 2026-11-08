@@ -91,4 +91,16 @@ assert.equal(individual.teamMode, false);
 assert.equal(individual.players.a.batting.deliveries, 2);
 assert.equal(individual.players.a.bowling.deliveries, 1);
 
+
+const separatedAppearances = buildHandCricketInsights({
+  config:{mode:"team",allowFist:false},
+  history:[
+    {innings:1,battingTeam:"red",batterId:"a",bowlerId:"c",batChoice:2,bowlChoice:1,runs:2,out:false},
+    {innings:1,battingTeam:"red",batterId:"b",bowlerId:"c",batChoice:4,bowlChoice:2,runs:4,out:false},
+    {innings:1,battingTeam:"red",batterId:"a",bowlerId:"c",batChoice:6,bowlChoice:3,runs:6,out:false}
+  ]
+}, roster);
+assert.equal(separatedAppearances.players.a.batting.transitions.transitions, 0,
+  "A returning batter's separate appearance must not create a false transition from their earlier turn");
+
 console.log("Hand Cricket phase-one insights tests passed.");
