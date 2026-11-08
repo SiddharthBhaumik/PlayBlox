@@ -3,7 +3,7 @@ const NUMERIC_CHOICES = CHOICES.slice(0, 6);
 const choiceOf = value => value === "fist" ? "fist" : NUMERIC_CHOICES.includes(String(value)) ? String(value) : null;
 const sum = values => values.reduce((total, value) => total + value, 0);
 const scopeOf = delivery => `${delivery.innings}:${delivery.battingTeam}`;
-const scopedKey = (...parts) => parts.map(value => String(value)).join("::");
+const scopedKey = (...parts) => JSON.stringify(parts);
 
 function emptyCounts(choices) {
   return Object.fromEntries(choices.map(choice => [choice, 0]));
@@ -59,9 +59,7 @@ function scorePrediction(probabilities, actual, choices) {
 }
 
 function summarizeScores(rows) {
-  if (!rows.length) {
-    return { samples: 0, accuracy: null, logLoss: null, brierScore: null };
-  }
+  if (!rows.length) return { samples: 0, accuracy: null, logLoss: null, brierScore: null };
   return {
     samples: rows.length,
     accuracy: rows.filter(row => row.correct).length / rows.length,
@@ -72,14 +70,12 @@ function summarizeScores(rows) {
 
 /**
  * Chronological, prequential prediction for regular team-mode innings.
- *
- * Every delivery is predicted before its current batter/bowler choices are
- * added to the model. All context is scoped to one batting team's innings;
- * Super Overs and individual-mode histories are excluded.
+ * Predictions use only earlier deliveries. Batter sequential patterns reset
+ * after a dismissal, while a player's overall frequency and matchup history
+ * remain available if that player later returns to bat.
  */
 export function buildHandCricketPredictions(state, options = {}) {
-  const teamMode = state?.config?.mode === "team";
-  if (!teamMode) {
+  if (state?.config?.mode !== "team") {
     return {
       version: 1,
       enabled: false,
@@ -97,8 +93,9 @@ export function buildHandCricketPredictions(state, options = {}) {
   const alpha = Number.isFinite(options.alpha) && options.alpha > 0 ? options.alpha : 6;
   const minContextSamples = Number.isInteger(options.minContextSamples) && options.minContextSamples >= 1
     ? options.minContextSamples : 3;
-  const deliveries = (state?.history || []).filter(delivery =>
-    !delivery.superOver
+  const deliveries = (Array.isArray(state?.history) ? state.history : []).filter(delivery =>
+    delivery && typeof delivery === "object"
+    && !delivery.superOver
     && ["red", "blue"].includes(delivery.battingTeam)
     && [1, 2].includes(delivery.innings)
     && delivery.batterId
@@ -116,6 +113,7 @@ export function buildHandCricketPredictions(state, options = {}) {
   const matchupCounts = new Map();
   const matchupBowlerTransitionCounts = new Map();
   const previousBatterChoice = new Map();
+  const batterAppearance = new Map();
   const previousMatchupBowlerChoice = new Map();
   const scored = { uniform: [], global: [], batter: [], contextual: [] };
   const predictions = [];
@@ -124,18 +122,20 @@ export function buildHandCricketPredictions(state, options = {}) {
     const delivery = deliveries[index];
     const scope = scopeOf(delivery);
     const batterKey = scopedKey(scope, delivery.batterId);
+    const appearanceIndex = batterAppearance.get(batterKey) || 0;
+    const appearanceKey = scopedKey(batterKey, appearanceIndex);
     const matchupKey = scopedKey(scope, delivery.batterId, delivery.bowlerId);
-    const previousBatter = previousBatterChoice.get(batterKey);
+    const previousBatter = previousBatterChoice.get(appearanceKey);
     const previousMatchupBowler = previousMatchupBowlerChoice.get(matchupKey);
 
-    // Snapshot all distributions before learning from this delivery.
+    // Snapshot every distribution before learning from this delivery.
     const seenGlobal = getCounts(globalCounts, scope, choices);
     const globalPrior = probabilitiesFromCounts(seenGlobal, choices, uniform, alpha);
     const seenBatter = getCounts(batterCounts, batterKey, choices);
     const batterPrior = probabilitiesFromCounts(seenBatter, choices, globalPrior, alpha);
 
     const transitionKey = previousBatter === undefined
-      ? null : scopedKey(batterKey, previousBatter);
+      ? null : scopedKey(appearanceKey, previousBatter);
     const transitionCounts = transitionKey
       ? getCounts(batterTransitionCounts, transitionKey, choices) : emptyCounts(choices);
     const transitionPrior = probabilitiesFromCounts(transitionCounts, choices, batterPrior, alpha);
@@ -161,18 +161,14 @@ export function buildHandCricketPredictions(state, options = {}) {
     ];
     const contextual = normalizeWeights(contextualParts);
     const actual = choiceOf(delivery.batChoice);
-    const distributions = {
-      uniform,
-      global: globalPrior,
-      batter: batterPrior,
-      contextual
-    };
+    const distributions = { uniform, global: globalPrior, batter: batterPrior, contextual };
     const row = {
       deliveryIndex: index,
       innings: delivery.innings,
       battingTeam: delivery.battingTeam,
       batterId: delivery.batterId,
       bowlerId: delivery.bowlerId,
+      batterAppearance: appearanceIndex,
       actualChoice: actual,
       previousBatterChoice: previousBatter ?? null,
       previousSameMatchupBowlerChoice: previousMatchupBowler ?? null,
@@ -197,8 +193,8 @@ export function buildHandCricketPredictions(state, options = {}) {
     }
     predictions.push(row);
 
-    // Only after every model has made its prediction do we reveal this
-    // delivery to the online learner and update its historical context.
+    // Update only after scoring. A dismissal ends this batter's sequential
+    // appearance; marginal and exact-matchup evidence deliberately survive.
     getCounts(globalCounts, scope, choices)[actual]++;
     getCounts(batterCounts, batterKey, choices)[actual]++;
     if (previousBatter !== undefined) {
@@ -208,7 +204,11 @@ export function buildHandCricketPredictions(state, options = {}) {
     if (previousMatchupBowler !== undefined) {
       getCounts(matchupBowlerTransitionCounts, matchupTransitionKey, choices)[actual]++;
     }
-    previousBatterChoice.set(batterKey, actual);
+    if (delivery.out === true) {
+      batterAppearance.set(batterKey, appearanceIndex + 1);
+    } else {
+      previousBatterChoice.set(appearanceKey, actual);
+    }
     previousMatchupBowlerChoice.set(matchupKey, choiceOf(delivery.bowlChoice));
   }
 
