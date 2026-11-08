@@ -231,8 +231,8 @@ assert.equal(glitch67.effects.glitches.length, 1, "Glitch must activate after th
 assert.equal(sixtySeven.getPublicState(glitch67).lastEvent.type, "turn-started");
 assert.equal(sixtySeven.getPrivateState(glitch67, "p1").glitchMappings.length, 0,
   "The owner's own next turn begins with their Glitch expired.");
-assert.equal(sixtySeven.getPrivateState(glitch67, "p2").glitchMappings.length, 0,
-  "Glitch mappings must remain private from other players.");
+assert.equal(sixtySeven.getPrivateState(glitch67, "p2").glitchMappings.length, 1,
+  "The next active player needs the private mapping to apply the transformed action rules.");
 
 // Delayed Fate stores the original card before Glitch transforms it.
 let delayed67 = sixtySeven.createInitialState(ctx67);
