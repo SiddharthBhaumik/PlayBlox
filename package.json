@@ -8,6 +8,7 @@
     "test:hand-cricket": "node scripts/test-hand-cricket.mjs",
     "test": "npm run check:syntax && npm run test:hand-cricket && npm run test:hand-cricket-analytics && npm run test:hand-cricket-insights && npm run validate:games && node scripts/test-game-contracts.mjs",
     "test:hand-cricket-analytics": "node scripts/test-hand-cricket-analytics.mjs",
-    "test:hand-cricket-insights": "node scripts/test-hand-cricket-insights.mjs"
+    "test:hand-cricket-insights": "node scripts/test-hand-cricket-insights.mjs",
+    "test:hand-cricket-predictions": "node scripts/test-hand-cricket-predictions.mjs"
   }
 }
