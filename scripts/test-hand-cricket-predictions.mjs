@@ -18,28 +18,17 @@ assert.equal(result.teamMode, true);
 assert.equal(result.evaluatedDeliveries, 6, "Super Over rows must be excluded");
 assert.deepEqual(result.choices, ["1","2","3","4","5","6"]);
 assert.equal(result.predictions.length, 6);
-
-// The first prediction has no history and therefore remains uniform.
-assert.equal(result.predictions[0].models.global.probabilities["1"], 1/6);
+assert.equal(result.predictions[0].models.uniform.probabilities["1"], 1/6);
 assert.equal(result.predictions[0].evidence.global, 0);
-
-// A prediction is generated before its actual choice is added to the model.
 assert.equal(result.predictions[1].evidence.global, 1);
 assert.equal(result.predictions[1].evidence.batter, 1);
 assert.equal(result.predictions[1].previousBatterChoice, "5");
-
-// The first delivery in the second innings cannot see first-innings evidence.
 assert.equal(result.predictions[5].evidence.global, 0);
 assert.equal(result.predictions[5].evidence.batter, 0);
 assert.equal(result.predictions[5].previousBatterChoice, null);
-
-// The same-matchup previous bowler choice is available only after a prior
-// delivery in that exact batter/bowler/innings context.
 assert.equal(result.predictions[1].previousSameMatchupBowlerChoice, "2");
 assert.equal(result.predictions[4].previousSameMatchupBowlerChoice, null);
 
-// All distributions are valid probability distributions and never use fist
-// when the match configuration disables it.
 for (const prediction of result.predictions) {
   for (const model of Object.values(prediction.models)) {
     const probabilities = Object.values(model.probabilities);
@@ -53,6 +42,23 @@ assert.equal(result.metrics.global.samples, 6);
 assert.equal(result.metrics.contextual.samples, 6);
 assert.ok(result.metrics.contextual.logLoss >= 0);
 assert.ok(result.metrics.contextual.brierScore >= 0);
+
+// Dismissal starts a new batter appearance: the returning batter must not
+// inherit their previous sequential choice or transition evidence.
+const dismissal = buildHandCricketPredictions({
+  config:{mode:"team",allowFist:false},
+  history:[
+    {innings:1,battingTeam:"red",batterId:"a",bowlerId:"x",batChoice:5,bowlChoice:2,runs:5,out:false},
+    {innings:1,battingTeam:"red",batterId:"a",bowlerId:"x",batChoice:4,bowlChoice:4,runs:0,out:true},
+    {innings:1,battingTeam:"red",batterId:"b",bowlerId:"x",batChoice:3,bowlChoice:1,runs:3,out:false},
+    {innings:1,battingTeam:"red",batterId:"a",bowlerId:"x",batChoice:2,bowlChoice:6,runs:2,out:false}
+  ]
+});
+const returningBatter = dismissal.predictions[3];
+assert.equal(returningBatter.batterAppearance, 1);
+assert.equal(returningBatter.previousBatterChoice, null);
+assert.equal(returningBatter.evidence.batterTransition, 0);
+assert.equal(returningBatter.evidence.batter, 2, "Marginal batter frequency remains available after return");
 
 const withFist = buildHandCricketPredictions({
   config:{mode:"team",allowFist:true},
