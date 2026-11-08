@@ -23,8 +23,8 @@ assert.equal(cooldown.reason,"delivery-cooldown");
 
 const next = selectHandCricketCommentary(candidates,selected.memory,{deliveryIndex:14});
 assert.equal(next.selected,true);
-assert.notEqual(next.candidate.id,"performance", "A candidate must not be repeated.");
-assert.notEqual(next.speaker.id,selected.speaker.id, "Avoid consecutive commentator repetition.");
+assert.notEqual(next.candidate.id,"performance","A candidate must not be repeated.");
+assert.notEqual(next.speaker.id,selected.speaker.id,"Avoid consecutive commentator repetition.");
 
 const capped = selectHandCricketCommentary(candidates,selected.memory,{deliveryIndex:20,maximumCommentaries:1});
 assert.equal(capped.selected,false);
@@ -33,5 +33,26 @@ assert.equal(capped.reason,"match-commentary-cap");
 const noEvidence = selectHandCricketCommentary([],initial,{deliveryIndex:20});
 assert.equal(noEvidence.selected,false);
 assert.equal(noEvidence.reason,"no-new-evidence");
+
+// Corrupt persisted memory and invalid settings should fail safely to defaults.
+const recovered = selectHandCricketCommentary(candidates,{
+  spokenCandidateIds:"not-an-array",
+  recentTopics:{},
+  speakerCounts:[],
+  commentaryCount:-3,
+  lastSpeakerId:"unknown"
+},{deliveryIndex:10,minimumDeliveryGap:-100,maximumCommentaries:-1});
+assert.equal(recovered.selected,true);
+assert.equal(recovered.memory.commentaryCount,1);
+
+// Invalid candidate identifiers and malformed rows are ignored.
+const invalidCandidates = selectHandCricketCommentary([
+  null,
+  {id:{},type:"x",priority:99,sampleSize:20},
+  {id:"x".repeat(181),type:"x",priority:99,sampleSize:20},
+  {id:"valid",type:"test",priority:1,sampleSize:8,evidence:{}}
+],initial,{deliveryIndex:10});
+assert.equal(invalidCandidates.selected,true);
+assert.equal(invalidCandidates.candidate.id,"valid");
 
 console.log("Hand Cricket Phase 2 commentary director tests passed.");
