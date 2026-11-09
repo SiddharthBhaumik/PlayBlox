@@ -225,17 +225,15 @@ function renderPlay(){
   const waiting=[];
   if(state.batterSelectionOpen)waiting.push("batting captain to confirm the batter");
   if(state.bowlerSelectionOpen)waiting.push("bowling captain to confirm the bowler");
-  const wildcardNotice=wildcardRoleNotice();
-  $("choice-area").innerHTML='<div class="hc-waiting">Waiting for '+waiting.join(" and ")+'…<div class="hc-pips"><i></i><i></i><i></i></div></div>'+(wildcardNotice?'<p class="hc-wildcard-role-notice" role="status">'+esc(wildcardNotice)+'</p>':"");
+  $("choice-area").innerHTML='<div class="hc-waiting">Waiting for '+waiting.join(" and ")+'…<div class="hc-pips"><i></i><i></i><i></i></div></div>';
  }else if(myRole){
   const waiting=mine?'<p class="hc-locked">✓ Choice locked. Waiting for '+(myRole==="batter"?bowlPlayer?.nickname:batPlayer?.nickname)+'…</p>':'<p class="hc-muted">Choose your number. The reveal happens when both choices are locked.</p>';
   choice='<div class="hc-choice"><h3>'+(myRole==="batter"?"Your batting choice":"Your bowling choice")+'</h3><div class="hc-numbers">'+[1,2,3,4,5,6].map(n=>'<button data-choice="'+n+'" '+(mine?'disabled':'')+'>'+n+'</button>').join("")+(state.config.allowFist?'<button class="fist" data-choice="fist" '+(mine?'disabled':'')+'>✊ Fist</button>':'')+'</div>'+waiting+'</div>';
   if(!mine)$("choice-area").innerHTML=choice;else $("choice-area").innerHTML=choice;
   $("choice-area").querySelectorAll("[data-choice]").forEach(b=>b.onclick=()=>act({type:"submit-ball",choice:b.dataset.choice==="fist"?"fist":Number(b.dataset.choice)}));
- }else {
-  const wildcardNotice=wildcardRoleNotice();
-  $("choice-area").innerHTML='<div class="hc-waiting">Waiting for both players to lock their choices…<div class="hc-pips"><i></i><i></i><i></i></div></div>'+(wildcardNotice?'<p class="hc-wildcard-role-notice" role="status">'+esc(wildcardNotice)+'</p>':"");
- }
+ }else $("choice-area").innerHTML='<div class="hc-waiting">Waiting for both players to lock their choices…<div class="hc-pips"><i></i><i></i><i></i></div></div>';
+ const roleNotice=wildcardRoleNotice();
+ if(roleNotice)$("choice-area").insertAdjacentHTML("beforeend",'<p class="hc-wildcard-role-notice" role="status">'+esc(roleNotice)+'</p>');
  renderCaptainControls();renderScoreboard();
  renderScorecard();
  renderAnalytics($("live-analytics"));
