@@ -90,7 +90,7 @@ function participants(context) {
 
 export const genie = {
   id: "genie",
-  name: "Genie's Guess",
+  name: "Akinator",
   description: "Think of anyone — real or fictional. Answer the genie's questions and try to stump its guesses.",
   guide: GUIDE,
   emoji: "🧞",
