@@ -203,11 +203,11 @@ function eligibleTeamBowlers(batterId){
 }
 function wildcardRoleNotice(){
  if(state.config.mode!=="team"||!state.wildcardId)return "";
- if(state.currentBatterId===state.wildcardId){
+ if(state.currentBatterId===state.wildcardId&&!state.batterSelectionOpen){
   const replacement=state.wildcardBowlerReplacementRequired;
   return "Wildcard selected to bat for "+state.battingTeam.toUpperCase()+". They cannot bowl against their own batting team."+(replacement?" "+state.bowlingTeam.toUpperCase()+"'s captain must confirm a replacement bowler before play can continue.":"");
  }
- if(state.currentBowlerId===state.wildcardId){
+ if(state.currentBowlerId===state.wildcardId&&!state.bowlerSelectionOpen){
   return "Wildcard selected to bowl for "+state.bowlingTeam.toUpperCase()+". If they are selected to bat, batting takes priority and the bowling captain must confirm a replacement.";
  }
  return "";
