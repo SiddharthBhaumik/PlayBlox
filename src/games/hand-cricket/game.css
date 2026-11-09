@@ -127,3 +127,5 @@
 .hc-appearance-label{display:grid;gap:8px;max-width:560px;margin:12px 0}
 .hc-appearance-label select{width:100%;min-height:132px;padding:8px;border:1px solid #49645b;border-radius:10px;background:#0e1b19;color:#f3f6ef;font:inherit}
 .hc-appearance-label option{padding:7px}
+
+.hc-wildcard-role-notice{margin:10px 0 0;padding:10px 12px;border:1px solid var(--hc-gold);border-left-width:3px;border-radius:9px;background:color-mix(in srgb,var(--hc-gold) 9%,transparent);color:var(--hc-text);font-size:13px;line-height:1.5}
