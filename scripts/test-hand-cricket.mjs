@@ -471,6 +471,7 @@ wildcardPriority=await chooseTeams(wildcardPriorityPlayers,wildcardPriority,[["p
 // Model the collision case: the bowling captain's current assignment is the wildcard.
 wildcardPriority.currentBowlerId="p3";
 wildcardPriority.overBowlerId="p3";
+wildcardPriority.lastBowlerId="p2"; // The only eligible replacement is the previous over's bowler.
 // Returning to bat starts a fresh personal innings for HS, while total runs persist.
 wildcardPriority.currentInningsRuns.p3=14;
 wildcardPriority.stats.p3.runs=25;
@@ -483,9 +484,13 @@ assert.equal(wildcardPriority.currentBatterId,"p3","The wildcard remains the sel
 assert.notEqual(wildcardPriority.currentBowlerId,"p3","Batting priority removes the wildcard from the conflicting bowling role");
 assert.equal(wildcardPriority.bowlerSelectionOpen,true,"The bowling captain must confirm a replacement bowler");
 assert.equal(wildcardPriority.wildcardBowlerReplacementRequired,true,"The replacement is marked as a wildcard-priority conflict");
+assert.equal(wildcardPriority.currentBowlerId,"p2","The only eligible replacement is auto-selected even when they bowled the previous over");
+assert.equal((await handCricket.validateAction(context("p2",wildcardPriorityPlayers),wildcardPriority,{type:"select-bowler",playerId:"p2"})).ok,true,
+ "The server permits the previous bowler when no alternative is eligible");
 wildcardPriority=action(wildcardPriorityPlayers,wildcardPriority,"p2",{type:"select-bowler",playerId:"p2"});
 assert.equal(wildcardPriority.currentBowlerId,"p2","The bowling captain can confirm a replacement bowler");
 assert.equal(wildcardPriority.wildcardBowlerReplacementRequired,false);
+assert.equal(wildcardPriority.overBowlerId,"p2","The confirmed replacement is the bowler used to complete the over");
 
 // Individual tournament ranking uses the requested bowling-based tie-breaks.
 const ranked=handCricket.createInitialState(context("p1",soPlayers));
