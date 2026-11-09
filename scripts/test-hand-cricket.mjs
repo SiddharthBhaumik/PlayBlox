@@ -492,6 +492,21 @@ assert.equal(wildcardPriority.currentBowlerId,"p2","The bowling captain can conf
 assert.equal(wildcardPriority.wildcardBowlerReplacementRequired,false);
 assert.equal(wildcardPriority.overBowlerId,"p2","The confirmed replacement is the bowler used to complete the over");
 
+// A wildcard replacing the bowler mid-over produces an explicitly mixed over;
+// its delivery history must not be falsely attributed to only one bowler.
+wildcardPriority.overBalls=[{bowlerId:"p3",runs:1,out:false}];
+wildcardPriority.teamScores.red.balls=1;
+wildcardPriority.teamScores.red.runs=1;
+wildcardPriority=playBall(wildcardPriorityPlayers,wildcardPriority,1,2);
+wildcardPriority=playBall(wildcardPriorityPlayers,wildcardPriority,1,2);
+wildcardPriority=playBall(wildcardPriorityPlayers,wildcardPriority,1,2);
+wildcardPriority=playBall(wildcardPriorityPlayers,wildcardPriority,1,2);
+wildcardPriority=playBall(wildcardPriorityPlayers,wildcardPriority,1,2);
+assert.equal(wildcardPriority.completedOvers.length,1,"The replacement completes the interrupted over");
+assert.deepEqual(wildcardPriority.completedOvers[0].bowlerIds,["p3","p2"],"The over records both the original wildcard bowler and replacement");
+assert.equal(wildcardPriority.completedOvers[0].bowlerId,null,"A mixed over has no single-bowler attribution");
+assert.equal(wildcardPriority.innings,2,"The match advances normally after the configured over");
+
 // Individual tournament ranking uses the requested bowling-based tie-breaks.
 const ranked=handCricket.createInitialState(context("p1",soPlayers));
 ranked.config.mode="individual";
