@@ -13,7 +13,6 @@ import { minefield } from "./minefield.js";
 import { sixtySeven } from "./67.js";
 import { wouldYouRather } from "./would-you-rather.js";
 import { handCricket } from "./hand-cricket.js";
-import { genie } from "./genie.js";
 import { plotTwist } from "./plot-twist.js";
 
 const serverGames = new Map();
@@ -44,7 +43,6 @@ registerServerGame(minefield);
 registerServerGame(sixtySeven);
 registerServerGame(wouldYouRather);
 registerServerGame(handCricket);
-registerServerGame(genie);
 registerServerGame(plotTwist);
 
 export function getServerGame(id) { return serverGames.get(id) || null; }
