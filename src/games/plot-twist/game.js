@@ -10,7 +10,7 @@ const code = (params.get("party") || "").toUpperCase();
 const token = code ? sessionStorage.getItem("playblox:" + code + ":token") : null;
 const $ = id => document.getElementById(id);
 let socket = null, room = null, gameState = null, privateState = null, stateVersion = 0, myPlayerId = null;
-let reconnectTimer = null, heartbeatTimer = null, reconnectDelay = 1000, generation = 0, leaving = false, submitting = false;
+let reconnectTimer = null, heartbeatTimer = null, reconnectDelay = 1000, generation = 0, leaving = false, submitting = false, updatingSettings = false;
 let renderedRevealStoryIndex = -1, renderedRevealLineCount = 0;
 
 $("back-to-lobby").href = "../../../" + (code ? "?party=" + encodeURIComponent(code) + "&lobby=1" : "");
@@ -53,7 +53,7 @@ async function sendAction(action) {
 }
 const syncLifecycle = setupGameLifecycle({
   root: document.querySelector("main"), getRoom: () => room, getPlayerId: () => myPlayerId,
-  api, backToLobby: () => $("back-to-lobby").href,
+  api, backToLobby: () => $("back-to-lobby").href, replayLabel: "↻ Play Plot Twist again",
 });
 
 function setPanel(id, visible) { $(id).hidden = !visible; }
@@ -106,9 +106,12 @@ function render() {
     setup: "Host settings", starter: "Opening lines", writing: "Story writing",
     reveal: "Grand reveal", finished: "Stories complete",
   })[phase] || "Plot Twist";
+  const totalWritingRounds = Math.max(0, (gameState.linesPerStory || 3) - 1);
   $("round-label").textContent = phase === "writing"
-    ? "Writing round " + gameState.round
-    : phase === "starter" ? "Opening lines" : "Each story · " + (gameState.linesPerStory || 3) + " lines";
+    ? "Writing round " + gameState.round + " of " + totalWritingRounds
+    : phase === "starter" ? "Opening lines · " + gameState.linesPerStory + " lines · " + totalWritingRounds + " writing rounds"
+    : phase === "setup" ? "Setup · " + gameState.linesPerStory + " lines · " + totalWritingRounds + " writing rounds"
+    : "Each story · " + (gameState.linesPerStory || 3) + " lines · " + totalWritingRounds + " writing rounds";
   const submitted = (gameState.submittedPlayerIds || []).includes(myPlayerId);
   const host = isHost();
   setPanel("setup-panel", phase === "setup" && host);
@@ -119,7 +122,8 @@ function render() {
   if (phase === "setup" && !host) {
     setPanel("waiting-panel", true);
     $("waiting-title").textContent = "The host is setting up the stories…";
-    $("waiting-copy").textContent = "The host will choose how many lines each story gets.";
+    const rounds = Math.max(0, (gameState.linesPerStory || 3) - 1);
+    $("waiting-copy").textContent = "The host has selected " + gameState.linesPerStory + " lines per story (" + rounds + " writing rounds after the opening line). The host will start when ready.";
   } else if (phase !== "setup") {
     setPanel("waiting-panel", false);
   }
@@ -162,11 +166,28 @@ function render() {
     renderedRevealLineCount = 0;
   }
   if (finished) renderAllStories(gameState.revealedStories || []);
-  $("confirm-settings").disabled = submitting;
+  $("confirm-settings").disabled = submitting || updatingSettings;
   $("submit-starter").disabled = submitting;
   $("submit-line").disabled = submitting;
 }
-$("line-count").addEventListener("input", () => { $("line-count-value").textContent = $("line-count").value; });
+$("line-count").addEventListener("input", () => {
+  $("line-count-value").textContent = $("line-count").value;
+});
+$("line-count").addEventListener("change", async () => {
+  if (!isHost() || gameState?.phase !== "setup" || updatingSettings || submitting) return;
+  updatingSettings = true;
+  $("confirm-settings").disabled = true;
+  try {
+    await sendAction({ type: "update-lines", value: Number($("line-count").value) });
+    await syncRoom();
+  } catch (error) {
+    help(error.message, true);
+    try { await syncRoom(); } catch {}
+  } finally {
+    updatingSettings = false;
+    render();
+  }
+});
 
 async function act(action, successMessage) {
   if (submitting) return;
@@ -230,6 +251,10 @@ function connect() {
     if (message.type === "game-state") {
       gameState = message.gameState; privateState = message.privateState ?? null; stateVersion = message.stateVersion;
       if (room) { room.lifecycle = message.lifecycle; room.gameState = gameState; room.stateVersion = stateVersion; }
+      render();
+    }
+    if (message.type === "rematch-vote") {
+      if (room) room.rematchVotes = message.votes || {};
       render();
     }
     if (message.type === "error") help(message.message || "A connection error occurred.", true);
