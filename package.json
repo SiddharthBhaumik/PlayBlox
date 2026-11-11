@@ -6,7 +6,8 @@
     "validate:games": "node scripts/validate-games.mjs",
     "check:syntax": "node scripts/check-syntax.mjs",
     "test:hand-cricket": "node scripts/test-hand-cricket.mjs",
-    "test": "npm run check:syntax && npm run test:hand-cricket && npm run test:hand-cricket-analytics && npm run validate:games && node scripts/test-game-contracts.mjs",
-    "test:hand-cricket-analytics": "node scripts/test-hand-cricket-analytics.mjs"
+    "test": "npm run check:syntax && npm run test:hand-cricket && npm run test:hand-cricket-analytics && npm run validate:games && node scripts/test-game-contracts.mjs && npm run test:plot-twist",
+    "test:hand-cricket-analytics": "node scripts/test-hand-cricket-analytics.mjs",
+    "test:plot-twist": "node scripts/test-plot-twist.mjs"
   }
 }
