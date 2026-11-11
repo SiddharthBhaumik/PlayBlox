@@ -1,0 +1,56 @@
+.plot-shell{max-width:1320px}
+.plot-layout{max-width:1240px;grid-template-columns:190px minmax(0,1fr);gap:22px}
+.plot-game{width:100%;min-width:0;max-width:900px;margin:18px auto 56px;text-align:center}
+.plot-title-row{display:flex;align-items:center;justify-content:center;gap:12px}
+.plot-title-row>span:first-child{font-size:clamp(42px,6vw,64px);filter:drop-shadow(3px 4px 0 #29352e20)}
+.plot-game h1{font-size:clamp(42px,6vw,66px);line-height:1;margin:12px 0 6px}
+.plot-intro{margin:0 auto 18px;color:#657266;font-weight:900}
+.beta-pill{padding:5px 10px;border:1px solid #c38d42;border-radius:999px;background:#fff0cf;color:#80551d;font-size:11px;font-weight:1000;letter-spacing:.08em}
+.plot-meta{display:flex;justify-content:space-between;gap:12px;margin:0 0 12px;color:#6c7568;font-size:12px;font-weight:1000}
+.plot-meta span{padding:7px 10px;border:1px solid #d9d2bd;border-radius:999px;background:#fffdf5}
+.plot-meta #connection-status{color:#287a52}
+.plot-meta #connection-status.offline{color:#a3473c;background:#fff0eb}
+.plot-card{padding:clamp(14px,3vw,28px);border:3px solid var(--ink);border-radius:28px;background:#fffdf5;box-shadow:var(--shadow)}
+.plot-progress{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-bottom:14px;border-bottom:1px solid #e4dece;color:#687365;font-size:12px;font-weight:1000}
+.plot-progress span:first-child{padding:7px 12px;border:2px solid var(--ink);border-radius:999px;background:#f4dfc5;color:var(--ink)}
+.plot-panel{max-width:720px;margin:20px auto 4px;padding:clamp(16px,3vw,26px);border:2px solid #e4d4bc;border-radius:22px;background:#fbf5e9;text-align:left}
+.plot-panel h2{font-size:clamp(23px,4vw,32px);margin:4px 0 8px}
+.panel-kicker{margin:0;color:#95642d;font-size:11px;font-weight:1000;letter-spacing:.12em}
+.panel-copy{margin:0 0 18px;color:#687365;font-size:13px;font-weight:800;line-height:1.55}
+.field-label{display:flex;justify-content:space-between;align-items:center;gap:12px;margin:16px 0 8px;font-size:13px;font-weight:1000}
+.field-label strong{padding:4px 10px;border-radius:8px;background:#f2dfbf;font-size:16px}
+#line-count{display:block;width:100%;accent-color:#a66e35;cursor:pointer}
+.range-scale{display:flex;justify-content:space-between;color:#687365;font-size:10px;font-weight:900}
+.plot-panel textarea{box-sizing:border-box;width:100%;resize:vertical;padding:14px;border:1px solid #d5c5ac;border-radius:13px;background:#fffdf8;color:#29352e;font:700 15px/1.5 'Nunito',sans-serif}
+.plot-primary{width:100%;margin-top:18px;padding:13px 16px;border:2px solid var(--ink);border-radius:13px;background:#f0d9b5;color:var(--ink);font:1000 14px 'Nunito',sans-serif;box-shadow:0 3px 0 #29352e20;cursor:pointer}
+.plot-primary:disabled{opacity:.55;cursor:not-allowed}
+.story-number{display:inline-block;margin-bottom:10px;padding:6px 11px;border-radius:999px;background:#e7d4b7;color:#65451f;font-size:11px;font-weight:1000;letter-spacing:.1em}
+.latest-line{margin:16px 0;padding:18px;border:2px solid #d7b98e;border-radius:15px 15px 15px 5px;background:#fffdf8}
+.latest-line span{color:#95642d;font-size:10px;font-weight:1000;letter-spacing:.1em}
+.latest-line p{margin:8px 0 0;color:#29352e;font:800 clamp(18px,3vw,24px)/1.35 'Baloo 2',cursive;overflow-wrap:anywhere}
+.waiting-panel{text-align:center}
+.waiting-orb{display:grid;place-items:center;width:60px;height:60px;margin:0 auto 10px;border-radius:50%;background:#f2dfbf;font-size:32px;color:#95642d}
+.waiting-track{margin-top:18px;text-align:left;font-size:11px;font-weight:1000;color:#687365}
+.track{height:9px;margin-top:7px;border-radius:999px;background:#e8dfd0;overflow:hidden}
+.track i{display:block;width:0;height:100%;border-radius:inherit;background:#a66e35;transition:width .2s}
+.reveal-panel{background:#fff8e8;border-color:#ead9b5}
+.reveal-lines{display:grid;gap:9px;margin:18px 0}
+.revealed-line{display:grid;grid-template-columns:34px minmax(0,1fr);gap:10px;align-items:start;padding:12px;border:1px solid #e4d6bf;border-radius:13px;background:#fffdf7;animation:line-in .25s ease-out}
+.revealed-line-number{display:grid;place-items:center;width:30px;height:30px;border-radius:10px;background:#f2dfbf;color:#65451f;font-size:12px;font-weight:1000}
+.revealed-line-copy{min-width:0}
+.revealed-line-copy p{margin:0;color:#29352e;font:700 16px/1.45 'Nunito',sans-serif;overflow-wrap:anywhere}
+.revealed-line-copy small{display:block;margin-top:5px;color:#8a6a43;font-size:10px;font-weight:1000;letter-spacing:.06em}
+.reveal-controls{display:flex;align-items:center;gap:12px}
+.reveal-controls span{flex:0 0 auto;color:#687365;font-size:11px;font-weight:1000}
+.reveal-controls .plot-primary{margin:0}
+.reveal-wait{text-align:center;color:#687365;font-size:12px;font-weight:900}
+.all-stories{display:grid;gap:16px;margin-top:16px}
+.full-story{padding:16px;border:1px solid #e4d6bf;border-radius:16px;background:#fffdf7}
+.full-story h3{margin:0 0 12px;font:800 21px 'Baloo 2',cursive}
+.full-story-line{padding:10px 0;border-top:1px solid #eee5d6}
+.full-story-line p{margin:0;font-size:14px;font-weight:800;line-height:1.5}
+.full-story-line small{display:block;margin-top:4px;color:#8a6a43;font-size:10px;font-weight:1000}
+.game-help{margin:16px 0 0;color:#74796d;font-size:12px;font-weight:800;line-height:1.6}
+.game-help.error{color:#a3473c}
+@keyframes line-in{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:translateY(0)}}
+@media(max-width:680px){.plot-layout{grid-template-columns:1fr;gap:12px}.plot-layout .game-roster{position:static}.plot-layout .game-roster ul{grid-template-columns:repeat(auto-fit,minmax(130px,1fr))}.plot-game{margin-top:8px}.plot-meta{flex-direction:column;align-items:center}.plot-card{padding:12px;border-radius:20px}.plot-panel{padding:14px}.reveal-controls{align-items:stretch;flex-direction:column}.reveal-controls .plot-primary{width:100%}}
