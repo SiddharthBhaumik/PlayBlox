@@ -140,6 +140,7 @@ function render() {
     $("waiting-title").textContent = "Your line is locked!";
     $("waiting-copy").textContent = "The stories are moving around the group. Waiting for everyone else.";
   }
+  $("waiting-track").hidden = !(phase === "starter" || phase === "writing");
   if (phase === "starter" || phase === "writing") {
     $("submitted-count").textContent = (gameState.submittedCount || 0) + " / " + gameState.playerCount + " submitted";
     $("submitted-bar").style.width = ((gameState.submittedCount || 0) / Math.max(1, gameState.playerCount) * 100) + "%";
