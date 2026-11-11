@@ -120,7 +120,7 @@ export const plotTwist = {
           stories[playerId] = {
             id: playerId,
             creatorId: playerId,
-            lines: [{ playerId, text: pendingLines[playerId] }],
+            lines: [{ playerId, authorName: context.players.find(player => player.id === playerId)?.nickname || "Player", text: pendingLines[playerId] }],
           };
         }
         return {
@@ -136,7 +136,7 @@ export const plotTwist = {
         const story = stories[storyId];
         stories[storyId] = {
           ...story,
-          lines: [...story.lines, { playerId, text: pendingLines[playerId] }],
+          lines: [...story.lines, { playerId, authorName: context.players.find(player => player.id === playerId)?.nickname || "Player", text: pendingLines[playerId] }],
         };
       }
       const complete = state.storyOrder.every(storyId => stories[storyId].lines.length >= state.linesPerStory);
@@ -238,7 +238,7 @@ export const plotTwist = {
     };
     if (state.phase === "starter" && submittedPlayerIds.length === playerOrder.length) {
       const built = {};
-      for (const id of playerOrder) built[id] = { id, creatorId: id, lines: [{ playerId: id, text: pendingLines[id] }] };
+      for (const id of playerOrder) built[id] = { id, creatorId: id, lines: [{ playerId: id, authorName: context.players.find(player => player.id === id)?.nickname || "Player", text: pendingLines[id] }] };
       return { ...next, stories: built, phase: "writing", round: 1, pendingLines: {}, submittedPlayerIds: [],
         roundAssignments: assignmentsFor(playerOrder, storyOrder, 1) };
     }
