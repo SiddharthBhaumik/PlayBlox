@@ -24,7 +24,6 @@
 .plot-panel textarea{box-sizing:border-box;width:100%;resize:vertical;padding:14px;border:1px solid #d5c5ac;border-radius:13px;background:#fffdf8;color:#29352e;font:700 15px/1.5 'Nunito',sans-serif}
 .plot-primary{width:100%;margin-top:18px;padding:13px 16px;border:2px solid var(--ink);border-radius:13px;background:#f0d9b5;color:var(--ink);font:1000 14px 'Nunito',sans-serif;box-shadow:0 3px 0 #29352e20;cursor:pointer}
 .plot-primary:disabled{opacity:.55;cursor:not-allowed}
-.story-number{display:inline-block;margin-bottom:10px;padding:6px 11px;border-radius:999px;background:#e7d4b7;color:#65451f;font-size:11px;font-weight:1000;letter-spacing:.1em}
 .latest-line{margin:16px 0;padding:18px;border:2px solid #d7b98e;border-radius:15px 15px 15px 5px;background:#fffdf8}
 .latest-line span{color:#95642d;font-size:10px;font-weight:1000;letter-spacing:.1em}
 .latest-line p{margin:8px 0 0;color:#29352e;font:800 clamp(18px,3vw,24px)/1.35 'Baloo 2',cursive;overflow-wrap:anywhere}
@@ -81,7 +80,6 @@ html[data-theme="dark"] .plot-panel textarea{background:#0b142c;color:#f7f0e5;bo
 html[data-theme="dark"] .plot-panel textarea::placeholder{color:#8994b6}
 html[data-theme="dark"] .plot-primary{background:#ffc943;color:#211a25;border-color:#ffc943;box-shadow:0 3px 0 #0005}
 html[data-theme="dark"] .plot-primary:disabled{opacity:.55}
-html[data-theme="dark"] .story-number{background:#49364b;color:#ffe4a2}
 html[data-theme="dark"] .latest-line{background:#1b2949;border-color:#59688e}
 html[data-theme="dark"] .latest-line span{color:#83d9d0}
 html[data-theme="dark"] .latest-line p{color:#f7f0e5}
