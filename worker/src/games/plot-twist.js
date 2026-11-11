@@ -81,7 +81,7 @@ export const plotTwist = {
     }
     const id = context.player.id;
     if (!state.playerOrder.includes(id)) return { ok: false, reason: "Only selected players can play." };
-    if (action.type === "set-lines") {
+    if (action.type === "update-lines" || action.type === "set-lines") {
       if (state.phase !== "setup" || !context.player.isHost) return { ok: false, reason: "Only the host can set the story length before writing starts." };
       if (!Number.isInteger(action.value) || action.value < MIN_LINES || action.value > MAX_LINES) {
         return { ok: false, reason: "Choose between 3 and 24 lines per story." };
@@ -104,6 +104,9 @@ export const plotTwist = {
   },
 
   reduceAction(context, state, action) {
+    if (action.type === "update-lines") {
+      return { ...state, linesPerStory: action.value };
+    }
     if (action.type === "set-lines") {
       return { ...state, linesPerStory: action.value, phase: "starter", submittedPlayerIds: [], pendingLines: {} };
     }
