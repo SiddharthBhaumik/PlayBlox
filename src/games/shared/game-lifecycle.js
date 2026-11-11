@@ -17,7 +17,7 @@ function lobbyDestination(code, fallback) {
   return target.href || fallback;
 }
 
-export function setupGameLifecycle({ root, getRoom, getPlayerId, api, backToLobby, showReplay = true, enabled = true }) {
+export function setupGameLifecycle({ root, getRoom, getPlayerId, api, backToLobby, showReplay = true, replayLabel = "↻ Replay / Continue", enabled = true }) {
   if (!root) return () => {};
   let redirectedToLobby = false;
   let panel = lifecycleInstances.get(root);
@@ -46,8 +46,11 @@ export function setupGameLifecycle({ root, getRoom, getPlayerId, api, backToLobb
         if (result.status === "lobby") {
           location.assign(lobbyDestination(room.code, backToLobby?.()));
         } else if (result.status === "waiting") {
+          room.rematchVotes = result.votes || {};
           status.textContent = choice === "replay" ? "Your replay choice is saved. Waiting for everyone else." : "Your choice is saved.";
-          votes.textContent = Object.keys(result.votes || {}).length + " of " + (room.gameState?.playerOrder || []).length + " players have chosen.";
+          const ids = (room.gameState?.playerOrder || []).filter(id => room.players.some(entry => entry.id === id && entry.role === "player"));
+          const count = ids.filter(id => room.rematchVotes[id] === choice).length;
+          votes.textContent = count + " of " + ids.length + " players have chosen.";
         }
       } catch (e) { error.textContent = e.message || "Could not save your choice."; button.disabled = false; }
     };
@@ -90,7 +93,7 @@ export function setupGameLifecycle({ root, getRoom, getPlayerId, api, backToLobb
     panel.hidden = !room || (!finished && !player?.isHost && player?.role !== "player");
     panel.querySelector(".playblox-lifecycle-title").textContent = finished ? "Round complete" : "Game in progress";
     panel.querySelector(".playblox-lifecycle-replay").hidden = !showReplay || !finished || !(room.gameState?.playerOrder || []).includes(getPlayerId());
-    panel.querySelector(".playblox-lifecycle-replay").textContent = "↻ Replay / Continue";
+    panel.querySelector(".playblox-lifecycle-replay").textContent = replayLabel;
     panel.querySelector(".playblox-lifecycle-lobby").hidden = !finished || !player?.isHost;
     panel.querySelector(".playblox-lifecycle-end").hidden = !player?.isHost || finished;
     panel.querySelector(".playblox-lifecycle-leave").hidden = !room.gameState?.playerOrder?.includes(getPlayerId());
