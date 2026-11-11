@@ -129,7 +129,9 @@ function render() {
   }
   setPanel("starter-panel", phase === "starter" && !submitted);
   setPanel("writing-panel", phase === "writing" && !submitted && Boolean(privateState?.latestLine));
-  setPanel("waiting-panel", (phase === "setup" && !host) || ((phase === "starter" || phase === "writing") && submitted) || (phase === "writing" && !privateState?.latestLine && !submitted) || (phase === "reveal" && !host));
+  // During the grand reveal, non-hosts should see the reveal panel and its dedicated
+  // host-waiting message — not the stale "your line is locked" writing-round panel.
+  setPanel("waiting-panel", (phase === "setup" && !host) || ((phase === "starter" || phase === "writing") && submitted) || (phase === "writing" && !privateState?.latestLine && !submitted));
   if (phase === "starter" && submitted) {
     $("waiting-title").textContent = "Your opening line is locked!";
     $("waiting-copy").textContent = "Waiting for everyone to finish their opening line.";
