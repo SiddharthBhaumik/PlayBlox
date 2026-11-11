@@ -11,6 +11,7 @@ const token = code ? sessionStorage.getItem("playblox:" + code + ":token") : nul
 const $ = id => document.getElementById(id);
 let socket = null, room = null, gameState = null, privateState = null, stateVersion = 0, myPlayerId = null;
 let reconnectTimer = null, heartbeatTimer = null, reconnectDelay = 1000, generation = 0, leaving = false, submitting = false;
+let renderedRevealStoryIndex = -1, renderedRevealLineCount = 0;
 
 $("back-to-lobby").href = "../../../" + (code ? "?party=" + encodeURIComponent(code) + "&lobby=1" : "");
 const playerName = id => room?.players.find(player => player.id === id)?.nickname || "Player";
@@ -63,6 +64,20 @@ function renderRevealedLine(line, index) {
   const text = document.createElement("p"); text.textContent = line.text;
   const author = document.createElement("small"); author.textContent = "WRITTEN BY " + (line.authorName || playerName(line.playerId)).toUpperCase();
   copy.append(text, author); row.append(number, copy); return row;
+}
+function renderRevealLines(storyIndex, revealedLines) {
+  const root = $("revealed-lines");
+  if (storyIndex !== renderedRevealStoryIndex || revealedLines.length < renderedRevealLineCount) {
+    root.replaceChildren();
+    renderedRevealStoryIndex = storyIndex;
+    renderedRevealLineCount = 0;
+  }
+  // Keep already revealed lines in the DOM. Only create the newly revealed row;
+  // rebuilding the whole list on every WebSocket update replayed every animation.
+  for (let index = renderedRevealLineCount; index < revealedLines.length; index++) {
+    root.append(renderRevealedLine(revealedLines[index], index));
+  }
+  renderedRevealLineCount = revealedLines.length;
 }
 function renderAllStories(stories) {
   const root = $("all-stories"); root.replaceChildren();
@@ -134,8 +149,7 @@ function render() {
     const current = stories[gameState.revealStoryIndex];
     $("reveal-heading").textContent = "Story " + (gameState.revealStoryIndex + 1);
     $("reveal-subheading").textContent = "The group wrote " + gameState.linesPerStory + " lines. Here's how it unfolded.";
-    const lines = $("revealed-lines"); lines.replaceChildren();
-    (current?.lines || []).forEach((line, index) => lines.append(renderRevealedLine(line, index)));
+    renderRevealLines(gameState.revealStoryIndex, current?.lines || []);
     $("reveal-progress").textContent = "Story " + (gameState.revealStoryIndex + 1) + " · Line " + (gameState.revealLineIndex + 1) + " of " + gameState.linesPerStory;
     $("reveal-next").hidden = !host;
     $("reveal-wait").hidden = host;
@@ -143,6 +157,10 @@ function render() {
     $("reveal-next").textContent = gameState.revealLineIndex + 1 >= gameState.linesPerStory
       ? (gameState.revealStoryIndex + 1 >= gameState.playerCount ? "Finish reveal →" : "Next story →")
       : "Reveal next line →";
+  }
+  if (phase !== "reveal") {
+    renderedRevealStoryIndex = -1;
+    renderedRevealLineCount = 0;
   }
   if (finished) renderAllStories(gameState.revealedStories || []);
   $("confirm-settings").disabled = submitting;
