@@ -61,7 +61,7 @@ function renderRevealedLine(line, index) {
   const number = document.createElement("span"); number.className = "revealed-line-number"; number.textContent = String(index + 1);
   const copy = document.createElement("div"); copy.className = "revealed-line-copy";
   const text = document.createElement("p"); text.textContent = line.text;
-  const author = document.createElement("small"); author.textContent = "WRITTEN BY " + playerName(line.playerId).toUpperCase();
+  const author = document.createElement("small"); author.textContent = "WRITTEN BY " + (line.authorName || playerName(line.playerId)).toUpperCase();
   copy.append(text, author); row.append(number, copy); return row;
 }
 function renderAllStories(stories) {
@@ -73,7 +73,7 @@ function renderAllStories(stories) {
     story.lines.forEach((line, lineIndex) => {
       const row = document.createElement("div"); row.className = "full-story-line";
       const text = document.createElement("p"); text.textContent = line.text;
-      const author = document.createElement("small"); author.textContent = "LINE " + (lineIndex + 1) + " · " + playerName(line.playerId);
+      const author = document.createElement("small"); author.textContent = "LINE " + (lineIndex + 1) + " · " + (line.authorName || playerName(line.playerId));
       row.append(text, author); article.append(row);
     });
     root.append(article);
