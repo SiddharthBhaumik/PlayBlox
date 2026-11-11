@@ -459,6 +459,7 @@ export class PartyRoom extends DurableObject {
         state.playerOrder = remainingIds;
         if (state.scores) delete state.scores[departedId];
       }
+      this.room.rematchVotes = {};
       this.room.stateVersion = (this.room.stateVersion || 0) + 1;
       this.room.recentActionIds = [];
       return "results";
@@ -589,6 +590,8 @@ export class PartyRoom extends DurableObject {
     this.room.gameMetadata = null;
     this.room.gameState = null;
     this.room.results = null;
+    this.room.guidePlayerIds = [];
+    this.room.guideReadyPlayerIds = [];
     this.room.stateVersion = (this.room.stateVersion || 0) + 1;
     this.room.recentActionIds = [];
     this.room.rematchVotes = {};
