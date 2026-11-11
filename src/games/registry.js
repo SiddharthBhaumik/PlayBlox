@@ -187,21 +187,6 @@ export const gameRegistry = [
     lateJoinPolicy: 'wait',
     spectators: { supported: true },
   },
-  {
-    id: 'genie',
-    name: "Akinator",
-    description: "Think of anyone — real or fictional. Answer the genie's questions and try to stump its guesses.",
-    guide: "GOAL: Stump the genie! Each round, every player takes one turn as the Thinker.\n\nTHINKER: Silently think of a real person or fictional character — don't tell anyone. The genie asks yes/no questions and only the Thinker answers: Yes, Probably, Don't know, Probably not, or No. Misclicked? Use Undo to take back your last answer.\n\nTHE GENIE GUESSES: When it feels confident, the genie names a character. Tell it whether it is right. It gets up to 3 guesses and 25 questions per turn.\n\nSCORING: Stump the genie completely and earn 3 points. If the genie only gets it on its second or third guess, earn 1 point. A first-guess hit earns 0. When stumped, the Thinker can reveal who they were thinking of.\n\nEVERYONE ELSE: Watch the questions and answers live and try to work out the character before the genie does.\n\nThe round ends after every player has been the Thinker once. Replay keeps cumulative scores. If a Thinker disconnects, the host can skip their turn.",
-    emoji: '🧞',
-    color: '#e6dcff',
-    status: 'beta',
-    path: './src/games/genie/index.html',
-    entryMode: 'party',
-    players: { min: 1, max: 8 },
-    interactionModel: 'turn-based',
-    lateJoinPolicy: 'wait',
-    spectators: { supported: true },
-  },
   // Example for a future game (uncomment and edit when its page exists):
   // {
   //   id: 'memory-match',
