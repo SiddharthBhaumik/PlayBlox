@@ -20,9 +20,20 @@ assert.equal(plotTwist.validateAction(context(players[1]), plotTwist.createIniti
 
 let state = plotTwist.createInitialState(context(host));
 assert.equal(state.phase, "setup");
+assert.equal(plotTwist.validateAction(context(host), state, { type: "update-lines", value: 9 }).ok, true);
+assert.equal(plotTwist.validateAction(context(players[1]), state, { type: "update-lines", value: 9 }).ok, false);
+state = plotTwist.reduceAction(context(host), state, { type: "update-lines", value: 9 });
+assert.equal(state.phase, "setup", "Live setting updates must not start the game");
+assert.equal(state.linesPerStory, 9);
+state = plotTwist.reduceAction(context(host), state, { type: "update-lines", value: 6 });
+assert.equal(state.phase, "setup");
 state = plotTwist.reduceAction(context(host), state, { type: "set-lines", value: 6 });
 assert.equal(state.phase, "starter");
 assert.equal(state.linesPerStory, 6);
+assert.equal(Math.max(0, state.linesPerStory - 1), 5, "Six total lines means five writing rounds after the opening");
+const replayState = plotTwist.startNextRound(context(host), state, "replay");
+assert.equal(replayState.phase, "setup", "Replay starts a fresh setup rather than continuing a previous story");
+assert.equal(replayState.round, 0);
 
 for (const player of players) {
   const action = { type: "submit-line", text: "Opening from " + player.nickname };
