@@ -54,3 +54,50 @@
 .game-help.error{color:#a3473c}
 @keyframes line-in{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:translateY(0)}}
 @media(max-width:680px){.plot-layout{grid-template-columns:1fr;gap:12px}.plot-layout .game-roster{position:static}.plot-layout .game-roster ul{grid-template-columns:repeat(auto-fit,minmax(130px,1fr))}.plot-game{margin-top:8px}.plot-meta{flex-direction:column;align-items:center}.plot-card{padding:12px;border-radius:20px}.plot-panel{padding:14px}.reveal-controls{align-items:stretch;flex-direction:column}.reveal-controls .plot-primary{width:100%}}
+
+
+/* Plot Twist — dark theme surfaces and form controls */
+html[data-theme="dark"] .plot-intro,
+html[data-theme="dark"] .plot-meta,
+html[data-theme="dark"] .plot-progress,
+html[data-theme="dark"] .range-scale,
+html[data-theme="dark"] .game-help{color:#bac5df}
+html[data-theme="dark"] .beta-pill{background:#342e4b;color:#ffe5a0;border-color:#ffc94380}
+html[data-theme="dark"] .plot-meta span{background:#182442;color:#d8def1;border-color:#a9b7ee40}
+html[data-theme="dark"] .plot-meta #connection-status{color:#75e0bb}
+html[data-theme="dark"] .plot-meta #connection-status.offline{color:#ffb2b9;background:#422333}
+html[data-theme="dark"] .plot-card{background:linear-gradient(145deg,#192546,#0d152b);border-color:#a9b7ee55;color:#f7f0e5}
+html[data-theme="dark"] .plot-progress{border-bottom-color:#a9b7ee35}
+html[data-theme="dark"] .plot-progress span:first-child{background:#342e4b;color:#ffe5a0;border-color:#ffc94380}
+html[data-theme="dark"] .plot-panel{background:#111c37;border-color:#a9b7ee50;color:#f7f0e5}
+html[data-theme="dark"] .plot-panel h2,
+html[data-theme="dark"] .plot-panel .field-label{color:#f7f0e5}
+html[data-theme="dark"] .panel-kicker{color:#83d9d0}
+html[data-theme="dark"] .panel-copy{color:#bdc8e2}
+html[data-theme="dark"] .field-label strong{background:#49364b;color:#ffe4a2}
+html[data-theme="dark"] #line-count{accent-color:#ffc943}
+html[data-theme="dark"] .range-scale{color:#bdc8e2}
+html[data-theme="dark"] .plot-panel textarea{background:#0b142c;color:#f7f0e5;border-color:#52628a}
+html[data-theme="dark"] .plot-panel textarea::placeholder{color:#8994b6}
+html[data-theme="dark"] .plot-primary{background:#ffc943;color:#211a25;border-color:#ffc943;box-shadow:0 3px 0 #0005}
+html[data-theme="dark"] .plot-primary:disabled{opacity:.55}
+html[data-theme="dark"] .story-number{background:#49364b;color:#ffe4a2}
+html[data-theme="dark"] .latest-line{background:#1b2949;border-color:#59688e}
+html[data-theme="dark"] .latest-line span{color:#83d9d0}
+html[data-theme="dark"] .latest-line p{color:#f7f0e5}
+html[data-theme="dark"] .waiting-orb{background:#29385d;color:#bcecff}
+html[data-theme="dark"] .waiting-track{color:#bdc8e2}
+html[data-theme="dark"] .track{background:#293653}
+html[data-theme="dark"] .track i{background:#43d5bd}
+html[data-theme="dark"] .reveal-panel{background:#172342;border-color:#8d7651}
+html[data-theme="dark"] .revealed-line,
+html[data-theme="dark"] .full-story{background:#1b2949;border-color:#a9b7ee40}
+html[data-theme="dark"] .revealed-line-number{background:#49364b;color:#ffe4a2}
+html[data-theme="dark"] .revealed-line-copy p,
+html[data-theme="dark"] .full-story-line p,
+html[data-theme="dark"] .full-story h3{color:#f7f0e5}
+html[data-theme="dark"] .revealed-line-copy small,
+html[data-theme="dark"] .full-story-line small{color:#bdc8e2}
+html[data-theme="dark"] .full-story-line{border-top-color:#a9b7ee30}
+html[data-theme="dark"] .reveal-wait{color:#bdc8e2}
+html[data-theme="dark"] .game-help.error{color:#ff9cab}
