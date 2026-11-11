@@ -22,6 +22,7 @@ jobs:
           npm run check:syntax
           npm run test:hand-cricket
           npm run test:hand-cricket-analytics
+          npm run test:plot-twist
       - name: Check other game contracts (known 67 contract failure)
         run: node scripts/test-game-contracts.mjs
         continue-on-error: true
