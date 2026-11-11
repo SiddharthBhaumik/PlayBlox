@@ -70,7 +70,7 @@ export const gameRegistry = [
     id: 'plot-twist',
     name: 'Plot Twist',
     description: 'Build a story together, one secret line at a time. Nobody sees the whole plot until the reveal.',
-    guide: "Everyone writes an opening line. Then stories rotate around the group: each player sees only the latest line of their assigned story and adds the next line. Every player contributes to each story once before anyone repeats. The host chooses 3–24 total lines per story, including the opening. When all stories are complete, the host reveals them one line at a time, with each author credited.",
+    guide: "THE IDEA: Everyone starts a story. Then stories rotate around the group, with each player adding one line at a time.\n\nSTARTING: The host chooses how many lines each story will contain (3–24, including its opening line). Every player writes one opening line. Each opening line becomes its own story.\n\nADDING TO STORIES: Each writing round, everyone receives one story to continue. You see only the latest line in that story — never its earlier lines. Write one line that follows it. Your submission stays hidden until the final reveal.\n\nFAIR ROTATION: Every player contributes to each story once before anyone gets a second turn on that story. Assignments rotate so everyone writes exactly one line per round. The same player can contribute again in later cycles.\n\nTHE REVEAL: When every story reaches the chosen length, the host reveals the stories one line at a time. The author of each line is shown. The host presses Next to reveal the next line and then move to the next story.\n\nBe creative, follow the last line, and don't worry about where the story is heading. That's the fun!",
     emoji: '📖',
     color: '#f4dfc5',
     status: 'beta',
