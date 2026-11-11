@@ -169,7 +169,7 @@ export const plotTwist = {
   getPrivateState(state, playerId) {
     if (!state || !state.playerOrder.includes(playerId)) return null;
     if (state.phase === "starter") {
-      return { mode: "starter", storyNumber: state.playerOrder.indexOf(playerId) + 1 };
+      return { mode: "starter" };
     }
     if (state.phase === "writing") {
       const storyId = storyForPlayer(state, playerId);
@@ -177,7 +177,6 @@ export const plotTwist = {
       const latest = story?.lines[story.lines.length - 1];
       return latest ? {
         mode: "writing",
-        storyNumber: state.storyOrder.indexOf(storyId) + 1,
         latestLine: latest.text,
         previousAuthorName: null,
       } : null;
