@@ -19,13 +19,18 @@ function shuffled(values) {
   }
   return result;
 }
+function assignmentsFor(playerOrder, storyOrder, round) {
+  const assignments = {};
+  for (let index = 0; index < playerOrder.length; index++) {
+    const storyIndex = (index - round + playerOrder.length * 10) % playerOrder.length;
+    assignments[playerOrder[index]] = storyOrder[storyIndex];
+  }
+  return assignments;
+}
 function storyForPlayer(state, playerId) {
   if (state.phase === "starter") return playerId;
   if (state.phase !== "writing") return null;
-  const playerIndex = state.playerOrder.indexOf(playerId);
-  if (playerIndex < 0) return null;
-  const storyIndex = (playerIndex - state.round + state.playerOrder.length * 10) % state.playerOrder.length;
-  return state.storyOrder[storyIndex] || null;
+  return state.roundAssignments?.[playerId] || null;
 }
 function publicStory(story, count = story.lines.length) {
   return { id: story.id, creatorId: story.creatorId, lines: story.lines.slice(0, count) };
@@ -63,6 +68,7 @@ export const plotTwist = {
       round: 0,
       submittedPlayerIds: [],
       pendingLines: {},
+      roundAssignments: {},
       stories: {},
       revealStoryIndex: 0,
       revealLineIndex: 0,
@@ -120,13 +126,13 @@ export const plotTwist = {
         return {
           ...state, stories, phase: "writing", round: 1,
           submittedPlayerIds: [], pendingLines: {},
+          roundAssignments: assignmentsFor(state.playerOrder, state.storyOrder, 1),
         };
       }
       const stories = { ...state.stories };
       for (let playerIndex = 0; playerIndex < state.playerOrder.length; playerIndex++) {
         const playerId = state.playerOrder[playerIndex];
-        const storyIndex = (playerIndex - state.round + state.playerOrder.length * 10) % state.playerOrder.length;
-        const storyId = state.storyOrder[storyIndex];
+        const storyId = state.roundAssignments[playerId];
         const story = stories[storyId];
         stories[storyId] = {
           ...story,
@@ -139,6 +145,7 @@ export const plotTwist = {
         stories,
         phase: complete ? "reveal" : "writing",
         round: state.round + (complete ? 0 : 1),
+        roundAssignments: complete ? {} : assignmentsFor(state.playerOrder, state.storyOrder, state.round + 1),
         submittedPlayerIds: [],
         pendingLines: {},
         revealStoryIndex: 0,
@@ -220,11 +227,20 @@ export const plotTwist = {
     const stories = { ...state.stories };
     delete stories[playerId];
     const submittedPlayerIds = state.submittedPlayerIds.filter(id => id !== playerId);
-    const next = { ...state, playerOrder, storyOrder, pendingLines, stories, submittedPlayerIds };
+    const next = {
+      ...state, playerOrder, storyOrder, pendingLines, stories, submittedPlayerIds,
+      ...(state.phase === "writing" ? {
+        // A roster change invalidates the current round's private assignments.
+        // Clear submissions so nobody's line is attached to a story they did not see.
+        pendingLines: {}, submittedPlayerIds: [],
+        roundAssignments: assignmentsFor(playerOrder, storyOrder, state.round),
+      } : {}),
+    };
     if (state.phase === "starter" && submittedPlayerIds.length === playerOrder.length) {
       const built = {};
       for (const id of playerOrder) built[id] = { id, creatorId: id, lines: [{ playerId: id, text: pendingLines[id] }] };
-      return { ...next, stories: built, phase: "writing", round: 1, pendingLines: {}, submittedPlayerIds: [] };
+      return { ...next, stories: built, phase: "writing", round: 1, pendingLines: {}, submittedPlayerIds: [],
+        roundAssignments: assignmentsFor(playerOrder, storyOrder, 1) };
     }
     return next;
   },
