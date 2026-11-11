@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#080d20"><title>Plot Twist — PlayBlox</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Nunito:wght@500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../../styles.css">
+  <link rel="stylesheet" href="./game.css">
+  <link id="playblox-dark-theme" rel="stylesheet" href="../../../dark-theme.css">
+  <script>
+    (() => {
+      let preference = "dark";
+      try { preference = localStorage.getItem("playblox-theme") === "light" ? "light" : "dark"; } catch (_) {}
+      document.documentElement.dataset.theme = preference;
+      const themeLink = document.getElementById("playblox-dark-theme");
+      if (themeLink) themeLink.disabled = preference !== "dark";
+      const themeColor = document.querySelector('meta[name="theme-color"]');
+      if (themeColor) themeColor.content = preference === "dark" ? "#080d20" : "#fff8e9";
+    })();
+  </script>
+  <script type="module" src="./game.js"></script>
+  <script src="../../../theme.js" defer></script>
+</head>
+<body>
+  <div class="page-shell game-shell plot-shell">
+    <header class="topbar">
+      <a class="brand" href="../../../" aria-label="PlayBlox home"><span class="brand-mark" aria-hidden="true">🧸</span><span class="brand-name">Play<span>Blox</span></span></a>
+      <a class="back-link" id="back-to-lobby" href="../../../">Back to party</a>
+      <button class="theme-toggle" type="button" data-theme-toggle aria-pressed="false"><span aria-hidden="true">🌙</span><span>Dark mode</span></button>
+    </header>
+    <div class="game-layout plot-layout">
+      <aside class="game-roster" aria-label="Players in this game"><h2>Playing together</h2><ul id="player-roster"><li>Connecting to party…</li></ul></aside>
+      <main class="plot-game">
+        <div class="eyebrow">✦ PLAYBLOX PARTY GAME · BETA ✦</div>
+        <div class="plot-title-row"><span aria-hidden="true">📖</span><h1>Plot Twist</h1><span class="beta-pill">BETA</span></div>
+        <p class="plot-intro">Everyone writes a piece. Nobody knows the whole story. Until the end.</p>
+        <div class="plot-meta"><span id="room-label">Connecting to party…</span><span id="connection-status">Connecting…</span></div>
+        <section class="plot-card">
+          <div class="plot-progress"><span id="phase-pill">Preparing stories</span><span id="round-label">Round —</span></div>
+          <section id="setup-panel" class="plot-panel" hidden>
+            <p class="panel-kicker">HOST SETTINGS</p><h2>How long should each story be?</h2>
+            <p class="panel-copy">Choose the total number of lines, including the opening line. Every story will have the same length.</p>
+            <label class="field-label" for="line-count">Lines per story <strong id="line-count-value">6</strong></label>
+            <input id="line-count" type="range" min="3" max="24" value="6">
+            <div class="range-scale"><span>3 lines</span><span>24 lines</span></div>
+            <button id="confirm-settings" class="plot-primary" type="button">Lock settings and begin</button>
+          </section>
+          <section id="starter-panel" class="plot-panel" hidden>
+            <p class="panel-kicker">CREATE A NEW STORY</p><h2>Write the opening line</h2>
+            <p class="panel-copy">Your line becomes the beginning of a story that will travel around the group. Make it interesting!</p>
+            <label class="field-label" for="starter-input">Your opening line</label>
+            <textarea id="starter-input" maxlength="240" rows="3" placeholder="One day, something very strange happened…"></textarea>
+            <button id="submit-starter" class="plot-primary" type="button">Lock my opening line</button>
+          </section>
+          <section id="writing-panel" class="plot-panel" hidden>
+            <div class="story-number" id="story-number">STORY 1</div>
+            <p class="panel-kicker">ONLY THE LATEST LINE IS VISIBLE</p><h2>Continue this story</h2>
+            <div class="latest-line"><span>THE LAST PERSON WROTE</span><p id="latest-line">Loading…</p></div>
+            <label class="field-label" for="line-input">Add the next line</label>
+            <textarea id="line-input" maxlength="240" rows="3" placeholder="What happens next?"></textarea>
+            <button id="submit-line" class="plot-primary" type="button">Lock my line</button>
+          </section>
+          <section id="waiting-panel" class="plot-panel waiting-panel" hidden>
+            <div class="waiting-orb">✦</div><h2 id="waiting-title">Your line is locked!</h2>
+            <p id="waiting-copy">Waiting for everyone else to finish this round.</p>
+            <div class="waiting-track"><span id="submitted-count">0 / 0 submitted</span><div class="track"><i id="submitted-bar"></i></div></div>
+          </section>
+          <section id="reveal-panel" class="plot-panel reveal-panel" hidden>
+            <p class="panel-kicker">THE GRAND REVEAL</p><h2 id="reveal-heading">Story 1</h2>
+            <p class="panel-copy" id="reveal-subheading">Watch the story unfold, one line at a time.</p>
+            <div id="revealed-lines" class="revealed-lines"></div>
+            <div class="reveal-controls"><span id="reveal-progress">Line 1 of 6</span><button id="reveal-next" class="plot-primary" type="button">Reveal next line →</button></div>
+            <p id="reveal-wait" class="reveal-wait" hidden>The host is revealing the stories. Sit back and enjoy!</p>
+          </section>
+          <section id="finished-panel" class="plot-panel finished-panel" hidden>
+            <p class="panel-kicker">ALL STORIES REVEALED</p><h2>The end… or is it?</h2>
+            <div id="all-stories" class="all-stories"></div>
+          </section>
+          <p id="game-help" class="game-help" role="status">Write your line, lock it in, and let the next person take the story somewhere unexpected.</p>
+        </section>
+      </main>
+    </div>
+  </div>
+</body>
+</html>
