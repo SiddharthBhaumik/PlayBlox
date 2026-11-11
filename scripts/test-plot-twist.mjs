@@ -41,8 +41,8 @@ for (let round = 1; round <= 5; round++) {
   for (const player of players) {
     const privateState = plotTwist.getPrivateState(state, player.id);
     assert.equal(privateState.mode, "writing");
-    const storyIndex = privateState.storyNumber - 1;
-    const storyId = state.storyOrder[storyIndex];
+    assert.equal(Object.hasOwn(privateState, "storyNumber"), false, "Story identity must not be exposed to players");
+    const storyId = state.roundAssignments[player.id];
     roundAssignments.set(player.id, storyId);
     const action = { type: "submit-line", text: "Round " + round + " from " + player.nickname };
     assert.equal(plotTwist.validateAction(context(player), state, action).ok, true);
