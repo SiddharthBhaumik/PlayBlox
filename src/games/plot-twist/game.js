@@ -94,8 +94,6 @@ function render() {
   $("round-label").textContent = phase === "writing"
     ? "Writing round " + gameState.round
     : phase === "starter" ? "Opening lines" : "Each story · " + (gameState.linesPerStory || 3) + " lines";
-  $("score").textContent = ""; // No score in a collaborative storytelling game.
-
   const submitted = (gameState.submittedPlayerIds || []).includes(myPlayerId);
   const host = isHost();
   setPanel("setup-panel", phase === "setup" && host);
@@ -112,7 +110,7 @@ function render() {
   }
   setPanel("starter-panel", phase === "starter" && !submitted);
   setPanel("writing-panel", phase === "writing" && !submitted && Boolean(privateState?.latestLine));
-  setPanel("waiting-panel", (phase === "setup" && !host) || ((phase === "starter" || phase === "writing") && submitted) || (phase === "reveal" && !host));
+  setPanel("waiting-panel", (phase === "setup" && !host) || ((phase === "starter" || phase === "writing") && submitted) || (phase === "writing" && !privateState?.latestLine && !submitted) || (phase === "reveal" && !host));
   if (phase === "starter" && submitted) {
     $("waiting-title").textContent = "Your opening line is locked!";
     $("waiting-copy").textContent = "Waiting for everyone to finish their opening line.";
@@ -159,6 +157,10 @@ async function act(action, successMessage) {
   try {
     await sendAction(action);
     await syncRoom();
+    if (action.type === "submit-line") {
+      $("starter-input").value = "";
+      $("line-input").value = "";
+    }
     if (successMessage) help(successMessage);
   } catch (error) {
     help(error.message, true);
