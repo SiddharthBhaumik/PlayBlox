@@ -73,6 +73,8 @@ for (let story = 0; story < players.length; story++) {
     state = plotTwist.reduceAction(context(host), state, { type: "reveal-next" });
   }
 }
+assert.equal(state.phase, "reveal");
+state = plotTwist.reduceAction(context(host), state, { type: "reveal-next" });
 assert.equal(state.phase, "finished");
 assert.equal(plotTwist.getPublicState(state).revealedStories.every(story => story.lines.length === 6), true);
 assert.equal(plotTwist.getResults(context(host), state).stories.length, 4);
