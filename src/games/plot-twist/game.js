@@ -139,7 +139,6 @@ function render() {
     $("submitted-bar").style.width = ((gameState.submittedCount || 0) / Math.max(1, gameState.playerCount) * 100) + "%";
   }
   if (phase === "writing" && privateState?.latestLine) {
-    $("story-number").textContent = "STORY " + privateState.storyNumber;
     $("latest-line").textContent = privateState.latestLine;
   }
   setPanel("reveal-panel", phase === "reveal");
