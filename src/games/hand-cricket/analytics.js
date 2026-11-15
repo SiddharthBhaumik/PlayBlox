@@ -1,3 +1,113 @@
+export function buildTeamPlayerScorecard(state, team, playerId) {
+  const history = Array.isArray(state?.history) ? state.history : [];
+  const batting = history.filter(d => d.batterId === playerId && d.battingTeam === team);
+  let highestScore = 0, currentScore = 0, activeInnings = null;
+  for (const d of history) {
+    const inningsKey = `${d.superOverRound || 0}:${d.innings}:${d.battingTeam || ""}`;
+    if (d.batterId === playerId && d.battingTeam === team) {
+      if (activeInnings !== inningsKey) currentScore = 0;
+      currentScore += Number(d.runs) || 0;
+      highestScore = Math.max(highestScore, currentScore);
+      activeInnings = inningsKey;
+      if (d.out) activeInnings = null;
+    } else {
+      activeInnings = null;
+    }
+  }
+  const bowling = history.filter(d => {
+    const bowlingTeam = d.bowlingTeam ?? (d.battingTeam === "red" ? "blue" : d.battingTeam === "blue" ? "red" : null);
+    return d.bowlerId === playerId && bowlingTeam === team;
+  });
+  return {
+    runs: batting.reduce((sum, d) => sum + (Number(d.runs) || 0), 0),
+    balls: batting.length,
+    highestScore,
+    wickets: batting.filter(d => d.out).length,
+    runsConceded: bowling.reduce((sum, d) => sum + (Number(d.runs) || 0), 0),
+    ballsBowled: bowling.length,
+    wicketsTaken: bowling.filter(d => d.out).length
+  };
+}
+
+export function buildHandCricketExport(state, room = {}, roomCode = "", exportedAt = new Date().toISOString()) {
+  const history = Array.isArray(state?.history) ? state.history : [];
+  const roomPlayers = Array.isArray(room?.players) ? room.players : [];
+  const playerIds = [...new Set([
+    ...(state?.playerOrder || []),
+    ...history.flatMap(d => [d.batterId, d.bowlerId]).filter(Boolean)
+  ])];
+  const players = playerIds.map(id => {
+    const roomPlayer = roomPlayers.find(p => p.id === id);
+    const appearance = history.find(d => d.batterId === id || d.bowlerId === id);
+    const team = state?.teams?.[id] || null;
+    return {
+      id,
+      nickname: roomPlayer?.nickname || (appearance?.batterId === id ? appearance.batterName : appearance?.bowlerName) || "Player",
+      team,
+      role: id === state?.wildcardId ? "wildcard" : team || "unassigned",
+      isWildcard: id === state?.wildcardId
+    };
+  });
+  const ballsByInnings = new Map();
+  const deliveries = history.map((delivery, index) => {
+    const superOverRound = delivery.superOverRound || 0;
+    const inningsKey = state?.config?.mode === "team"
+      ? `team:${superOverRound}:${delivery.innings}:${delivery.battingTeam || "unknown"}`
+      : `individual:${delivery.innings}`;
+    const inningsBall = (ballsByInnings.get(inningsKey) || 0) + 1;
+    ballsByInnings.set(inningsKey, inningsBall);
+    const bowlingTeam = delivery.bowlingTeam ?? (
+      delivery.battingTeam === "red" ? "blue" :
+      delivery.battingTeam === "blue" ? "red" : null
+    );
+    return {
+      ...delivery,
+      sequence: index + 1,
+      inningsKey,
+      inningsBall,
+      over: Math.floor((inningsBall - 1) / 6) + 1,
+      ballInOver: ((inningsBall - 1) % 6) + 1,
+      bowlingTeam
+    };
+  });
+  return {
+    schemaVersion: 1,
+    exportedAt,
+    game: { id: "hand-cricket", name: "Hand Cricket" },
+    match: {
+      roomCode: roomCode || null,
+      roomName: room?.name || null,
+      mode: state?.config?.mode || null,
+      config: state?.config ? JSON.parse(JSON.stringify(state.config)) : null,
+      teams: state?.teams ? JSON.parse(JSON.stringify(state.teams)) : {},
+      wildcard: state?.wildcardId ? {
+        playerId: state.wildcardId,
+        role: state?.config?.oddPlayerMode || null
+      } : null,
+      toss: {
+        callerId: state?.tossCallerId || null,
+        call: state?.tossCall || null,
+        result: state?.tossResult || null,
+        winnerTeam: state?.tossWinnerTeam || null,
+        choice: state?.tossChoice || null,
+        battingTeam: state?.tossBattingTeam || null
+      },
+      result: {
+        winnerTeam: state?.winnerTeam ?? null,
+        teamScores: state?.teamScores ? JSON.parse(JSON.stringify(state.teamScores)) : null,
+        regulationScores: state?.regulationScores ? JSON.parse(JSON.stringify(state.regulationScores)) : null,
+        superOverRounds: state?.superOverRounds ? JSON.parse(JSON.stringify(state.superOverRounds)) : [],
+        completedAt: state?.completedAt || null
+      }
+    },
+    players,
+    aggregatePlayerStats: state?.stats ? JSON.parse(JSON.stringify(state.stats)) : {},
+    completedOvers: state?.completedOvers ? JSON.parse(JSON.stringify(state.completedOvers)) : [],
+    deliveryCount: deliveries.length,
+    deliveries
+  };
+}
+
 const rate = (runs, balls) => balls ? runs * 100 / balls : null;
 const economy = (runs, balls) => balls ? runs * 6 / balls : null;
 const choiceKey = value => value === "fist" ? "fist" : String(value);
