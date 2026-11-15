@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { buildHandCricketAnalytics } from "../src/games/hand-cricket/analytics.js";
+import { buildHandCricketAnalytics, buildTeamPlayerScorecard, buildHandCricketExport } from "../src/games/hand-cricket/analytics.js";
 
 const state = {
   config: { mode: "team" },
@@ -49,4 +49,76 @@ assert.equal(individual.fallOfWickets.red.length,0);
 const empty=buildHandCricketAnalytics({config:{mode:"team"},history:[]});
 assert.equal(empty.overall.ballsPerWicket,null);
 assert.equal(empty.overall.runsPerDismissedBatter,null);
+
+const wildcardHistory = [
+  {innings:1,superOver:false,superOverRound:0,battingTeam:"red",bowlingTeam:"blue",batterId:"wild",bowlerId:"blue1",runs:4,out:false,batChoice:4,bowlChoice:2},
+  {innings:1,superOver:false,superOverRound:0,battingTeam:"red",bowlingTeam:"blue",batterId:"red1",bowlerId:"blue1",runs:1,out:false,batChoice:1,bowlChoice:3},
+  {innings:1,superOver:false,superOverRound:0,battingTeam:"red",bowlingTeam:"blue",batterId:"wild",bowlerId:"blue1",runs:2,out:true,batChoice:2,bowlChoice:2},
+  {innings:2,superOver:false,superOverRound:0,battingTeam:"blue",bowlingTeam:"red",batterId:"blue1",bowlerId:"wild",runs:3,out:false,batChoice:3,bowlChoice:1},
+  {innings:2,superOver:false,superOverRound:0,battingTeam:"blue",bowlingTeam:"red",batterId:"blue1",bowlerId:"wild",runs:2,out:true,batChoice:2,bowlChoice:2},
+  {innings:1,superOver:true,superOverRound:1,battingTeam:"blue",bowlingTeam:"red",batterId:"wild",bowlerId:"red1",runs:5,out:false,batChoice:5,bowlChoice:1}
+];
+const wildcardState = {
+  config:{mode:"team",oddPlayerMode:"bat-bowl",wickets:2,allowFist:true,unlimited:false,limit:5},
+  playerOrder:["red1","blue1","wild"],teams:{red1:"red",blue1:"blue",wild:"wildcard"},wildcardId:"wild",
+  history:wildcardHistory,stats:{wild:{runs:11,balls:3,wickets:1,ballsBowled:2,runsConceded:5,wicketsTaken:1,highestScore:7}},
+  teamScores:{red:{runs:7,wickets:1,balls:3},blue:{runs:5,wickets:1,balls:2}},
+  superOverRounds:[{round:0,scores:{red:{runs:0},blue:{runs:0}}}]
+};
+const wildcardRed=buildTeamPlayerScorecard(wildcardState,"red","wild");
+const wildcardBlue=buildTeamPlayerScorecard(wildcardState,"blue","wild");
+assert.deepEqual(
+  {runs:wildcardRed.runs,balls:wildcardRed.balls,highestScore:wildcardRed.highestScore,wickets:wildcardRed.wickets},
+  {runs:6,balls:2,highestScore:4,wickets:1},
+  "Red batting scorecard includes only wildcard deliveries while batting for Red and separates return appearances"
+);
+assert.deepEqual(
+  {runs:wildcardBlue.runs,balls:wildcardBlue.balls,highestScore:wildcardBlue.highestScore,wickets:wildcardBlue.wickets},
+  {runs:5,balls:1,highestScore:5,wickets:0},
+  "Blue batting scorecard includes only wildcard deliveries while batting for Blue, including Super Overs"
+);
+assert.deepEqual(
+  {runsConceded:wildcardRed.runsConceded,ballsBowled:wildcardRed.ballsBowled,wicketsTaken:wildcardRed.wicketsTaken},
+  {runsConceded:5,ballsBowled:2,wicketsTaken:1},
+  "Red bowling figures include only wildcard deliveries while bowling for Red"
+);
+assert.deepEqual(
+  {runsConceded:wildcardBlue.runsConceded,ballsBowled:wildcardBlue.ballsBowled,wicketsTaken:wildcardBlue.wicketsTaken},
+  {runsConceded:0,ballsBowled:0,wicketsTaken:0},
+  "Blue bowling figures exclude wildcard bowling for Red"
+);
+const legacyBowling=buildTeamPlayerScorecard({history:[
+  {innings:1,battingTeam:"red",batterId:"r",bowlerId:"wild",runs:2,out:false}
+]},"blue","wild");
+assert.equal(legacyBowling.runsConceded,2,"Older delivery history without bowlingTeam remains readable by deriving the opposite side");
+
+const exportState={
+  ...wildcardState,
+  history:[
+    {...wildcardHistory[0],ball:1,at:100},
+    {...wildcardHistory[1],ball:2,at:200},
+    {...wildcardHistory[5],ball:1,at:300}
+  ],
+  completedAt:999,
+  winnerTeam:"red",
+  completedOvers:[{innings:1,battingTeam:"red",balls:[wildcardHistory[0]],runs:4,wickets:0,complete:false}]
+};
+const exported=buildHandCricketExport(exportState,{name:"Test room",players:[
+  {id:"red1",nickname:"Red One"},{id:"blue1",nickname:"Blue One"},{id:"wild",nickname:"Wildcard"}
+]},"ABCD","2026-11-16T00:00:00.000Z");
+assert.equal(exported.schemaVersion,1);
+assert.equal(exported.deliveryCount,3);
+assert.equal(exported.deliveries.length,3,"Export preserves every ball-by-ball delivery");
+assert.deepEqual(exported.deliveries.map(d=>d.sequence),[1,2,3],"Export preserves chronological order and assigns a sequence");
+assert.equal(exported.deliveries[0].bowlingTeam,"blue","Export includes the opposing bowling team");
+assert.equal(exported.deliveries[2].superOver,true,"Export retains Super Over deliveries");
+assert.equal(exported.deliveries[2].inningsBall,1,"Ball numbering restarts for each Super Over innings");
+assert.equal(exported.deliveries[2].over,1);
+assert.equal(exported.deliveries[2].ballInOver,1);
+assert.equal(exported.players.find(p=>p.id==="wild").isWildcard,true);
+assert.equal(exported.match.result.winnerTeam,"red");
+assert.equal(exported.match.result.superOverRounds.length,1);
+assert.equal(exported.completedOvers.length,1);
+assert.equal(exported.aggregatePlayerStats.wild.runs,11,"Export also retains the original aggregate statistics");
+
 console.log("Hand Cricket analytics tests passed.");
