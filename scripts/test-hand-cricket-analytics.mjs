@@ -51,8 +51,8 @@ assert.equal(empty.overall.ballsPerWicket,null);
 assert.equal(empty.overall.runsPerDismissedBatter,null);
 
 const wildcardHistory = [
-  {innings:1,superOver:false,superOverRound:0,battingTeam:"red",bowlingTeam:"blue",batterId:"wild",bowlerId:"blue1",runs:4,out:false,batChoice:4,bowlChoice:2},
-  {innings:1,superOver:false,superOverRound:0,battingTeam:"red",bowlingTeam:"blue",batterId:"red1",bowlerId:"blue1",runs:1,out:false,batChoice:1,bowlChoice:3},
+  {innings:1,superOver:false,superOverRound:0,battingTeam:"red",bowlingTeam:"blue",batterId:"wild",bowlerId:"blue1",runs:4,out:true,batChoice:4,bowlChoice:2},
+  {innings:1,superOver:false,superOverRound:0,battingTeam:"red",bowlingTeam:"blue",batterId:"red1",bowlerId:"blue1",runs:1,out:true,batChoice:1,bowlChoice:3},
   {innings:1,superOver:false,superOverRound:0,battingTeam:"red",bowlingTeam:"blue",batterId:"wild",bowlerId:"blue1",runs:2,out:true,batChoice:2,bowlChoice:2},
   {innings:2,superOver:false,superOverRound:0,battingTeam:"blue",bowlingTeam:"red",batterId:"blue1",bowlerId:"wild",runs:3,out:false,batChoice:3,bowlChoice:1},
   {innings:2,superOver:false,superOverRound:0,battingTeam:"blue",bowlingTeam:"red",batterId:"blue1",bowlerId:"wild",runs:2,out:true,batChoice:2,bowlChoice:2},
@@ -69,7 +69,7 @@ const wildcardRed=buildTeamPlayerScorecard(wildcardState,"red","wild");
 const wildcardBlue=buildTeamPlayerScorecard(wildcardState,"blue","wild");
 assert.deepEqual(
   {runs:wildcardRed.runs,balls:wildcardRed.balls,highestScore:wildcardRed.highestScore,wickets:wildcardRed.wickets},
-  {runs:6,balls:2,highestScore:4,wickets:1},
+  {runs:6,balls:2,highestScore:4,wickets:2},
   "Red batting scorecard includes only wildcard deliveries while batting for Red and separates return appearances"
 );
 assert.deepEqual(
