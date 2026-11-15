@@ -189,6 +189,7 @@ function resolveDelivery(s,ctx){
   else if(bat===bowl){out=true;reason="Matching numbers";}
   else{runs=bat;reason="Runs scored";}
   const team=s.config.mode==="team"?s.battingTeam:null;
+  const bowlingTeam=team?s.bowlingTeam:null;
   const batterStats=s.stats[batter],bowlerStats=s.stats[bowler];
   s.bowlingSequence=(s.bowlingSequence||0)+1;bowlerStats.lastBowledAt=s.bowlingSequence;
   const batterBefore=s.currentInningsRuns[batter]||0;
@@ -213,7 +214,7 @@ function resolveDelivery(s,ctx){
   if(team)events.push(...milestoneEvents(s,s.teamScores[team].runs-runs,s.teamScores[team].runs,team,batter));
   const delivery={
     ball:team?s.teamScores[team].balls:batterStats.balls,
-    innings:team?s.innings:s.individualIndex,battingTeam:team,
+    innings:team?s.innings:s.individualIndex,battingTeam:team,bowlingTeam,
     batterId:batter,bowlerId:bowler,batterName:nameOf(ctx,batter),bowlerName:nameOf(ctx,bowler),
     batChoice:bat,bowlChoice:bowl,out,runs,reason,superOver:Boolean(s.superOverActive),superOverRound:s.superOverRound||0,at:Date.now()
   };
